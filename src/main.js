@@ -28,6 +28,7 @@ function field(el, label, value = "", type = "text") {
     attr: { id },
   });
   if (type !== "textarea") input.type = type;
+  else wrap.addClass("al-textarea-field");
   input.value = String(value ?? "");
   return input;
 }

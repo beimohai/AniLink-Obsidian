@@ -194,7 +194,7 @@ AniLink.prototype.settingsModal = function () {
       label.createSpan({ text: C.STATUS[status] });
     }
     const sync = section("sync", "跨设备");
-    button(sync, "打开本机数据目录", () =>
+    button(sync, "打开数据目录", () =>
       shell.openPath(path.dirname(this.deviceFile)),
     );
     inputs.deviceSync = select(
@@ -2274,7 +2274,7 @@ Connections.prototype.display = function () {
     text:
       "AniLink " +
       this.p.manifest.version +
-      " · 更新日期 2026-11-11 · 作者 北漠海",
+      " · 更新日期 2026-11-12 · 作者 北漠海",
     cls: "al-muted",
   });
 };

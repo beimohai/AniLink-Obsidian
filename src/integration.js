@@ -207,6 +207,7 @@ AniLink.prototype.searchModal = function () {
           if (s.type !== 2) continue;
           const row = results.createDiv("al-search-card");
           const cover = s.images?.medium || s.images?.common;
+          row.toggleClass("al-search-text-only", !cover);
           if (cover)
             row.createEl("img", {
               attr: {

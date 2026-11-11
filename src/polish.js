@@ -45,5 +45,6 @@ Dashboard.prototype.renderCards = function (cards) {
     ).length;
     if (ready)
       card.createSpan({ text: String(ready), cls: "al-unwatched-badge" });
+    card.toggleClass("al-has-unwatched", !!ready);
   }
 };

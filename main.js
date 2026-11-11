@@ -636,6 +636,7 @@ function field(el, label, value = "", type = "text") {
     attr: { id },
   });
   if (type !== "textarea") input.type = type;
+  else wrap.addClass("al-textarea-field");
   input.value = String(value ?? "");
   return input;
 }
@@ -1896,6 +1897,7 @@ AniLink.prototype.searchModal = function () {
           if (s.type !== 2) continue;
           const row = results.createDiv("al-search-card");
           const cover = s.images?.medium || s.images?.common;
+          row.toggleClass("al-search-text-only", !cover);
           if (cover)
             row.createEl("img", {
               attr: {
@@ -3048,6 +3050,7 @@ Dashboard.prototype.renderCards = function (cards) {
     ).length;
     if (ready)
       card.createSpan({ text: String(ready), cls: "al-unwatched-badge" });
+    card.toggleClass("al-has-unwatched", !!ready);
   }
 };
 
@@ -4455,7 +4458,7 @@ AniLink.prototype.settingsModal = function () {
       label.createSpan({ text: C.STATUS[status] });
     }
     const sync = section("sync", "跨设备");
-    button(sync, "打开本机数据目录", () =>
+    button(sync, "打开数据目录", () =>
       shell.openPath(path.dirname(this.deviceFile)),
     );
     inputs.deviceSync = select(
@@ -6535,7 +6538,7 @@ Connections.prototype.display = function () {
     text:
       "AniLink " +
       this.p.manifest.version +
-      " · 更新日期 2026-11-11 · 作者 北漠海",
+      " · 更新日期 2026-11-12 · 作者 北漠海",
     cls: "al-muted",
   });
 };
@@ -6696,30 +6699,54 @@ AniLink.prototype.onload = async function () {
     .update(base)
     .digest("hex")
     .slice(0, 24);
-  this.deviceFile = path.join(
+  const localFolder = path.join(
     process.env.LOCALAPPDATA || require("os").homedir(),
     "AniLink",
-    `${id}.json`,
   );
+  this.legacyDeviceFile = path.join(localFolder, `${id}.json`);
+  this.deviceIdentityFile = path.join(localFolder, `${id}.device.json`);
+  this.deviceFile = path.join(base, this.manifest.dir, "data.json");
   this.records = {};
   this.deviceBaseline = {};
   this.rawLoadData = this.loadData.bind(this);
   this.rawSaveData = this.saveData.bind(this);
   this.loadData = async () => {
     const saved = await this.rawLoadData();
-    this.markerWritten = saved?.deviceStorage === 1;
     let local;
-    try {
-      local = JSON.parse(await fs.readFile(this.deviceFile, "utf8"));
-    } catch (e) {
-      if (e.code !== "ENOENT")
-        throw Error("AniLink 本机配置读取失败，已停止加载以免覆盖原数据");
+    if (saved?.storage !== "vault" && (!saved || saved.deviceStorage === 1)) {
+      try {
+        local = JSON.parse(await fs.readFile(this.legacyDeviceFile, "utf8"));
+      } catch (error) {
+        if (error.code !== "ENOENT")
+          throw Error("旧版 AniLink 数据读取失败，已停止迁移");
+      }
     }
-    this.deviceId = local?.deviceId || crypto.randomBytes(16).toString("hex");
-    this.records = DeviceModel.merge(local?.records);
-    this.recordGroup = local?.recordGroup || "";
+    let identity;
+    try {
+      identity = JSON.parse(await fs.readFile(this.deviceIdentityFile, "utf8"));
+    } catch (error) {
+      if (error.code !== "ENOENT") throw Error("AniLink 设备标识读取失败");
+    }
+    this.deviceId =
+      identity?.deviceId ||
+      local?.deviceId ||
+      crypto.randomBytes(16).toString("hex");
+    await fs.mkdir(localFolder, { recursive: true });
+    await fs.writeFile(
+      this.deviceIdentityFile,
+      JSON.stringify({ deviceId: this.deviceId }),
+      "utf8",
+    );
+    if (
+      saved?.storage === "vault" &&
+      (!saved.state || !Array.isArray(saved.state.shows))
+    )
+      throw Error("AniLink 库内数据格式无效，已停止加载以免覆盖数据");
+    const document = saved?.storage === "vault" ? saved : local;
+    this.records = DeviceModel.merge(document?.records);
+    this.recordGroup = document?.recordGroup || "";
     const state =
-      local?.state ||
+      document?.state ||
       (saved?.deviceStorage === 1 ? C.defaults() : saved) ||
       C.defaults();
     this.deviceBaseline = DeviceModel.project(state);
@@ -6728,37 +6755,22 @@ AniLink.prototype.onload = async function () {
   };
   this.saveData = async (data) => {
     const after = DeviceModel.project(data);
-    if (data.settings.deviceSync === true) {
-      const initial =
-        this.recordGroup !== data.settings.syncGroup ||
-        !Object.keys(this.records).length;
-      this.records = DeviceModel.capture(
-        initial ? {} : this.records,
-        initial ? {} : this.deviceBaseline,
-        after,
-        this.deviceId,
-      );
-      this.recordGroup = data.settings.syncGroup;
-    }
-    this.deviceBaseline = after;
-    await fs.mkdir(path.dirname(this.deviceFile), { recursive: true });
-    const temp = this.deviceFile + ".tmp";
-    await fs.writeFile(
-      temp,
-      JSON.stringify({
-        version: 1,
-        deviceId: this.deviceId,
-        recordGroup: this.recordGroup,
-        records: this.records,
-        state: data,
-      }),
-      "utf8",
+    this.records = DeviceModel.capture(
+      this.records,
+      Object.keys(this.records).length ? this.deviceBaseline : {},
+      after,
+      this.deviceId,
     );
-    await fs.rename(temp, this.deviceFile);
-    if (!this.markerWritten) {
-      await this.rawSaveData({ version: 2, deviceStorage: 1 });
-      this.markerWritten = true;
-    }
+    if (data.settings.deviceSync === true)
+      this.recordGroup = data.settings.syncGroup;
+    await this.rawSaveData({
+      version: 3,
+      storage: "vault",
+      recordGroup: this.recordGroup,
+      records: this.records,
+      state: data,
+    });
+    this.deviceBaseline = after;
   };
   await deviceOnload.call(this);
   await this.persist();
@@ -6857,6 +6869,66 @@ AniLink.prototype.mergeDeviceFiles = async function () {
     JSON.stringify({ version: 1, group, records: this.records }),
   );
   this.redraw();
+};
+
+AniLink.prototype.onExternalSettingsChange = async function () {
+  await this.saveChain;
+  const incoming = await this.rawLoadData();
+  if (incoming?.storage !== "vault" || !Array.isArray(incoming.state?.shows))
+    return;
+  // Capture clicks made while the external file was being read before merging.
+  const local = DeviceModel.capture(
+    this.records,
+    this.deviceBaseline,
+    DeviceModel.project(this.state),
+    this.deviceId,
+  );
+  const combined = DeviceModel.merge(local, incoming.records);
+  if (JSON.stringify(combined) === JSON.stringify(this.records)) return;
+  DeviceModel.apply(this.state, combined, C.newShow);
+  this.records = combined;
+  this.deviceBaseline = DeviceModel.project(this.state);
+  for (const job of this.state.queue) {
+    const show = this.state.shows.find((show) => show.id === job.showId);
+    if (!show) continue;
+    if (job.kind === "collection")
+      C.queueJob(this.state, {
+        ...job,
+        payload: {
+          type: show.status,
+          rate: show.rate,
+          comment: show.comment,
+          private: show.private,
+        },
+      });
+    if (job.kind === "episode") {
+      const episode = show.episodes.find(
+        (episode) => episode.id === job.episodeId,
+      );
+      if (episode)
+        C.queueJob(this.state, {
+          ...job,
+          payload: { type: episode.watched ? 2 : 0 },
+        });
+    }
+  }
+  await this.persist();
+  this.redraw();
+};
+
+const storageSettings = Connections.prototype.display;
+Connections.prototype.display = function () {
+  storageSettings.call(this);
+  new Setting(this.containerEl)
+    .setName("数据存储")
+    .setDesc(
+      "完整数据保存在插件目录 data.json，包含账号凭据。复制插件目录即可迁移，请使用私人同步空间。",
+    )
+    .addButton((button) =>
+      button
+        .setButtonText("打开目录")
+        .onClick(() => shell.openPath(path.dirname(this.p.deviceFile))),
+    );
 };
 
 module.exports=AniLink;
