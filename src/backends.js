@@ -143,9 +143,12 @@ AniLink.prototype.removeManagedSubscription = async function (s) {
   await this.qb().removeSubscription(s);
 };
 AniLink.prototype.installSubscription = async function (s, sub) {
+  await this.ensureDownloader();
   const backend = sub.backend || this.state.settings.defaultBackend || "native";
   if (backend === "native") {
     await this.qb().install(s, sub);
+    delete s.rssError;
+    delete s.ruleError;
     return;
   }
   if (sub.feed !== s.subscription.feed && s.subscription.backendId)
@@ -157,6 +160,8 @@ AniLink.prototype.installSubscription = async function (s, sub) {
     sub,
   );
   Object.assign(sub, result);
+  delete s.rssError;
+  delete s.ruleError;
 };
 AniLink.prototype.backendModal = function () {
   new Panel(this, "追番后端", (el, m) => {

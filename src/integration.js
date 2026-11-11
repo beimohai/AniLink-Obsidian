@@ -382,7 +382,7 @@ AniLink.prototype.subscriptionModal = function (s) {
     const query = field(
       header,
       "资源名称",
-      s.title.replace(/\s*第[\d一二三四五六七八九十]+[季期].*$/, ""),
+      s.title || s.name,
     );
     const output = el.createDiv("al-results");
     let gen = 0;

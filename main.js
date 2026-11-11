@@ -524,6 +524,26 @@ function resolveEpisode(show, title) {
   if (absolute && local && absolute.id !== local.id) return null;
   return absolute || local || null;
 }
+function sourceQueries(show, query) {
+  const titles = [query, show.name, show.title, show.name_cn].filter(Boolean);
+  const bases = titles.map((title) =>
+    title
+      .replace(/\s*第[\d一二三四五六七八九十]+(?:クール|部分|季|期).*$/u, "")
+      .trim(),
+  );
+  const short = bases
+    .filter((title) => /^[\p{Script=Han}]{7,}$/u.test(title))
+    .flatMap((title) =>
+      [6, 5].map((length) => Array.from(title).slice(-length).join("")),
+    );
+  return [
+    ...new Set(
+      [...titles, ...bases, ...short]
+        .map((title) => title.trim())
+        .filter(Boolean),
+    ),
+  ];
+}
 function releaseTags(title) {
   return {
     language: /简繁|簡繁/.test(title)
@@ -535,8 +555,12 @@ function releaseTags(title) {
           : /多国|多國/.test(title)
             ? "多语"
             : "未标注",
-    quality: (title.match(/(?:2160|1080|720|480)[pi]?/i) || [])[0] || "未标注",
-    codec: (title.match(/HEVC|AVC|H[. ]?26[45]|AV1/i) || [])[0] || "",
+    quality: (
+      (title.match(/(?:2160|1080|720|480)[pi]?/i) || [])[0] || "未标注"
+    ).toLowerCase(),
+    codec: (
+      (title.match(/HEVC|AVC|H[. ]?26[45]|AV1/i) || [])[0] || ""
+    ).toUpperCase(),
     subtitle: /内封|內封/.test(title)
       ? "内封"
       : /内嵌|內嵌/.test(title)
@@ -605,6 +629,7 @@ module.exports = {
   parseEpisode,
   resolveEpisode,
   releaseTags,
+  sourceQueries,
   feedPath,
   ruleName,
   buildRule,
@@ -618,7 +643,6 @@ module.exports = {
   QBittorrent,
   mergeFiles,
 };
-
 
 return module.exports;})();
 const VIEW = "anilink-dashboard";
@@ -2072,7 +2096,7 @@ AniLink.prototype.subscriptionModal = function (s) {
     const query = field(
       header,
       "资源名称",
-      s.title.replace(/\s*第[\d一二三四五六七八九十]+[季期].*$/, ""),
+      s.title || s.name,
     );
     const output = el.createDiv("al-results");
     let gen = 0;
@@ -2871,9 +2895,12 @@ AniLink.prototype.removeManagedSubscription = async function (s) {
   await this.qb().removeSubscription(s);
 };
 AniLink.prototype.installSubscription = async function (s, sub) {
+  await this.ensureDownloader();
   const backend = sub.backend || this.state.settings.defaultBackend || "native";
   if (backend === "native") {
     await this.qb().install(s, sub);
+    delete s.rssError;
+    delete s.ruleError;
     return;
   }
   if (sub.feed !== s.subscription.feed && s.subscription.backendId)
@@ -2885,6 +2912,8 @@ AniLink.prototype.installSubscription = async function (s, sub) {
     sub,
   );
   Object.assign(sub, result);
+  delete s.rssError;
+  delete s.ruleError;
 };
 AniLink.prototype.backendModal = function () {
   new Panel(this, "追番后端", (el, m) => {
@@ -4469,7 +4498,7 @@ AniLink.prototype.settingsModal = function () {
     );
     input(sync, "syncGroup", "同步分组（各设备相同）");
     sync.createEl("p", {
-      text: "同步书架、逐集进度、评价和弹幕映射。使用你现有的同步工具同步库内 AniLink-sync 文件夹。Token、密码、下载路径和文件记录只保存在本机；订阅在每台设备单独启用。",
+      text: "同步书架、逐集进度、评价和弹幕映射。使用你现有的同步工具同步库内 AniLink-sync 文件夹。此交换文件不含 Token、密码、路径与下载记录；完整配置仍保存在插件目录 data.json。",
       cls: "al-muted",
     });
     button(sync, "立即合并", () =>
@@ -5263,6 +5292,7 @@ AniLink.prototype.refresh = async function (manual) {
           await this.downloadRelease(show, row);
           queued.add(ep.id);
         }
+        delete show.rssError;
       } catch (err) {
         show.rssError = err.message;
         C.record(this.state, show.title + "：" + err.message);
@@ -5276,14 +5306,12 @@ AniLink.prototype.refresh = async function (manual) {
 };
 const sourceSearchWithAliases = AniLink.prototype.findSources;
 AniLink.prototype.findSources = async function (show, query) {
-  const names = [
-    ...new Set([query, show.title, show.name, show.name_cn].filter(Boolean)),
-  ];
+  const names = C.sourceQueries(show, query);
   let failure;
   for (const name of names) {
     try {
       const sources = await sourceSearchWithAliases.call(this, show, name);
-      if (sources.length) return sources;
+      if (sources.some((source) => source.groups.length)) return sources;
     } catch (err) {
       failure = err;
     }

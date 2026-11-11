@@ -52,6 +52,8 @@ function harness() {
     const p = new URLSearchParams(req.body),
       route = u.pathname.replace("/api/v2/", "");
     switch (route) {
+      case "app/version":
+        return ok("v5.3.0");
       case "auth/login":
         return ok("Ok.", { "set-cookie": "SID=test; HttpOnly; Path=/" });
       case "app/preferences":
@@ -940,4 +942,72 @@ test("season label before episode separator is not mistaken for an episode range
     C.resolveEpisode(show, "Ao no Hako Season 2 - 05 [1080P].mp4")?.id,
     504,
   );
+});
+
+test("release profiles merge resolution casing and keep different subtitle formats separate", () => {
+  const a = C.releaseTags("[Group] Anime - 01 [1080p avc][简日内嵌]");
+  const b = C.releaseTags("[Group] Anime - 02 [1080P AVC][简日内嵌]");
+  assert.deepEqual(a, b);
+  assert.notDeepEqual(
+    a,
+    C.releaseTags("[Group] Anime - 03 [1080P AVC][简日内封]"),
+  );
+});
+test("Mikan fallback includes original title and a short title without losing subject verification", () => {
+  const names = C.sourceQueries(
+    {
+      title: "魔法姐妹露露特莉莉 第2部分",
+      name: "魔法の姉妹ルルットリリィ 第2クール",
+    },
+    "魔法姐妹露露特莉莉 第2部分",
+  );
+  assert.ok(names.includes("魔法の姉妹ルルットリリィ"));
+  assert.ok(names.includes("露露特莉莉"));
+});
+test("subscription waits for downloader readiness before creating its feed and rule", async () => {
+  const h = harness(),
+    p = plugin(h.http),
+    s = fixture();
+  s.rssError = "net::ERR_CONNECTION_REFUSED";
+  let ready = false;
+  p.ensureDownloader = async () => {
+    ready = true;
+  };
+  const install = p.qb().install;
+  const client = p.qb();
+  client.install = async function (...args) {
+    assert.equal(ready, true);
+    return install.apply(this, args);
+  };
+  p.qb = () => client;
+  await p.installSubscription(s, {
+    ...s.subscription,
+    feed: "https://example.test/rss",
+    keyword: "Star",
+    start: 1,
+    end: 12,
+    enabled: false,
+  });
+  assert.ok(h.state.rules["AniLink-42"]);
+  assert.equal(s.rssError, undefined);
+});
+
+test("concurrent local downloader starts wait for one startup before retrying Web UI", async () => {
+  const h = harness(),
+    p = plugin(h.http);
+  let started = false,
+    starts = 0;
+  p.state.settings.qbUrl = "http://127.0.0.1:8080";
+  p.qb = () => ({
+    call: async () => {
+      if (!started) throw Error("net::ERR_CONNECTION_REFUSED");
+      return "v5.3.0";
+    },
+  });
+  p.openDownloader = async () => {
+    starts++;
+    started = true;
+  };
+  await Promise.all([p.ensureDownloader(), p.ensureDownloader()]);
+  assert.equal(starts, 1);
 });

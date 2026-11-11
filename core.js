@@ -510,6 +510,26 @@ function resolveEpisode(show, title) {
   if (absolute && local && absolute.id !== local.id) return null;
   return absolute || local || null;
 }
+function sourceQueries(show, query) {
+  const titles = [query, show.name, show.title, show.name_cn].filter(Boolean);
+  const bases = titles.map((title) =>
+    title
+      .replace(/\s*第[\d一二三四五六七八九十]+(?:クール|部分|季|期).*$/u, "")
+      .trim(),
+  );
+  const short = bases
+    .filter((title) => /^[\p{Script=Han}]{7,}$/u.test(title))
+    .flatMap((title) =>
+      [6, 5].map((length) => Array.from(title).slice(-length).join("")),
+    );
+  return [
+    ...new Set(
+      [...titles, ...bases, ...short]
+        .map((title) => title.trim())
+        .filter(Boolean),
+    ),
+  ];
+}
 function releaseTags(title) {
   return {
     language: /简繁|簡繁/.test(title)
@@ -521,8 +541,12 @@ function releaseTags(title) {
           : /多国|多國/.test(title)
             ? "多语"
             : "未标注",
-    quality: (title.match(/(?:2160|1080|720|480)[pi]?/i) || [])[0] || "未标注",
-    codec: (title.match(/HEVC|AVC|H[. ]?26[45]|AV1/i) || [])[0] || "",
+    quality: (
+      (title.match(/(?:2160|1080|720|480)[pi]?/i) || [])[0] || "未标注"
+    ).toLowerCase(),
+    codec: (
+      (title.match(/HEVC|AVC|H[. ]?26[45]|AV1/i) || [])[0] || ""
+    ).toUpperCase(),
     subtitle: /内封|內封/.test(title)
       ? "内封"
       : /内嵌|內嵌/.test(title)
@@ -591,6 +615,7 @@ module.exports = {
   parseEpisode,
   resolveEpisode,
   releaseTags,
+  sourceQueries,
   feedPath,
   ruleName,
   buildRule,
@@ -604,4 +629,3 @@ module.exports = {
   QBittorrent,
   mergeFiles,
 };
-

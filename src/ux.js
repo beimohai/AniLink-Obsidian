@@ -205,7 +205,7 @@ AniLink.prototype.settingsModal = function () {
     );
     input(sync, "syncGroup", "同步分组（各设备相同）");
     sync.createEl("p", {
-      text: "同步书架、逐集进度、评价和弹幕映射。使用你现有的同步工具同步库内 AniLink-sync 文件夹。Token、密码、下载路径和文件记录只保存在本机；订阅在每台设备单独启用。",
+      text: "同步书架、逐集进度、评价和弹幕映射。使用你现有的同步工具同步库内 AniLink-sync 文件夹。此交换文件不含 Token、密码、路径与下载记录；完整配置仍保存在插件目录 data.json。",
       cls: "al-muted",
     });
     button(sync, "立即合并", () =>
@@ -999,6 +999,7 @@ AniLink.prototype.refresh = async function (manual) {
           await this.downloadRelease(show, row);
           queued.add(ep.id);
         }
+        delete show.rssError;
       } catch (err) {
         show.rssError = err.message;
         C.record(this.state, show.title + "：" + err.message);
@@ -1012,14 +1013,12 @@ AniLink.prototype.refresh = async function (manual) {
 };
 const sourceSearchWithAliases = AniLink.prototype.findSources;
 AniLink.prototype.findSources = async function (show, query) {
-  const names = [
-    ...new Set([query, show.title, show.name, show.name_cn].filter(Boolean)),
-  ];
+  const names = C.sourceQueries(show, query);
   let failure;
   for (const name of names) {
     try {
       const sources = await sourceSearchWithAliases.call(this, show, name);
-      if (sources.length) return sources;
+      if (sources.some((source) => source.groups.length)) return sources;
     } catch (err) {
       failure = err;
     }

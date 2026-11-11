@@ -1,6 +1,6 @@
 {
   "name": "obsidian-anilink",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "scripts": {
     "build": "node build.js",
