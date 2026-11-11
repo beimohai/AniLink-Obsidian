@@ -1,0 +1,29 @@
+{
+  "name": "obsidian-anilink",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node build.js",
+    "test": "node --test tests/*.test.js",
+    "check": "node scripts/review-audit.cjs",
+    "lint": "eslint main.js core.js --max-warnings 0",
+    "format": "prettier --write src core.js styles.css tests build.js scripts/*.cjs",
+    "package": "node scripts/package.cjs"
+  },
+  "devDependencies": {
+    "@typescript-eslint/parser": "^8.72.2",
+    "eslint": "^9.39.5",
+    "eslint-plugin-obsidianmd": "^0.5.1",
+    "prettier": "^3.9.10"
+  },
+  "description": "AniLink 动画订阅、播放与 Bangumi 进度整合插件",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "overrides": {
+    "minimatch": "11.0.5",
+    "moment": "2.31.0"
+  }
+}
+
