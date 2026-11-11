@@ -131,14 +131,14 @@ AniLink.prototype.onload = async function () {
       return await Promise.race([
         transport(request),
         new Promise((_, reject) => {
-          timer = setTimeout(
+          timer = window.setTimeout(
             () => reject(Error("读取超时（20 秒），可重试")),
             20000,
           );
         }),
       ]);
     } finally {
-      clearTimeout(timer);
+      window.clearTimeout(timer);
     }
   };
 };

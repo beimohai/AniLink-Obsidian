@@ -73,7 +73,7 @@ AniLink.prototype.resolveFanku = async function (subject) {
       try {
         const data = JSON.parse(text.slice(start + 19, -1));
         if (typeof data[1] === "string") flight += data[1];
-      } catch {}
+      } catch  { /* Best-effort optional operation; retain the existing state on failure. */ }
     }
     const walk = (o) => {
       if (!o || typeof o !== "object") return;
@@ -83,7 +83,7 @@ AniLink.prototype.resolveFanku = async function (subject) {
     for (const line of flight.split("\n"))
       try {
         walk(JSON.parse(line.slice(line.indexOf(":") + 1)));
-      } catch {}
+      } catch  { /* Best-effort optional operation; retain the existing state on failure. */ }
     const norm = (v) =>
       String(v || "")
         .normalize("NFKC")
@@ -239,7 +239,7 @@ AniLink.prototype.downloadRelease = async function (s, article) {
       Array.isArray(result.added_torrent_ids) &&
       result.added_torrent_ids.length > 0 &&
       result.failure_count === 0;
-  } catch {}
+  } catch  { /* Best-effort optional operation; retain the existing state on failure. */ }
   if (!accepted) throw Error("下载器拒绝种子：" + response.text.slice(0, 100));
   C.record(this.state, `${s.title}：已开始下载本季第 ${ep.ep || ep.sort} 集`);
   await this.persist();

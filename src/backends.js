@@ -188,7 +188,8 @@ AniLink.prototype.backendModal = function () {
               "utf8",
             ),
           );
-          const { defaultBackend, ...credentials } = connection;
+          const credentials = { ...connection };
+          delete credentials.defaultBackend;
           Object.assign(this.state.settings, credentials);
           await this.persist();
           result.empty();
@@ -197,7 +198,7 @@ AniLink.prototype.backendModal = function () {
             ["AutoBangumi", this.ab()],
           ])
             try {
-              const r = await client.list();
+              await client.list();
               result.createEl("p", { text: `${label} 已连接` });
             } catch (e) {
               result.createEl("p", { text: e.message });

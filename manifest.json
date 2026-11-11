@@ -1,11 +1,10 @@
 {
   "id": "anilink",
   "name": "AniLink",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minAppVersion": "1.15.0",
   "description": "Manage anime subscriptions, local downloads, playback, and Bangumi progress and reviews.",
   "author": "北漠海",
   "isDesktopOnly": true,
-  "authorUrl": "https://space.bilibili.com/1065768987"
+  "authorUrl": "https://github.com/beimohai"
 }
-

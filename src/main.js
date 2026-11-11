@@ -304,6 +304,7 @@ class Dashboard extends ItemView {
       );
     const body = el.createDiv("al-tab-body");
     if (this.tab === "episodes") {
+      // Episode content is rendered by the dedicated progress panel.
     } else if (this.tab === "subscription") {
       const sub = s.subscription;
       if (s.rssError) body.createEl("p", { text: s.rssError, cls: "al-muted" });

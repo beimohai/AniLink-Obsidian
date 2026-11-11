@@ -211,7 +211,7 @@ AniLink.prototype.downloadMappedDanmaku = async function (
           await fs.access(target);
           skipped++;
           continue;
-        } catch {}
+        } catch  { /* Best-effort optional operation; retain the existing state on failure. */ }
         const r = await this.http.request(
           `https://comment.bilibili.com/${e.danmaku.cid}.xml`,
         );

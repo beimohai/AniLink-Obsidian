@@ -126,6 +126,7 @@ function plugin(http) {
           : require(id),
     module: { exports: {} },
     console,
+    window: { setTimeout, clearTimeout, setInterval, clearInterval },
     setTimeout,
     clearTimeout,
     URL,

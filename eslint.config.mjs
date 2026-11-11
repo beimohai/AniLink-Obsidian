@@ -30,6 +30,9 @@ export default [
     plugins: { obsidianmd },
     rules: {
       "no-unreachable": "error",
+      "no-empty": "error",
+      "no-unused-expressions": "error",
+      "no-unused-vars": ["error", { args: "none", caughtErrors: "none" }],
       "no-constant-binary-expression": "error",
       "no-dupe-class-members": "error",
       "obsidianmd/hardcoded-config-path": "error",

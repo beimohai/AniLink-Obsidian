@@ -1,0 +1,30 @@
+name: Release
+on:
+  push:
+    tags: ['1.*']
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build && npm run lint && npm test && npm run check
+      - uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+            styles.css
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" main.js manifest.json styles.css --title "AniLink $GITHUB_REF_NAME" --notes "See CHANGELOG.md for changes and README.md for installation and dependencies."

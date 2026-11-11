@@ -73,7 +73,7 @@ AniLink.prototype.refresh = async function (manual) {
           }
         }
       }
-    } catch {}
+    } catch  { /* Best-effort optional operation; retain the existing state on failure. */ }
   for (const s of this.state.shows.filter(
     (s) =>
       !s.demo &&
@@ -107,7 +107,7 @@ AniLink.prototype.refresh = async function (manual) {
       }
       if (subscribed.some((s) => s.rssError))
         this.health.qb = { ok: false, text: "已连接，但 RSS 获取异常" };
-    } catch {}
+    } catch  { /* Best-effort optional operation; retain the existing state on failure. */ }
   await this.persist();
   this.redraw();
 };
@@ -594,7 +594,7 @@ AniLink.prototype.checkConnections = async function () {
   try {
     await fs.access(this.state.settings.playerExe);
     this.health.player = { ok: true, text: "本机播放器可用（远程 API 可选）" };
-  } catch {}
+  } catch  { /* Best-effort optional operation; retain the existing state on failure. */ }
   this.redraw();
 };
 AniLink.prototype.autoConfigure = async function (useSystemProxy = false) {
@@ -622,12 +622,12 @@ AniLink.prototype.autoConfigure = async function (useSystemProxy = false) {
     );
     let ready = false;
     for (let i = 0; i < 8; i++) {
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => window.setTimeout(r, 500));
       try {
         await this.qb().call("app/version");
         ready = true;
         break;
-      } catch {}
+      } catch  { /* Best-effort optional operation; retain the existing state on failure. */ }
     }
     if (!ready)
       throw Error("已启动下载器，请检查 Web UI 是否启用及现有账号密码");

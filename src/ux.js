@@ -45,7 +45,7 @@ AniLink.prototype.openWebsite = async function (value) {
     }
     await this.app.workspace.revealLeaf(leaf);
     for (let attempt = 0; attempt < 100 && !leaf.view.webviewMounted; attempt++)
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise((resolve) => window.setTimeout(resolve, 50));
     await leaf.view.webview.loadURL(url.href);
     leaf.view.displayWebView();
     await this.app.workspace.revealLeaf(leaf);
@@ -1183,9 +1183,10 @@ Dashboard.prototype.render = function () {
   if (refresh) {
     refresh.textContent = "刷新";
     refresh.onclick = async () => {
-      await this.app.plugins.disablePlugin(this.p.manifest.id);
-      await this.app.plugins.enablePlugin(this.p.manifest.id);
-      await this.app.plugins.plugins[this.p.manifest.id].open();
+      await this.p.run(async () => {
+        await this.p.refresh(true);
+        this.p.redraw();
+      });
     };
   }
   button(bar, "新番表", () => {
@@ -1312,7 +1313,7 @@ Dashboard.prototype.renderDetail = function (el, show) {
       if (e.errorCode !== -3)
         report("加载失败 " + e.errorCode + " " + e.errorDescription);
     });
-    const timer = setTimeout(() => {
+    const timer = window.setTimeout(() => {
       if (!guest.isConnected) return;
       try {
         if (!guest.getURL() || guest.isLoading()) report("加载超过30秒");
@@ -1320,7 +1321,7 @@ Dashboard.prototype.renderDetail = function (el, show) {
         report(e.message);
       }
     }, 30000);
-    this.register(() => clearTimeout(timer));
+    this.register(() => window.clearTimeout(timer));
   }
 };
 
@@ -1361,8 +1362,8 @@ Dashboard.prototype.renderDetail = function (el, show) {
     observer.disconnect();
     body.removeEventListener("scroll", update);
   });
-  panel.addEventListener("click", () => requestAnimationFrame(update));
-  requestAnimationFrame(update);
+  panel.addEventListener("click", () => window.requestAnimationFrame(update));
+  window.requestAnimationFrame(update);
 };
 AniLink.prototype.websiteLogin = function (service) {
   const urls = {
@@ -1465,7 +1466,7 @@ Dashboard.prototype.render = function () {
     this.informationSizeObserver.observe(root);
     this.register(() => this.informationSizeObserver.disconnect());
   }
-  requestAnimationFrame(() => this.fitInformation());
+  window.requestAnimationFrame(() => this.fitInformation());
 };
 
 AniLink.prototype.prepareUploaderDanmaku = async function (
@@ -1977,7 +1978,7 @@ AniLink.prototype.detectPlayer = async function () {
     try {
       await fs.access(file);
       return file;
-    } catch {}
+    } catch  { /* Best-effort optional operation; retain the existing state on failure. */ }
   }
   new Notice("未检测到播放器，请手动选择程序");
   return null;
@@ -2042,9 +2043,9 @@ AniLink.prototype.websiteLogin = function (service) {
   if (service !== "bili") return;
   const modal = [...(this.panels || [])].at(-1);
   let pending = false;
-  const timer = setInterval(async () => {
+  const timer = window.setInterval(async () => {
     if (!modal?.containerEl.isConnected) {
-      clearInterval(timer);
+      window.clearInterval(timer);
       return;
     }
     if (pending) return;
@@ -2054,16 +2055,15 @@ AniLink.prototype.websiteLogin = function (service) {
         "https://api.bilibili.com/x/web-interface/nav",
       );
       if (result.code === 0 && result.data?.isLogin) {
-        clearInterval(timer);
+        window.clearInterval(timer);
         modal.close();
         new Notice("已登录 " + result.data.uname);
       }
-    } catch {
-    } finally {
+    } catch  { /* Best-effort optional operation; retain the existing state on failure. */ } finally {
       pending = false;
     }
   }, 2500);
-  this.register(() => clearInterval(timer));
+  this.register(() => window.clearInterval(timer));
 };
 const orderedToolbar = Dashboard.prototype.render;
 Dashboard.prototype.render = function () {
@@ -2170,6 +2170,7 @@ AniLink.prototype.alignSourceAudio = async function (source, target) {
     this.manifest.dir,
     "align-audio.py",
   );
+  await fs.writeFile(script, this.bundledAudioScript, "utf8");
   return new Promise((resolve, reject) =>
     execFile(
       "python",
@@ -2208,7 +2209,7 @@ AniLink.prototype.ensureDownloader = async function () {
     this.downloaderStarting = (async () => {
       await this.openDownloader();
       for (let i = 0; i < 30; i++) {
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => window.setTimeout(r, 500));
         try {
           await this.qb().call("app/version");
           return;

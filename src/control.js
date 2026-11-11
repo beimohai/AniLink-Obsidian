@@ -61,8 +61,8 @@ AniLink.prototype.sync = function () {
         } catch (e) {
           job.attempts++;
           job.error = e.message;
-          clearTimeout(this.pushRetryTimer);
-          this.pushRetryTimer = setTimeout(
+          window.clearTimeout(this.pushRetryTimer);
+          this.pushRetryTimer = window.setTimeout(
             () => {
               if (!this.disposed)
                 this.background("重试推送", () => this.sync());
@@ -70,7 +70,7 @@ AniLink.prototype.sync = function () {
             Math.min(300000, 15000 * 2 ** Math.min(job.attempts - 1, 5)),
           );
           this.pushRetryTimer.unref?.();
-          this.register(() => clearTimeout(this.pushRetryTimer));
+          this.register(() => window.clearTimeout(this.pushRetryTimer));
           this.state.syncError = e.message;
           await this.persist();
           return;
@@ -379,7 +379,7 @@ AniLink.prototype.refresh = async function (manual) {
       try {
         await this.updateSubscriptionRule(s, s.subscription);
         s.ruleError = "";
-      } catch {}
+      } catch  { /* Best-effort optional operation; retain the existing state on failure. */ }
   }
   if (this.state.settings.downloadNotifications !== false)
     for (const s of this.state.shows) {
