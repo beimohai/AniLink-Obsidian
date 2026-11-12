@@ -1011,3 +1011,10 @@ test("concurrent local downloader starts wait for one startup before retrying We
   await Promise.all([p.ensureDownloader(), p.ensureDownloader()]);
   assert.equal(starts, 1);
 });
+
+test("season prefix before episode separator is not rejected as a batch in download rules", () => {
+ const title = "[LoliHouse] 青之芦苇 第二季 / Ao Ashi S2 - 06 [WebRip 1080p HEVC-10bit AAC][简繁内封字幕]";
+ const profile = C.releaseTags(title);
+ assert.ok(C.previewMatch(title, {feed:"https://example.test/rss",profile,quality:profile.quality,language:profile.language,start:1,end:12}));
+ assert.ok(C.sourceQueries({title:"赛博朋克：边缘行者 2"}, "").includes("边缘行者"));
+});

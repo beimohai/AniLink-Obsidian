@@ -104,7 +104,7 @@ function buildRule(show, sub = show.subscription) {
     "全集",
     "\\bbatch\\b",
     "\\bcomplete\\b",
-    "\\d{1,3}\\s*[-~～]\\s*\\d{1,3}(?!\\d)",
+    "(?<![A-Za-z\\d])\\d{1,3}\\s*[-~～]\\s*\\d{1,3}(?!\\d)",
   ];
   const profile = sub.profile;
   const required = [];
@@ -524,7 +524,7 @@ function sourceQueries(show, query) {
     );
   return [
     ...new Set(
-      [...titles, ...bases, ...short]
+      [...titles, ...bases, ...bases.flatMap((title) => title.replace(/\s+\d+$/, "").split(/[：:]/).map((part) => part.trim()).filter((part) => part.length >= 3)), ...short]
         .map((title) => title.trim())
         .filter(Boolean),
     ),

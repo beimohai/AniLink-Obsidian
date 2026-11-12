@@ -118,7 +118,7 @@ function buildRule(show, sub = show.subscription) {
     "全集",
     "\\bbatch\\b",
     "\\bcomplete\\b",
-    "\\d{1,3}\\s*[-~～]\\s*\\d{1,3}(?!\\d)",
+    "(?<![A-Za-z\\d])\\d{1,3}\\s*[-~～]\\s*\\d{1,3}(?!\\d)",
   ];
   const profile = sub.profile;
   const required = [];
@@ -538,7 +538,7 @@ function sourceQueries(show, query) {
     );
   return [
     ...new Set(
-      [...titles, ...bases, ...short]
+      [...titles, ...bases, ...bases.flatMap((title) => title.replace(/\s+\d+$/, "").split(/[：:]/).map((part) => part.trim()).filter((part) => part.length >= 3)), ...short]
         .map((title) => title.trim())
         .filter(Boolean),
     ),
@@ -2044,9 +2044,13 @@ AniLink.prototype.findSources = async function (s, query) {
   ].slice(0, 16);
   const matches = [];
   for (const id of ids) {
-    const page = await this.mikanDocument(
-      "https://mikanani.me/Home/Bangumi/" + id,
-    );
+    let page;
+    try {
+      page = await this.mikanDocument("https://mikanani.me/Home/Bangumi/" + id);
+    } catch (error) {
+      if (/HTTP 404/.test(error.message)) continue;
+      throw error;
+    }
     const verified = [...page.querySelectorAll("a[href]")].some((a) => {
       try {
         const u = new URL(a.getAttribute("href"));

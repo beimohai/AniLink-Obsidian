@@ -330,9 +330,13 @@ AniLink.prototype.findSources = async function (s, query) {
   ].slice(0, 16);
   const matches = [];
   for (const id of ids) {
-    const page = await this.mikanDocument(
-      "https://mikanani.me/Home/Bangumi/" + id,
-    );
+    let page;
+    try {
+      page = await this.mikanDocument("https://mikanani.me/Home/Bangumi/" + id);
+    } catch (error) {
+      if (/HTTP 404/.test(error.message)) continue;
+      throw error;
+    }
     const verified = [...page.querySelectorAll("a[href]")].some((a) => {
       try {
         const u = new URL(a.getAttribute("href"));
