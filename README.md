@@ -8,11 +8,11 @@
 
 </div>
 
-中文 | [English](README.en.md)
+中文 | [English](README_EN.md)
 
 ## 项目简介
 
-AniLink 是一款面向 Windows 桌面端的 [Obsidian](https://obsidian.md/) 追番整合插件。将番剧检索、字幕组 RSS、本地下载、弹幕、播放、观看进度和 Bangumi 评价集中在一个页面，无需为每部番剧创建笔记。
+AniLink 是一款面向 Windows 桌面端的 [Obsidian](https://obsidian.md/) 追番整合插件。将番剧检索、字幕组 RSS、本地下载、弹幕、播放、观看进度和 Bangumi 评价集中在一个页面。
 
 - **统一书架**：季度、追番状态、标题筛选与最近更新排序，展示本地可观看的分集。
 - **订阅与下载**：在插件中查找蜜柑字幕组，选择语言、编码及字幕版本，交给 qBittorrent 管理 RSS 与下载。
@@ -32,31 +32,26 @@ AniLink 是一款面向 Windows 桌面端的 [Obsidian](https://obsidian.md/) �
 
 1.0.1 起音频校准脚本内置于 `main.js`，首次校准时写入插件目录，不再需要单独下载 Python 脚本。更新时替换上述三个文件，保留个人配置与媒体文件。请勿把源码压缩包当作可直接安装的插件。
 
-### 安装哪些外部软件
+### 依赖安装与连接配置
 
-| 软件或账号 | 用途 | 是否必需 |
+从右上角打开“连接配置”。仅需配置自己实际使用的功能；关闭弹窗不会保存修改。AniLink 不需要其他 Obsidian 社区插件，也不依赖作者电脑上的固定路径。
+
+| 功能 | 依赖与安装 | 连接配置中的操作 |
 | --- | --- | --- |
-| Windows 桌面版 Obsidian ≥ 1.15.0 | 运行插件 | 必需 |
-| [qBittorrent](https://www.qbittorrent.org/) | 下载、RSS 规则与任务管理 | 下载功能必需 |
-| [弹弹play](https://www.dandanplay.com/) | 本地视频及同名 XML 弹幕播放 | 推荐；也可配置其他播放器 |
-| Python、NumPy、FFmpeg | 本地音频时间偏移校准 | 开启音频校准时必需 |
-| Bangumi 账号及 Access Token | 同步收藏、进度和评价 | 远端同步必需 |
-| Bilibili 登录会话 | 来源检索、弹幕及音轨访问 | 相关访问可能需要登录 |
+| 基础运行 | Windows 桌面版 [Obsidian](https://obsidian.md/) ≥ 1.15.0。安装并启用 AniLink。 | 无。 |
+| 书架、搜索与评价同步 | [Bangumi](https://bgm.tv/) 账号和 Access Token。通过“获取 Token”打开授权页后复制令牌。 | 将令牌粘贴到 **Bangumi → Access Token**。令牌属于私密凭据，不应分享或提交到仓库。插件的搜索、分集和收藏同步使用官方带令牌 v0 API。 |
+| RSS 下载 | [qBittorrent](https://www.qbittorrent.org/) Windows 版。安装后在“工具 → 选项 → Web UI”启用 Web UI，并自行设定端口、用户名和密码；RSS 功能保持启用。 | 填写 Web UI 地址、程序路径、用户名、密码和下载目录。默认地址为 `http://127.0.0.1:8080`。普通“刷新”不会连接、探测或启动 qBittorrent；只有明确的订阅、下载、清理和“检查连接”操作才会使用它。 |
+| 本地播放 | 推荐安装 [弹弹play](https://www.dandanplay.com/)；PotPlayer、mpv、VLC 也可以作为播放器，但 XML 弹幕加载取决于各自扩展。 | 在 **播放器 → 程序路径** 选择可执行文件。视频目录必须允许创建同名 XML 文件。 |
+| 弹幕偏移纠正 | 安装 [Python](https://www.python.org/downloads/windows/) 并勾选加入 PATH；安装 [FFmpeg](https://ffmpeg.org/download.html) 后将其 `bin` 目录加入 PATH。 | 在 **播放器 → 弹幕偏移纠正** 点击“检查依赖”。NumPy 缺失时可点击“安装 NumPy”，插件将执行 `python -m pip install --user numpy`；FFmpeg 是系统级软件，插件只检查，不会静默安装。该功能仅在播放时抓取弹幕时执行，可随时关闭。 |
+| Bilibili 弹幕来源 | Bilibili 登录会话；部分搜索、音轨或弹幕访问可能要求登录并受服务端风控影响。 | 在 **bilibili** 区登录，并按需填写限定的 UP 主 UID。登录过期后重新登录。 |
+| SMB / Windows 共享 | 无需额外协议配置；使用 `\服务器\共享` 或映射盘。 | 在 **媒体存储与路径映射** 选择 SMB，填写下载器路径前缀和 UNC/盘符形式的本机路径。 |
+| NFS | 先用 Windows 或 NAS 客户端将 NFS 导出挂载为盘符/目录。 | 选择 NFS，填写挂载后的本机路径；不能直接填写 NFS URL。 |
+| WebDAV、SFTP、FTP/FTPS | 用 Windows 客户端、同步工具或 [rclone](https://rclone.org/) 将远端挂载或同步为本机目录。 | 选择对应协议，填写下载器路径前缀和本机挂载点，并点击“检查本机路径”。AniLink 不保存远端账号、密码或 URL。 |
+| rclone | 安装 rclone，先在终端完成 `rclone config`，再用 `rclone mount remote: X:` 或同步命令创建本机目录。 | 选择 rclone，填写本机挂载点。挂载在 Obsidian 启动后断开时，检查会明确提示路径不可访问。 |
 
-不需要其他 Obsidian 社区插件，不依赖作者电脑的路径。ANI-RSS、AutoBangumi、公共弹幕聚合 API 和参考源码目录不是基础流程依赖。PotPlayer、mpv、VLC 可作为视频播放器，但弹幕扩展需自行配置，不能保证与弹弹play相同的自动载入效果。
+Bangumi 网页可因网络环境访问困难，但不能把网页镜像简单当作 API 镜像：本插件需要可鉴权、可写入收藏与分集进度的官方 v0 API。当前未验证到兼容的替代端点，因此不会提供会造成搜索或同步失效的“镜像站开关”。网页预览可改为默认浏览器，或直接关闭番剧信息面板。
 
-音频校准环境：安装 Python 后执行 `python -m pip install numpy`，将 FFmpeg 加入 PATH。确认 `python --version` 与 `ffmpeg -version` 可在终端运行。插件不会自动安装这些软件。
-
-### 连接配置
-
-从右上角打开“连接配置”，按本机填写并保存；关闭窗口不保存修改。
-
-1. **Bangumi**：获取个人 Access Token，粘贴到输入框。有效期与权限由 Bangumi 决定，不要分享令牌。
-2. **qBittorrent**：填写程序路径和下载目录；在 qBittorrent 设置中开启 Web UI 与 RSS，手动设置用户名和密码。默认地址 `http://127.0.0.1:8080`，须与软件监听端口一致。Web UI 是插件提交下载、查询任务和管理 RSS 的控制接口，不是必须手动打开的下载页面。这里使用账号密码登录，不支持 API 密钥替代。
-3. **播放器**：选择播放器可执行文件。建议使用弹弹play，视频目录需要允许生成同名 XML 文件。
-4. **Bilibili**：扫码登录，检查用户名、UID 与登录状态；按需修改限定搜索的 UP 主 UID。登录过期后需要重新登录。
-
-建议为 AniLink 使用独立媒体目录，不要将个人文档或多个番剧混放在同一个番剧目录内。自动清理会实际删除媒体文件。
+建议为 AniLink 使用独立媒体目录，不要将个人文档或多个番剧混放在同一番剧目录内。自动清理会实际删除媒体文件。
 
 ## 追番全流程
 
@@ -84,7 +79,8 @@ RSS 规则保存在 qBittorrent，只有下载器运行时才会检查与下载�
 
 ## 常见问题与边界
 
-**下载成功却出现连接错误？** 下载接口与后续状态检查是不同请求。先检查 qBittorrent 是否仍运行、Web UI 端口和认证是否正确；保留发生时间与脱敏日志，不能只凭连接失败判定下载失败。
+
+**刷新会启动或检查下载器吗？** 不会。刷新只扫描已记录媒体文件的本地可访问性、执行 Bangumi 同步及元数据工作，不会访问 qBittorrent Web UI、RSS 或规则。下载器相关操作由明确的订阅、下载、清理或“检查连接”触发。
 
 **网页预览打不开？** 预览依赖 Obsidian Web viewer、站点嵌入限制、登录会话和网络。可切换默认浏览器打开；番库无法确定条目时可能退回检索页，不保证所有译名与续季均能唯一关联。
 
@@ -129,4 +125,4 @@ npm run package
 
 本项目采用 [MIT License](LICENSE)。Obsidian、Bangumi、蜜柑、番库、Bilibili、qBittorrent、弹弹play及其他外部服务或软件遵循各自协议。AniLink 是整合工具，不代表这些项目官方，不提供视频资源的版权授权。
 
-_开源让世界更美好。_
+_世界因开源更精彩_

@@ -22,6 +22,8 @@ const defaults = () => ({
     downloadRoot: "",
     remoteRoot: "",
     localRoot: "",
+    storageMode: "local",
+    storageLabel: "",
     pollSeconds: 60,
   },
   shows: [],
@@ -179,6 +181,9 @@ function previewMatch(title, sub) {
 }
 function localPath(file, settings) {
   if (!file) return "";
+  // A NAS share or a WebDAV sync/mount is still accessed by Electron as a
+  // local path (UNC, mapped drive, or sync folder).  Keep the qBittorrent
+  // server-side prefix separate from that client-visible path.
   const remote = settings.remoteRoot?.replace(/[\\/]+$/, ""),
     local = settings.localRoot?.replace(/[\\/]+$/, "");
   if (remote && local) {

@@ -143,7 +143,9 @@ AniLink.prototype.removeManagedSubscription = async function (s) {
   await this.qb().removeSubscription(s);
 };
 AniLink.prototype.installSubscription = async function (s, sub) {
-  await this.ensureDownloader();
+  // Installing or resuming a subscription is an explicit user request, so it
+  // may start a configured local downloader if its Web UI is not yet running.
+  await this.ensureDownloader({ allowStart: true });
   const backend = sub.backend || this.state.settings.defaultBackend || "native";
   if (backend === "native") {
     await this.qb().install(s, sub);

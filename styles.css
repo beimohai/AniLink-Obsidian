@@ -2691,3 +2691,225 @@
   margin: 8px 0;
   padding: 0;
 }
+
+/* Final dashboard alignment and settings rhythm. */
+.al-plugin-settings > h2 {
+  margin: 26px 0 6px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-medium);
+}
+.al-plugin-settings > h2:first-child { margin-top: 4px; }
+.al-plugin-settings .setting-item { min-height: 48px; align-items: center; }
+.al-plugin-settings .setting-item-info,
+.al-plugin-settings .setting-item-control { align-self: center; }
+.al-plugin-settings .setting-item-control { align-items: center; }
+.al-plugin-settings .setting-item:not(:has(.setting-item-description)) .setting-item-name {
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+}
+
+/* The work cards retain matching right edges even in a narrow leaf. */
+.al-root .al-flat-workspace > .al-work-section { min-width: 0; }
+.al-root .al-section-subscription,
+.al-root .al-section-review { justify-self: stretch; }
+.al-root .al-section-subscription .al-subscription-actions,
+.al-root .al-section-review .al-review-actions { width: 100%; }
+.al-root .al-section-subscription .al-subscription-actions { justify-content: flex-end; }
+.al-root .al-section-review .al-header-status { margin-left: auto; }
+.al-root .al-information-empty { margin: 18px 0; text-align: center; }
+
+/* Compact, readable sync and connection dialogs. */
+.al-sync-modal.modal { width: 440px; max-width: min(92vw, 440px); }
+.al-sync-modal .modal-content { overflow-wrap: anywhere; }
+.al-sync-modal .al-sync-toolbar {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch; gap: 8px; margin: 10px 0;
+}
+.al-sync-modal .al-sync-toolbar button { width: 100% !important; min-width: 0; white-space: normal; }
+.al-sync-modal :is(.al-sync-status, .al-muted, p) { overflow-wrap: anywhere; }
+
+.al-connections-flat.modal { width: 650px; max-width: 92vw; }
+.al-refined-connections .modal-content { padding-top: 10px; }
+.al-refined-connections .al-connection-section:first-child { padding-top: 0; }
+.al-refined-connections .al-connection-section h3 { margin: 0 0 8px; }
+.al-refined-connections .al-connection-section .al-field { width: 100%; box-sizing: border-box; }
+.al-refined-connections .al-connection-section .al-field input,
+.al-refined-connections .al-connection-section .al-field select,
+.al-refined-connections .al-path-picker { width: 100%; box-sizing: border-box; }
+.al-refined-connections .al-token-row { width: 100%; }
+.al-refined-connections .al-token-row > .al-field { flex: 1 1 0; }
+.al-refined-connections .al-path-picker { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+.al-refined-connections .al-path-picker input { width: 100%; }
+.al-refined-connections .al-path-picker button,
+.al-refined-connections .al-token-row > button { height: 34px; min-height: 34px; box-sizing: border-box; padding-inline: 12px; }
+.al-refined-connections .al-password-eye { right: 6px; bottom: 4px; width: 26px; height: 26px; min-height: 26px; border: 0; background: transparent; box-shadow: none; }
+.al-calibration-settings { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--background-modifier-border); }
+.al-calibration-settings label { display: flex; align-items: center; gap: 7px; margin: 8px 0; }
+
+/* Download preferences are action-oriented: controls keep their natural width. */
+.al-preferences-modal.modal { width: 460px; max-width: 92vw; }
+.al-preferences-modal .modal-content > button,
+.al-preferences-modal .al-actions > button {
+  width: auto;
+  min-width: 0;
+  flex: 0 0 auto;
+}
+.al-preferences-modal .al-actions { justify-content: flex-start; }
+
+/* Responsive dashboard: a comfortable two-pane layout in a narrowed desktop
+   leaf, then an explicit master/detail flow on phones.  These final rules are
+   deliberately scoped to the dashboard to avoid affecting Obsidian itself. */
+@container (min-width: 621px) and (max-width: 920px) {
+  .al-root .al-layout {
+    grid-template-columns: minmax(235px, 0.9fr) minmax(0, 1.1fr);
+    gap: 10px;
+  }
+
+  .al-root .al-nav {
+    gap: 4px;
+  }
+
+  .al-root .al-nav button {
+    padding-inline: 9px;
+  }
+
+  .al-root .al-shelf-tools {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .al-root .al-shelf-tools select[aria-label="季度"] {
+    display: none;
+  }
+
+  .al-root .al-flat-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .al-root .al-detail-head .al-title-block h2 {
+    font-size: 21px;
+  }
+}
+
+@container (max-width: 620px) {
+  .al-root {
+    height: auto;
+    overflow: auto !important;
+    padding: 12px !important;
+  }
+
+  .al-root .al-top {
+    align-items: flex-start;
+  }
+
+  .al-root .al-top h1 {
+    font-size: 22px;
+  }
+
+  .al-root .al-top > .al-actions {
+    padding-right: 0;
+  }
+
+  .al-root .al-layout {
+    display: flex !important;
+    flex-direction: column;
+    overflow: visible;
+    min-height: 0;
+  }
+
+  .al-root .al-nav {
+    display: flex;
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .al-root .al-shelf {
+    display: flex;
+    overflow: visible;
+  }
+
+  .al-root .al-cards {
+    overflow: visible;
+    padding: 2px 0 16px;
+  }
+
+  .al-root .al-detail {
+    display: none;
+    overflow: visible;
+    padding: 12px;
+  }
+
+  .al-root.al-mobile-detail .al-nav,
+  .al-root.al-mobile-detail .al-shelf {
+    display: none;
+  }
+
+  .al-root.al-mobile-detail .al-detail {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .al-root .al-mobile-back {
+    display: none;
+  }
+
+  .al-root.al-mobile-detail .al-mobile-back {
+    display: inline-flex;
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    order: -1;
+    margin-bottom: 4px;
+    padding-inline: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+  }
+
+  .al-root .al-detail-head,
+  .al-root .al-detail .al-detail-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .al-root .al-header-status,
+  .al-root .al-detail-head > .al-status-buttons {
+    grid-column: 1;
+    grid-row: auto;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  .al-root .al-flat-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .al-root .al-shelf-tools {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .al-root .al-shelf-tools select[aria-label="季度"] {
+    display: none;
+  }
+
+  .al-root .al-card,
+  .al-root .al-card.al-has-unwatched {
+    grid-template-columns: 68px minmax(0, 1fr);
+    gap: 11px;
+    padding: 11px;
+  }
+
+  .al-root .al-card > img,
+  .al-root .al-card .al-cover-placeholder {
+    width: 68px !important;
+    max-width: 68px;
+    height: 100px !important;
+  }
+
+  .al-root .al-card > div {
+    height: 100px;
+  }
+}

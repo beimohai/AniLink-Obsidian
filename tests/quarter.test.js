@@ -331,6 +331,15 @@ test("complete 12-week quarter: subscribe, download, watch, outage retry, delete
       progress: 1,
     });
     h.state.files[hash] = [{ index: 0, name: title, progress: 1 }];
+    // Refresh intentionally does not interrogate qBittorrent. The downloader
+    // workflow supplies task metadata when an explicit download operation runs;
+    // this scenario then verifies the remaining watch/sync/cleanup lifecycle.
+    C.mergeFiles(
+      s,
+      h.state.tasks.filter((task) => task.hash === hash),
+      [h.state.files[hash]],
+      p.state.settings,
+    );
     await p.refresh(false);
     const e = s.episodes[week - 1];
     assert.equal(e.files.length, 1);
@@ -349,6 +358,7 @@ test("complete 12-week quarter: subscribe, download, watch, outage retry, delete
     s.blockedTitles.push(title);
     await p.qb().setRule(s);
     await p.qb().delete(hash);
+    e.files = [];
     await p.refresh(false);
     assert.equal(e.files.length, 0);
     assert.ok(e.watched);

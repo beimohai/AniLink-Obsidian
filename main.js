@@ -36,6 +36,8 @@ const defaults = () => ({
     downloadRoot: "",
     remoteRoot: "",
     localRoot: "",
+    storageMode: "local",
+    storageLabel: "",
     pollSeconds: 60,
   },
   shows: [],
@@ -193,6 +195,9 @@ function previewMatch(title, sub) {
 }
 function localPath(file, settings) {
   if (!file) return "";
+  // A NAS share or a WebDAV sync/mount is still accessed by Electron as a
+  // local path (UNC, mapped drive, or sync folder).  Keep the qBittorrent
+  // server-side prefix separate from that client-visible path.
   const remote = settings.remoteRoot?.replace(/[\\/]+$/, ""),
     local = settings.localRoot?.replace(/[\\/]+$/, "");
   if (remote && local) {
@@ -647,6 +652,11 @@ module.exports = {
 return module.exports;})();
 const VIEW = "anilink-dashboard";
 let fieldCounter = 0;
+function isConnectionFailure(message) {
+  return /connection_error|err_connection|err_connection_refused|econnrefused|connection refused|net::err_/i.test(
+    String(message || ""),
+  );
+}
 function button(el, text, fn, cls = "") {
   const b = el.createEl("button", { text, cls });
   b.onclick = () => fn();
@@ -852,6 +862,10 @@ class Dashboard extends ItemView {
       card.dataset.showId = String(s.id);
       card.onclick = () => {
         this.selected = s.id;
+        // On narrow screens the shelf and detail act as a master/detail pair.
+        // CSS decides when this state becomes visible, so desktop behavior is
+        // unchanged while a selected show opens its own mobile page.
+        this.mobilePane = "detail";
         this.render();
       };
       if (s.cover) {
@@ -1087,6 +1101,42 @@ class AniLink extends Plugin {
       name: "刷新下载与待同步任务",
       callback: () => this.run(() => this.refresh(true)),
     });
+    // Commands deliberately define no `hotkeys`: Obsidian exposes them in its
+    // native shortcut editor, while users keep full control over assignments.
+    this.addCommand({
+      id: "open-settings",
+      name: "打开插件设置",
+      callback: () => {
+        this.app.setting.open();
+        this.app.setting.openTabById(this.manifest.id);
+      },
+    });
+    this.addCommand({
+      id: "open-next-episode",
+      name: "播放当前番剧的下一集",
+      checkCallback: (checking) => {
+        const view = this.app.workspace.getActiveViewOfType(Dashboard);
+        const show = this.state.shows.find((s) => s.id === view?.selected);
+        const episode = show?.episodes.find(
+          (e) => !e.watched && e.files?.some((f) => f.progress === 1 && f.localExists !== false),
+        );
+        if (!show || !episode) return false;
+        if (!checking) this.run(() => this.play(show, episode, episode.files.find((f) => f.progress === 1 && f.localExists !== false)));
+        return true;
+      },
+    });
+    this.addCommand({
+      id: "mark-next-episode-watched",
+      name: "标记当前番剧的下一集已看",
+      checkCallback: (checking) => {
+        const view = this.app.workspace.getActiveViewOfType(Dashboard);
+        const show = this.state.shows.find((s) => s.id === view?.selected);
+        const episode = show?.episodes.find((e) => e.type === 0 && !e.watched);
+        if (!show || !episode) return false;
+        if (!checking) this.run(() => this.markWatched(show, episode, true));
+        return true;
+      },
+    });
     this.addSettingTab(new Connections(this.app, this));
     this.registerInterval(
       window.setInterval(() => {
@@ -1136,9 +1186,11 @@ class AniLink extends Plugin {
     try {
       await fn();
     } catch (e) {
-      C.record(this.state, e.message);
+      if (isConnectionFailure(e.message)) return;
+      const message = String(e.message || "操作失败");
+      C.record(this.state, message);
       await this.persist();
-      if (!quiet) new Notice(e.message, 8000);
+      if (!quiet) new Notice(message, 8000);
     } finally {
       this.busy = false;
       this.redraw();
@@ -1201,7 +1253,10 @@ class AniLink extends Plugin {
                 : `v${r.version}`,
         };
       } catch (e) {
-        this.health[key] = { ok: false, text: e.message };
+        this.health[key] = {
+          ok: false,
+          text: isConnectionFailure(e.message) ? "" : String(e.message),
+        };
       }
     }
     await this.persist();
@@ -1211,36 +1266,12 @@ class AniLink extends Plugin {
     const shows = this.state.shows.filter(
       (s) => s.subscription.feed && !s.demo,
     );
-    if (shows.length) {
-      const qb = this.qb();
-      try {
-        for (const s of shows) {
-          const tasks = await qb.torrents(s);
-          const files = [];
-          for (const t of tasks) files.push(await qb.files(t.hash));
-          const was = new Set(
-            allFiles(s)
-              .filter((f) => f.progress === 1 && f.localExists !== false)
-              .map((f) => f.hash + ":" + f.index),
-          );
-          C.mergeFiles(s, tasks, files, this.state.settings);
-          const fresh = allFiles(s).filter(
-            (f) =>
-              f.progress === 1 &&
-              f.localExists !== false &&
-              !was.has(f.hash + ":" + f.index),
-          );
-          if (fresh.length) {
-            C.record(this.state, `${s.title}：${fresh.length} 个视频下载完成`);
-          }
-        }
-        this.health.qb = { ok: true, text: "已更新下载状态" };
-      } catch (e) {
-        this.health.qb = { ok: false, text: e.message };
-        C.record(this.state, "下载状态更新失败：" + e.message);
-        if (manual) new Notice(e.message);
-      }
-    }
+    // Refresh must not probe or start qBittorrent.  The local media scan in
+    // the later refresh layer is the authoritative source while Obsidian is
+    // running; task interrogation is reserved for explicit download actions
+    // and the Connection Check button.
+    if (shows.length)
+      this.health.qb = { ok: null, text: "未在刷新时检查下载器" };
     await this.sync();
     await this.persist();
     if (manual) new Notice("AniLink 刷新完成");
@@ -1805,23 +1836,6 @@ AniLink.prototype.refresh = async function (manual) {
     }
   }
   await baseRefresh.call(this, manual);
-  const subscribed = this.state.shows.filter(
-    (s) => !s.demo && s.subscription.feed,
-  );
-  if (subscribed.length)
-    try {
-      const feeds = await this.qb().call("rss/items?withData=true");
-      for (const s of subscribed) {
-        const feed = feeds[C.feedPath(s)];
-        s.rssError = feed?.hasError
-          ? "下载器读取 RSS 失败，请检查服务连接中的网络配置"
-          : !feed
-            ? "下载器中没有此 RSS，请重新保存订阅"
-            : "";
-      }
-      if (subscribed.some((s) => s.rssError))
-        this.health.qb = { ok: false, text: "已连接，但 RSS 获取异常" };
-    } catch  { /* Best-effort optional operation; retain the existing state on failure. */ }
   await this.persist();
   this.redraw();
 };
@@ -2746,7 +2760,9 @@ AniLink.prototype.downloadEpisode = async function (s, e) {
     for (const row of rows)
       button(el, row.title, () =>
         this.run(async () => {
-          await this.downloadRelease(s, row);
+          // This button is a deliberate download request.  It may start the
+          // configured local qBittorrent instance if its Web UI is unavailable.
+          await this.downloadRelease(s, row, true);
           m.close();
         }),
       );
@@ -2899,7 +2915,9 @@ AniLink.prototype.removeManagedSubscription = async function (s) {
   await this.qb().removeSubscription(s);
 };
 AniLink.prototype.installSubscription = async function (s, sub) {
-  await this.ensureDownloader();
+  // Installing or resuming a subscription is an explicit user request, so it
+  // may start a configured local downloader if its Web UI is not yet running.
+  await this.ensureDownloader({ allowStart: true });
   const backend = sub.backend || this.state.settings.defaultBackend || "native";
   if (backend === "native") {
     await this.qb().install(s, sub);
@@ -3636,6 +3654,7 @@ AniLink.prototype.syncModal = function () {
 };
 AniLink.prototype.preferencesModal = function () {
   new Panel(this, "偏好设置", (el, m) => {
+    m.modalEl.addClass("al-preferences-modal");
     const s = this.state.settings,
       inputs = {};
     if (this.state.schedulePending)
@@ -3735,13 +3754,6 @@ AniLink.prototype.preferencesModal = function () {
             s[k] = Math.min(max, Math.max(min, Number(s[k]) || def));
           await this.persist();
           await this.configureDownloadSchedule();
-          try {
-            await this.qb().call("app/setPreferences", {
-              json: JSON.stringify({ rss_refresh_interval: s.rssMinutes }),
-            });
-          } catch (e) {
-            C.record(this.state, "RSS 间隔未应用：" + e.message);
-          }
           m.close();
           this.redraw();
         }),
@@ -3772,11 +3784,6 @@ AniLink.prototype.refresh = async function (manual) {
           f.localExists = false;
         }
       }
-    if (s.ruleError)
-      try {
-        await this.updateSubscriptionRule(s, s.subscription);
-        s.ruleError = "";
-      } catch  { /* Best-effort optional operation; retain the existing state on failure. */ }
   }
   if (this.state.settings.downloadNotifications !== false)
     for (const s of this.state.shows) {
@@ -4303,9 +4310,11 @@ AniLink.prototype.run = function (fn, quiet = false) {
     try {
       return await fn();
     } catch (e) {
-      C.record(this.state, e.message);
+      if (isConnectionFailure(e.message)) return;
+      const message = String(e.message || "操作失败");
+      C.record(this.state, message);
       await this.persist();
-      new Notice(e.message, 8000);
+      new Notice(message, 8000);
     } finally {
       this.busy = false;
       this.redraw();
@@ -4347,7 +4356,8 @@ AniLink.prototype.openWebsite = async function (value) {
     leaf.view.displayWebView();
     await this.app.workspace.revealLeaf(leaf);
   } catch (e) {
-    new Notice(`网页打开失败：${e.message}`);
+    if (!isConnectionFailure(e.message))
+      new Notice(`网页打开失败：${String(e.message || "未知错误")}`);
   }
 };
 AniLink.prototype.openFanku = async function (subject) {
@@ -5145,6 +5155,10 @@ Dashboard.prototype.renderDetail = function (el, s) {
   ))
     if (["Bangumi", "番库"].includes(b.textContent)) b.remove();
   if (!panel || panel.dataset.information) return;
+  if (this.p.state.settings.informationPanel === false) {
+    panel.remove();
+    return;
+  }
   panel.dataset.information = "1";
   const bar = panel.querySelector(".al-actions");
   const opener = bar.querySelector("button");
@@ -5159,16 +5173,23 @@ Dashboard.prototype.renderDetail = function (el, s) {
     },
   };
   let active =
-    this.informationActive || this.p.state.settings.informationPage || "fanku";
+    this.informationActive || this.p.state.settings.informationPage || "none";
   let navigation = 0;
   for (const guest of panel.querySelectorAll("webview")) guest.hidden = true;
-  const activate = async (key) => {
+  let activate = async (key) => {
     const revision = ++navigation;
     active = key;
     this.informationActive = key;
     for (const guest of panel.querySelectorAll("webview")) guest.hidden = true;
     for (const loading of panel.querySelectorAll(".al-web-loading"))
       loading.hidden = true;
+    if (key === "none") {
+      for (const b of tabs.children) {
+        b.classList.toggle("al-active", b.dataset.page === key);
+        b.setAttribute("aria-pressed", String(b.dataset.page === key));
+      }
+      return;
+    }
     const page = pages[key];
     if (!page.url) {
       try {
@@ -5223,6 +5244,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
     }
   };
   for (const [key, label] of [
+    ["none", "不预览"],
     ["bangumi", "Bangumi"],
     ["fanku", "番库"],
     ["trend", "评分趋势"],
@@ -5230,12 +5252,17 @@ Dashboard.prototype.renderDetail = function (el, s) {
     const b = button(
       tabs,
       label,
-      () => activate(key),
+      () => {
+        // A second click on the active source intentionally closes its preview.
+        if (key === active && key !== "none") activate("none");
+        else activate(key);
+      },
       key === active ? "al-active" : "",
     );
     b.dataset.page = key;
   }
   opener.onclick = async () => {
+    if (active === "none") return;
     await activate(active);
     await this.p.openWebsite(
       pages[active].guest?.getURL() || pages[active].url,
@@ -5243,6 +5270,15 @@ Dashboard.prototype.renderDetail = function (el, s) {
   };
   bar.insertBefore(opener, wrap);
   opener.addClass("al-link");
+  const empty = panel.createEl("p", {
+    text: "未加载预览。选择上方网站后才会开始加载。",
+    cls: "al-muted al-information-empty",
+  });
+  const activateInformation = activate;
+  activate = async (key) => {
+    empty.hidden = key !== "none";
+    return activateInformation(key);
+  };
   activate(active);
   for (const b of el.querySelectorAll(
     ".al-section-review > .al-actions button",
@@ -5265,48 +5301,9 @@ Connections.prototype.display = function () {
 };
 const refreshWithFeedFallback = AniLink.prototype.refresh;
 AniLink.prototype.refresh = async function (manual) {
-  const result = await refreshWithFeedFallback.call(this, manual);
-  if (
-    this.feedFallbackBusy ||
-    (!manual && Date.now() - (this.lastFeedFallback || 0) < 60000)
-  )
-    return result;
-  this.feedFallbackBusy = true;
-  this.lastFeedFallback = Date.now();
-  try {
-    for (const show of this.state.shows.filter(
-      (s) => s.subscription.enabled && s.subscription.feed,
-    )) {
-      try {
-        const rows = await this.readFeed(show.subscription.feed);
-        const tasks = await this.qb().torrents(show);
-        const queued = new Set(
-          tasks.map((t) => C.resolveEpisode(show, t.name)?.id).filter(Boolean),
-        );
-        for (const row of rows) {
-          const ep = C.resolveEpisode(show, row.title);
-          if (
-            !ep ||
-            ep.watched ||
-            queued.has(ep.id) ||
-            ep.files?.some((f) => f.localExists !== false) ||
-            !C.previewMatch(row.title, show.subscription)
-          )
-            continue;
-          await this.downloadRelease(show, row);
-          queued.add(ep.id);
-        }
-        delete show.rssError;
-      } catch (err) {
-        show.rssError = err.message;
-        C.record(this.state, show.title + "：" + err.message);
-      }
-    }
-    await this.persist();
-  } finally {
-    this.feedFallbackBusy = false;
-  }
-  return result;
+  // RSS is owned by qBittorrent. Refreshing AniLink deliberately only scans
+  // known local media and syncs metadata; it must never probe the downloader.
+  return refreshWithFeedFallback.call(this, manual);
 };
 const sourceSearchWithAliases = AniLink.prototype.findSources;
 AniLink.prototype.findSources = async function (show, query) {
@@ -6059,6 +6056,44 @@ AniLink.prototype.settingsModal = function () {
     add(qb, "qbPassword", "密码", "password");
     const directory = add(qb, "downloadRoot", "下载目录");
     this.pathPicker(directory, true);
+    const storage = section("媒体存储与路径映射");
+    const mode = select(storage, "媒体位置", settings.storageMode || "local", {
+      local: "本机磁盘",
+      smb: "SMB / Windows 共享（UNC 或映射盘）",
+      nfs: "NFS 挂载盘",
+      webdav: "WebDAV 挂载盘或同步目录",
+      sftp: "SFTP 挂载盘或同步目录",
+      ftps: "FTP / FTPS 挂载盘或同步目录",
+      rclone: "rclone 挂载盘或同步目录",
+    });
+    inputs.storageMode = mode;
+    add(storage, "storageLabel", "连接名称（可选）");
+    add(storage, "remoteRoot", "下载器路径前缀");
+    const localRoot = add(storage, "localRoot", "本机可访问路径前缀");
+    this.pathPicker(localRoot, true);
+    const storageHelp = storage.createEl("p", {
+      text: "AniLink 只读取 Windows 可访问的文件路径，不直接保存远端协议账号或密码。SMB 可填 UNC（\\服务器\共享）或映射盘；NFS、WebDAV、SFTP、FTP/FTPS 请先用系统客户端或 rclone 挂载/同步为本机目录。将下载器路径前缀映射到该目录，例如 /downloads → W:\Anime。",
+      cls: "al-muted",
+    });
+    const mappingStatus = storage.createEl("p", { cls: "al-muted" });
+    const checkMapping = async () => {
+      const target = localRoot.value.trim();
+      if (!target) {
+        mappingStatus.setText("尚未填写本机可访问路径前缀。");
+        return;
+      }
+      try {
+        await fs.access(target);
+        mappingStatus.setText("本机路径可访问。");
+      } catch {
+        mappingStatus.setText("本机路径当前不可访问；请检查挂载、映射盘或同步客户端。");
+      }
+    };
+    button(storage, "检查本机路径", () => this.run(checkMapping));
+    mode.onchange = () => {
+      const label = mode.options[mode.selectedIndex]?.text || "该连接";
+      storageHelp.setText(`${label}：先由 Windows 或挂载工具提供本机目录；AniLink 只使用下方路径映射读取媒体，不会向远端服务保存或发送凭据。`);
+    };
     qb.createEl("p", {
       text: "在 qBittorrent 工具 → 选项 → Web UI 中启用服务，自行设置用户名和密码，然后填写到这里。",
       cls: "al-muted",
@@ -6214,9 +6249,15 @@ Connections.prototype.display = function () {
     "informationPage",
     "默认番剧信息",
     "首次进入番剧时显示的网页。",
-    { fanku: "番库", bangumi: "Bangumi", trend: "评分趋势" },
-    "fanku",
+    { none: "不预览（按需加载）", fanku: "番库", bangumi: "Bangumi", trend: "评分趋势" },
+    "none",
   );
+  toggle("informationPanel", "番剧信息面板", "关闭后右侧不显示网页预览面板。", true);
+  heading("存储与 NAS");
+  new Setting(el)
+    .setName("媒体路径映射")
+    .setDesc("配置下载器路径到 NAS、映射盘或 WebDAV 同步目录的对应关系。")
+    .addButton((b) => b.setButtonText("配置").onClick(() => this.p.settingsModal()));
   heading("下载与清理");
   toggle(
     "cleanupAfterWatch",
@@ -6248,7 +6289,7 @@ Connections.prototype.display = function () {
 AniLink.prototype.pathPicker = function (input, directory) {
   const row = input.parentElement.createDiv("al-path-picker");
   row.appendChild(input);
-  button(row, "选择", () =>
+  button(row, "选择路径", () =>
     this.run(async () => {
       const result = await require("electron").remote.dialog.showOpenDialog({
         properties: [directory ? "openDirectory" : "openFile"],
@@ -6439,6 +6480,10 @@ AniLink.prototype.settingsModal = function () {
     const row = input.parentElement;
     const eye = button(row, "", () => {
       input.type = input.type === "password" ? "text" : "password";
+      require("obsidian").setIcon(
+        eye,
+        input.type === "password" ? "eye-off" : "eye",
+      );
       eye.setAttribute(
         "aria-label",
         input.type === "password" ? "显示密码" : "隐藏密码",
@@ -6446,7 +6491,7 @@ AniLink.prototype.settingsModal = function () {
     });
     eye.addClass("al-password-eye");
     eye.setAttribute("aria-label", "显示密码");
-    require("obsidian").setIcon(eye, "eye");
+    require("obsidian").setIcon(eye, "eye-off");
   }
   for (const button of [...modal.contentEl.querySelectorAll("button")]) {
     if (button.textContent === "自动检测") button.remove();
@@ -6458,7 +6503,65 @@ AniLink.prototype.settingsModal = function () {
       p.setText(
         "弹弹play（视频与 XML 弹幕）；PotPlayer、mpv、VLC（视频播放，弹幕需要各自扩展）。",
       );
+  const player = [...modal.contentEl.querySelectorAll(".al-connection-section")].find(
+    (section) => section.querySelector("h3")?.textContent === "播放器",
+  );
+  if (!player) return;
+  const calibration = player.createDiv("al-calibration-settings");
+  calibration.createEl("strong", { text: "弹幕偏移纠正" });
+  calibration.createEl("p", {
+    text: "按来源音轨校准并写入 XML，仅在播放并抓取弹幕时执行。",
+    cls: "al-muted",
+  });
+  const enabled = calibration.createEl("input", { attr: { type: "checkbox" } });
+  enabled.checked = this.state.settings.calibrateDanmaku !== false;
+  const label = calibration.createEl("label", { text: "播放前校准弹幕" });
+  label.prepend(enabled);
+  enabled.onchange = async () => {
+    this.state.settings.calibrateDanmaku = enabled.checked;
+    await this.persist();
+  };
+  const status = calibration.createEl("p", {
+    text: "正在检查 Python、NumPy 与 FFmpeg…",
+    cls: "al-muted",
+  });
+  const actions = calibration.createDiv("al-actions");
+  const inspect = async () => {
+    const result = await this.calibrationDependencies();
+    status.setText(`Python：${result.python ? "已就绪" : "未找到"}；NumPy：${result.numpy ? "已就绪" : "未安装"}；FFmpeg：${result.ffmpeg ? "已就绪" : "未找到"}`);
+    return result;
+  };
+  button(actions, "检查依赖", () => this.run(inspect));
+  button(actions, "安装 NumPy", () =>
+    this.run(async () => {
+      if (!(await this.calibrationDependencies()).python)
+        throw Error("未找到 Python，请先安装 Python 后重新打开 Obsidian");
+      await this.installCalibrationNumpy();
+      await inspect();
+    }),
+  );
+  inspect().catch(() => status.setText("无法检查依赖"));
 };
+AniLink.prototype.calibrationDependencies = async function () {
+  const probe = (program, args) =>
+    new Promise((resolve) => execFile(program, args, { windowsHide: true }, (error) => resolve(!error)));
+  const [python, numpy, ffmpeg] = await Promise.all([
+    probe("python", ["--version"]),
+    probe("python", ["-c", "import numpy"]),
+    probe("ffmpeg", ["-version"]),
+  ]);
+  return { python, numpy, ffmpeg };
+};
+AniLink.prototype.installCalibrationNumpy = () =>
+  new Promise((resolve, reject) =>
+    execFile(
+      "python",
+      ["-m", "pip", "install", "--user", "numpy"],
+      { windowsHide: true, timeout: 120000, maxBuffer: 1024 * 1024 },
+      (error, _stdout, stderr) =>
+        error ? reject(Error(String(stderr || "NumPy 安装失败"))) : resolve(),
+    ),
+  );
 
 AniLink.prototype.alignSourceAudio = async function (source, target) {
   const script = path.join(
@@ -6491,12 +6594,14 @@ AniLink.prototype.alignSourceAudio = async function (source, target) {
     ),
   );
 };
-AniLink.prototype.ensureDownloader = async function () {
+AniLink.prototype.ensureDownloader = async function ({ allowStart = true } = {}) {
   try {
     await this.qb().call("app/version");
     return;
   } catch (error) {
     if (!/ERR_CONNECTION_REFUSED|ECONNREFUSED/.test(error.message)) throw error;
+    if (!allowStart)
+      throw Error("下载器未运行；刷新只会记录状态，不会自动启动它");
   }
   const host = new URL(this.state.settings.qbUrl).hostname;
   if (!["127.0.0.1", "localhost", "::1", "[::1]"].includes(host))
@@ -6520,25 +6625,35 @@ AniLink.prototype.ensureDownloader = async function () {
     });
   return this.downloaderStarting;
 };
-const readyDownload = AniLink.prototype.downloadRelease;
-AniLink.prototype.downloadRelease = async function (show, article) {
-  await this.ensureDownloader();
-  return readyDownload.call(this, show, article);
+
+// Keep the dashboard's existing desktop layout, but expose a true master/detail
+// flow for phones.  The class is intentionally state-driven rather than based
+// on window width so rotating a device never loses the current selection.
+const responsiveDashboardRender = Dashboard.prototype.render;
+Dashboard.prototype.render = function () {
+  responsiveDashboardRender.call(this);
+  const root = this.contentEl;
+  root.classList.toggle("al-mobile-detail", this.mobilePane === "detail");
+  const detail = root.querySelector(".al-detail");
+  if (!detail || this.mobilePane !== "detail") return;
+
+  const head = detail.querySelector(".al-detail-head");
+  if (!head) return;
+  const back = button(
+    head,
+    "← 返回番单",
+    () => {
+      this.mobilePane = "shelf";
+      this.render();
+    },
+    "al-mobile-back",
+  );
+  back.setAttribute("aria-label", "返回番单");
 };
-const calibrationSettings = Connections.prototype.display;
-Connections.prototype.display = function () {
-  calibrationSettings.call(this);
-  new Setting(this.containerEl)
-    .setName("播放前校准弹幕")
-    .setDesc("逐来源音频校准并保存XML后启动播放器，需要Python、NumPy、FFmpeg。")
-    .addToggle((t) =>
-      t
-        .setValue(this.p.state.settings.calibrateDanmaku !== false)
-        .onChange(async (value) => {
-          this.p.state.settings.calibrateDanmaku = value;
-          await this.p.persist();
-        }),
-    );
+const readyDownload = AniLink.prototype.downloadRelease;
+AniLink.prototype.downloadRelease = async function (show, article, allowStart = false) {
+  await this.ensureDownloader({ allowStart });
+  return readyDownload.call(this, show, article);
 };
 const releaseSettings = Connections.prototype.display;
 Connections.prototype.display = function () {

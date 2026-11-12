@@ -91,23 +91,6 @@ AniLink.prototype.refresh = async function (manual) {
     }
   }
   await baseRefresh.call(this, manual);
-  const subscribed = this.state.shows.filter(
-    (s) => !s.demo && s.subscription.feed,
-  );
-  if (subscribed.length)
-    try {
-      const feeds = await this.qb().call("rss/items?withData=true");
-      for (const s of subscribed) {
-        const feed = feeds[C.feedPath(s)];
-        s.rssError = feed?.hasError
-          ? "下载器读取 RSS 失败，请检查服务连接中的网络配置"
-          : !feed
-            ? "下载器中没有此 RSS，请重新保存订阅"
-            : "";
-      }
-      if (subscribed.some((s) => s.rssError))
-        this.health.qb = { ok: false, text: "已连接，但 RSS 获取异常" };
-    } catch  { /* Best-effort optional operation; retain the existing state on failure. */ }
   await this.persist();
   this.redraw();
 };

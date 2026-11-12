@@ -15,6 +15,11 @@ const { execFile } = require("child_process");
 const C = require("./core");
 const VIEW = "anilink-dashboard";
 let fieldCounter = 0;
+function isConnectionFailure(message) {
+  return /connection_error|err_connection|err_connection_refused|econnrefused|connection refused|net::err_/i.test(
+    String(message || ""),
+  );
+}
 function button(el, text, fn, cls = "") {
   const b = el.createEl("button", { text, cls });
   b.onclick = () => fn();
@@ -220,6 +225,10 @@ class Dashboard extends ItemView {
       card.dataset.showId = String(s.id);
       card.onclick = () => {
         this.selected = s.id;
+        // On narrow screens the shelf and detail act as a master/detail pair.
+        // CSS decides when this state becomes visible, so desktop behavior is
+        // unchanged while a selected show opens its own mobile page.
+        this.mobilePane = "detail";
         this.render();
       };
       if (s.cover) {
@@ -455,6 +464,42 @@ class AniLink extends Plugin {
       name: "刷新下载与待同步任务",
       callback: () => this.run(() => this.refresh(true)),
     });
+    // Commands deliberately define no `hotkeys`: Obsidian exposes them in its
+    // native shortcut editor, while users keep full control over assignments.
+    this.addCommand({
+      id: "open-settings",
+      name: "打开插件设置",
+      callback: () => {
+        this.app.setting.open();
+        this.app.setting.openTabById(this.manifest.id);
+      },
+    });
+    this.addCommand({
+      id: "open-next-episode",
+      name: "播放当前番剧的下一集",
+      checkCallback: (checking) => {
+        const view = this.app.workspace.getActiveViewOfType(Dashboard);
+        const show = this.state.shows.find((s) => s.id === view?.selected);
+        const episode = show?.episodes.find(
+          (e) => !e.watched && e.files?.some((f) => f.progress === 1 && f.localExists !== false),
+        );
+        if (!show || !episode) return false;
+        if (!checking) this.run(() => this.play(show, episode, episode.files.find((f) => f.progress === 1 && f.localExists !== false)));
+        return true;
+      },
+    });
+    this.addCommand({
+      id: "mark-next-episode-watched",
+      name: "标记当前番剧的下一集已看",
+      checkCallback: (checking) => {
+        const view = this.app.workspace.getActiveViewOfType(Dashboard);
+        const show = this.state.shows.find((s) => s.id === view?.selected);
+        const episode = show?.episodes.find((e) => e.type === 0 && !e.watched);
+        if (!show || !episode) return false;
+        if (!checking) this.run(() => this.markWatched(show, episode, true));
+        return true;
+      },
+    });
     this.addSettingTab(new Connections(this.app, this));
     this.registerInterval(
       window.setInterval(() => {
@@ -504,9 +549,11 @@ class AniLink extends Plugin {
     try {
       await fn();
     } catch (e) {
-      C.record(this.state, e.message);
+      if (isConnectionFailure(e.message)) return;
+      const message = String(e.message || "操作失败");
+      C.record(this.state, message);
       await this.persist();
-      if (!quiet) new Notice(e.message, 8000);
+      if (!quiet) new Notice(message, 8000);
     } finally {
       this.busy = false;
       this.redraw();
@@ -569,7 +616,10 @@ class AniLink extends Plugin {
                 : `v${r.version}`,
         };
       } catch (e) {
-        this.health[key] = { ok: false, text: e.message };
+        this.health[key] = {
+          ok: false,
+          text: isConnectionFailure(e.message) ? "" : String(e.message),
+        };
       }
     }
     await this.persist();
@@ -579,36 +629,12 @@ class AniLink extends Plugin {
     const shows = this.state.shows.filter(
       (s) => s.subscription.feed && !s.demo,
     );
-    if (shows.length) {
-      const qb = this.qb();
-      try {
-        for (const s of shows) {
-          const tasks = await qb.torrents(s);
-          const files = [];
-          for (const t of tasks) files.push(await qb.files(t.hash));
-          const was = new Set(
-            allFiles(s)
-              .filter((f) => f.progress === 1 && f.localExists !== false)
-              .map((f) => f.hash + ":" + f.index),
-          );
-          C.mergeFiles(s, tasks, files, this.state.settings);
-          const fresh = allFiles(s).filter(
-            (f) =>
-              f.progress === 1 &&
-              f.localExists !== false &&
-              !was.has(f.hash + ":" + f.index),
-          );
-          if (fresh.length) {
-            C.record(this.state, `${s.title}：${fresh.length} 个视频下载完成`);
-          }
-        }
-        this.health.qb = { ok: true, text: "已更新下载状态" };
-      } catch (e) {
-        this.health.qb = { ok: false, text: e.message };
-        C.record(this.state, "下载状态更新失败：" + e.message);
-        if (manual) new Notice(e.message);
-      }
-    }
+    // Refresh must not probe or start qBittorrent.  The local media scan in
+    // the later refresh layer is the authoritative source while Obsidian is
+    // running; task interrogation is reserved for explicit download actions
+    // and the Connection Check button.
+    if (shows.length)
+      this.health.qb = { ok: null, text: "未在刷新时检查下载器" };
     await this.sync();
     await this.persist();
     if (manual) new Notice("AniLink 刷新完成");

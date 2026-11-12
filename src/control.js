@@ -239,6 +239,7 @@ AniLink.prototype.syncModal = function () {
 };
 AniLink.prototype.preferencesModal = function () {
   new Panel(this, "偏好设置", (el, m) => {
+    m.modalEl.addClass("al-preferences-modal");
     const s = this.state.settings,
       inputs = {};
     if (this.state.schedulePending)
@@ -338,13 +339,6 @@ AniLink.prototype.preferencesModal = function () {
             s[k] = Math.min(max, Math.max(min, Number(s[k]) || def));
           await this.persist();
           await this.configureDownloadSchedule();
-          try {
-            await this.qb().call("app/setPreferences", {
-              json: JSON.stringify({ rss_refresh_interval: s.rssMinutes }),
-            });
-          } catch (e) {
-            C.record(this.state, "RSS 间隔未应用：" + e.message);
-          }
           m.close();
           this.redraw();
         }),
@@ -375,11 +369,6 @@ AniLink.prototype.refresh = async function (manual) {
           f.localExists = false;
         }
       }
-    if (s.ruleError)
-      try {
-        await this.updateSubscriptionRule(s, s.subscription);
-        s.ruleError = "";
-      } catch  { /* Best-effort optional operation; retain the existing state on failure. */ }
   }
   if (this.state.settings.downloadNotifications !== false)
     for (const s of this.state.shows) {

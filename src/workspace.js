@@ -263,7 +263,9 @@ AniLink.prototype.downloadEpisode = async function (s, e) {
     for (const row of rows)
       button(el, row.title, () =>
         this.run(async () => {
-          await this.downloadRelease(s, row);
+          // This button is a deliberate download request.  It may start the
+          // configured local qBittorrent instance if its Web UI is unavailable.
+          await this.downloadRelease(s, row, true);
           m.close();
         }),
       );
