@@ -5473,7 +5473,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
       });
       const loadingTimeout = window.setTimeout(() => {
         if (!page.guest.isConnected || page.ready || page.failed) return;
-        page.loading.textContent = "网页加载超时，可点击网站按钮重试或打开网页。";
+        page.loading.textContent = "网页加载超时，可点击打开网页查看。";
       }, 30000);
       this.register(() => window.clearTimeout(loadingTimeout));
       page.guest.addEventListener("did-fail-load", (event) => {
@@ -5509,10 +5509,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
       tabs,
       label,
       () => {
-        if (key === active && key !== "none") {
-          try { pages[key].guest?.reload(); }
-          catch (error) { C.record(this.p.state, "网页重新加载失败：" + error.message); }
-        }
+        if (key === active && key !== "none") activate("none");
         else activate(key);
       },
       key === active ? "al-active" : "",
