@@ -46,14 +46,9 @@ AniLink.prototype.openWebsite = async function (value) {
       throw e;
     }
     await this.app.workspace.revealLeaf(leaf);
-    for (let attempt = 0; attempt < 100 && !leaf.view.webviewMounted; attempt++)
-      await new Promise((resolve) => window.setTimeout(resolve, 50));
-    await leaf.view.webview.loadURL(url.href);
-    leaf.view.displayWebView();
-    await this.app.workspace.revealLeaf(leaf);
   } catch (e) {
     if (!isConnectionFailure(e.message))
-      new Notice(`网页打开失败：${String(e.message || "未知错误")}`);
+      throw Error(`Obsidian Web viewer 未能打开页面：${String(e.message || "未知错误")}`);
   }
 };
 AniLink.prototype.openFanku = async function (subject) {
@@ -279,9 +274,8 @@ AniLink.prototype.subscriptionsManager = function () {
       info.createEl("p", {
         text: [
           s.subscription.sourceGroup || s.subscription.group,
-          s.subscription.quality,
+          [s.subscription.profile?.quality || s.subscription.quality, s.subscription.profile?.language, s.subscription.profile?.codec, s.subscription.profile?.subtitle].filter((v) => v && v !== "未标注").join(" · "),
           s.subscription.enabled ? "自动下载" : "已暂停",
-          s.rssError,
         ]
           .filter(Boolean)
           .join(" · "),
@@ -302,6 +296,14 @@ AniLink.prototype.subscriptionsManager = function () {
           this.subscriptionsManager();
         }),
       );
+      button(actions, "自定义 RSS", () => { m.close(); this.customRssModal(s); });
+      button(actions, "移除", () => this.run(async () => {
+        await this.removeManagedSubscription(s);
+        s.subscription = { ...s.subscription, feed: "", enabled: false };
+        await this.persist();
+        m.close();
+        this.subscriptionsManager();
+      }));
     }
   }).open();
 };
@@ -322,7 +324,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
             .join(" · ")
         : "未订阅",
     });
-    button(row, "订阅", () => this.p.subscriptionModal(s));
+    button(row, s.subscription?.feed ? "更换字幕组" : "选择字幕组", () => this.p.subscriptionModal(s));
   }
 };
 const quarterCards = Dashboard.prototype.renderCards;
@@ -452,33 +454,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
   button(bar, "打开网页", () =>
     this.p.openWebsite(`https://netaba.re/subject/${s.id}`),
   );
-  if (this.trendSubject !== s.id) {
-    this.trendGuest = trend.createEl("webview", {
-      attr: {
-        src: `https://netaba.re/subject/${s.id}`,
-        title: "netaba 评分趋势",
-        partition: "persist:anilink-trends",
-      },
-    });
-    this.trendGuest.addClass("al-trend-frame");
-    const guest = this.trendGuest;
-    guest.addEventListener("dom-ready", () => {
-      guest
-        .insertCSS(
-          `
-        header { display:none !important; }
-        h1 { padding-top:0 !important; margin:0 !important; font-size:22px !important; line-height:1.4 !important; }
-        h2 { margin:0 !important; font-size:15px !important; line-height:1.4 !important; }
-        [class*="text-8xl"], [class*="text-9xl"], [class*="text-6xl"], [class*="text-4xl"] { font-size:22px !important; line-height:1.3 !important; }
-        .pt-6, .pt-8 { padding-top:8px !important; }
-        section:has(.highcharts-container) > .mt-20 { margin-top:4px !important; }
-        section:has(.highcharts-container) ~ section:has(.highcharts-container) { display:none !important; }
-      `,
-        )
-        .catch(() => {});
-    });
-    this.trendSubject = s.id;
-  } else if (!this.trendGuest.isConnected) trend.appendChild(this.trendGuest);
+  this.trendGuest = null;
 };
 const removalConfirm = AniLink.prototype.confirm;
 AniLink.prototype.confirm = function (title, text, fn) {
@@ -524,13 +500,17 @@ Dashboard.prototype.renderDetail = function (el, s) {
   if (head) button(head, "弹幕", () => this.p.danmakuModal(s));
 };
 AniLink.prototype.scanLocalVideos = async function () {
+  if (this.state.settings.remoteEnabled) {
+    await this.scanRemoteVideos();
+    return;
+  }
   for (const s of this.state.shows) {
     for (const e of s.episodes)
       e.files = (e.files || []).filter((f) => f.localExists !== false);
     const root =
       s.subscription.savePath ||
       path.join(
-        this.state.settings.downloadRoot || "",
+        this.state.settings.libraryRoot || this.state.settings.downloadRoot || "",
         s.title.replace(/[<>:"/\\|?*]/g, "_"),
       );
     if (!path.isAbsolute(root)) continue;
@@ -639,6 +619,43 @@ AniLink.prototype.openDownloader = async function () {
     child.once("error", reject);
     child.once("spawn", resolve);
   });
+};
+AniLink.prototype.runScheduler = async function (args = []) {
+  const root = path.join(this.app.vault.adapter.getBasePath(), this.manifest.dir);
+  const script = path.join(root, "download-scheduler.ps1");
+  const config = path.join(root, "scheduler.json");
+  const exe = this.state.settings.qbExe;
+  if (!exe) throw Error("请先选择 qBittorrent 程序路径");
+  await fs.access(script);
+  await fs.access(exe);
+  await fs.writeFile(config, JSON.stringify({ dataFile: this.deviceFile, exe, profile: this.state.settings.qbProfile || "" }), "utf8");
+  const powerShell = path.join(process.env.SystemRoot || "C:\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+  await new Promise((resolve, reject) => {
+    const child = execFile(powerShell, ["-NoProfile", "-WindowStyle", "Hidden", "-File", script, ...args], { windowsHide: true }, () => {});
+    child.once("error", reject);
+    child.once("spawn", resolve);
+  });
+};
+AniLink.prototype.configureLoginScheduler = async function (enable) {
+  const root = path.join(this.app.vault.adapter.getBasePath(), this.manifest.dir);
+  const script = path.join(root, "install-scheduler.ps1");
+  const exe = this.state.settings.qbExe;
+  if (enable && !exe) throw Error("请先选择 qBittorrent 程序路径");
+  await fs.access(script);
+  if (enable) await fs.access(exe);
+  await this.persist();
+  const powerShell = path.join(process.env.SystemRoot || "C:\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+  const args = ["-NoProfile", "-WindowStyle", "Hidden", "-File", script];
+  if (enable) {
+    args.push("-PluginDataPath", this.deviceFile, "-QbExe", exe);
+    if (this.state.settings.qbProfile) args.push("-QbProfile", this.state.settings.qbProfile);
+  } else args.push("-Uninstall");
+  await new Promise((resolve, reject) => execFile(powerShell, args, { windowsHide: true }, (error) => error ? reject(error) : resolve()));
+  new Notice(enable ? "已启用 AniLink 登录检查" : "已停用 AniLink 登录检查");
+};
+AniLink.prototype.armIdleShutdown = async function () {
+  if (this.state.settings.downloadMode !== "once" || !this.downloaderStartedByAniLink) return;
+  await this.runScheduler(["-Once", "-ManageRunning"]);
 };
 const tidyRender = Dashboard.prototype.render;
 Dashboard.prototype.render = function () {
@@ -794,6 +811,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
     stableDetail.call(this, el, s);
   }
   this.alignWorkspace?.();
+  this.fitInformation?.();
 };
 const alignedRender = Dashboard.prototype.render;
 Dashboard.prototype.render = function () {
@@ -835,10 +853,10 @@ Dashboard.prototype.render = function () {
     );
   };
   if (!this.alignmentObserver) {
-    this.alignmentObserver = new ResizeObserver(() => this.alignWorkspace());
-    this.alignmentObserver.observe(root);
-    this.alignmentObserver.observe(root.querySelector(".al-nav"));
-    this.register(() => this.alignmentObserver.disconnect());
+    this.alignmentObserver = true;
+    const resize = () => window.requestAnimationFrame(() => this.alignWorkspace());
+    window.addEventListener("resize", resize);
+    this.register(() => window.removeEventListener("resize", resize));
   }
   this.alignWorkspace();
 };
@@ -862,7 +880,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
   const tabs = wrap.createDiv("al-status-buttons");
   bar.insertBefore(wrap, opener);
   const pages = {
-    trend: { url: `https://netaba.re/subject/${s.id}`, guest: this.trendGuest },
+    trend: { url: `https://netaba.re/subject/${s.id}` },
     bangumi: { url: `https://bgm.tv/subject/${s.id}` },
     fanku: {
       url: s.fankuUrl || null,
@@ -902,25 +920,36 @@ Dashboard.prototype.renderDetail = function (el, s) {
         text: "加载中…",
       });
       page.guest = panel.createEl("webview", {
-        attr: { src: page.url },
+        attr: { src: page.url, partition: "persist:anilink-preview", allowpopups: "true" },
       });
       page.guest.addClass("al-trend-frame");
       page.guest.addEventListener("did-start-loading", () => {
+        page.failed = false;
         page.loading.textContent = "加载中…";
         page.loading.hidden = active !== key || !!page.ready;
       });
       page.guest.addEventListener("did-stop-loading", () => {
+        if (page.failed) return;
         page.ready = true;
         page.loading.hidden = true;
+        page.guest.classList.remove("al-web-pending");
       });
       page.guest.addEventListener("dom-ready", () => {
+        if (page.failed) return;
         page.ready = true;
         page.loading.hidden = true;
       });
+      const loadingTimeout = window.setTimeout(() => {
+        if (!page.guest.isConnected || page.ready || page.failed) return;
+        page.loading.textContent = "网页加载超时，可点击网站按钮重试或打开网页。";
+      }, 30000);
+      this.register(() => window.clearTimeout(loadingTimeout));
       page.guest.addEventListener("did-fail-load", (event) => {
-        if (event.errorCode !== -3) {
-          page.loading.textContent = "加载失败 · " + event.errorDescription;
-          page.loading.hidden = active !== key || !!page.ready;
+        if (event.errorCode !== -3 && event.isMainFrame !== false) {
+          page.failed = true;
+          page.ready = false;
+          page.loading.hidden = active !== key;
+          page.loading.textContent = "加载失败 " + event.errorCode + " " + event.errorDescription + " · 点击打开网页查看";
           C.record(
             this.p.state,
             "网页加载失败 " + page.url + " " + event.errorDescription,
@@ -940,7 +969,6 @@ Dashboard.prototype.renderDetail = function (el, s) {
     }
   };
   for (const [key, label] of [
-    ["none", "不预览"],
     ["bangumi", "Bangumi"],
     ["fanku", "番库"],
     ["trend", "评分趋势"],
@@ -949,21 +977,20 @@ Dashboard.prototype.renderDetail = function (el, s) {
       tabs,
       label,
       () => {
-        // A second click on the active source intentionally closes its preview.
-        if (key === active && key !== "none") activate("none");
+        if (key === active && key !== "none") {
+          try { pages[key].guest?.reload(); }
+          catch (error) { C.record(this.p.state, "网页重新加载失败：" + error.message); }
+        }
         else activate(key);
       },
       key === active ? "al-active" : "",
     );
     b.dataset.page = key;
   }
-  opener.onclick = async () => {
-    if (active === "none") return;
-    await activate(active);
-    await this.p.openWebsite(
-      pages[active].guest?.getURL() || pages[active].url,
-    );
-  };
+  opener.onclick = () => this.p.run(async () => {
+    const page = pages[active === "none" ? "bangumi" : active];
+    await shell.openExternal(page.url || await this.p.resolveFanku(s));
+  });
   bar.insertBefore(opener, wrap);
   opener.addClass("al-link");
   const empty = panel.createEl("p", {
@@ -1063,19 +1090,34 @@ AniLink.prototype.deleteEpisodeFiles = function (show, episode) {
   );
   this.confirm(
     "删除文件？",
-    `删除本集 ${files.length} 个视频，保留观看记录。`,
+    `删除本集 ${files.length} 个视频及其绑定的弹幕 XML，保留观看记录。`,
     () =>
       this.run(async () => {
+        const danmakuPaths = new Set(episode.danmaku?.ownedPaths || []);
         for (const file of files) {
+          const xml = file.path.replace(/\.[^.]+$/, ".xml");
+          if (this.state.settings.deleteTorrentWithFiles !== false && file.hash &&
+              !show.episodes.some((other) => other.id !== episode.id && other.files?.some((media) => media.hash === file.hash)))
+            await this.qb().call("torrents/delete", { hashes: file.hash, deleteFiles: "false" });
+          if (file.remotePath) await this.deleteRemoteMedia(file);
+          danmakuPaths.add(xml);
           await fs.unlink(file.path).catch((err) => {
             if (err.code !== "ENOENT") throw err;
           });
           if (file.taskTitle && !show.blockedTitles.includes(file.taskTitle))
             show.blockedTitles.push(file.taskTitle);
         }
+        for (const danmakuPath of danmakuPaths)
+          await fs.unlink(danmakuPath).catch((err) => {
+            if (err.code !== "ENOENT") throw err;
+          });
         episode.files = (episode.files || []).filter((f) => !files.includes(f));
-        if (show.subscription.feed) await this.qb().setRule(show);
+        delete episode.danmaku;
         await this.persist();
+        if (show.subscription.feed) {
+          try { await this.qb().setRule(show); }
+          catch { show.ruleError = "删除已完成，订阅规则更新待重试"; await this.persist(); }
+        }
         C.record(this.state, show.title + "：已删除本集文件");
       }),
   );
@@ -1171,12 +1213,7 @@ Dashboard.prototype.render = function () {
   );
   if (refresh) {
     refresh.textContent = "刷新";
-    refresh.onclick = async () => {
-      await this.p.run(async () => {
-        await this.p.refresh(true);
-        this.p.redraw();
-      });
-    };
+    refresh.onclick = () => this.p.refreshAndReopen();
   }
   button(bar, "新番表", () => {
     const now = new Date();
@@ -1205,7 +1242,7 @@ Dashboard.prototype.renderDetail = function (el, show) {
   const sub = el.querySelector(".al-inline-subscription");
   const state = sub?.querySelector(".al-subscription-state");
   const toggle = [...(sub?.querySelectorAll("button") || [])].find((b) =>
-    /暂停订阅|恢复订阅/.test(b.textContent),
+    /暂停|恢复/.test(b.textContent),
   );
   if (toggle && state) {
     toggle.classList.toggle(
@@ -1321,7 +1358,7 @@ Dashboard.prototype.renderDetail = function (el, show) {
   if (!panel || panel.dataset.visibleLoading) return;
   panel.dataset.visibleLoading = "1";
   const update = () => {
-    if (!panel.isConnected || revision !== navigation) return;
+    if (!panel.isConnected) return;
     const guest = [...panel.querySelectorAll("webview")].find((g) => !g.hidden);
     if (!guest) return;
     const bounds = guest.getBoundingClientRect(),
@@ -1422,6 +1459,26 @@ Dashboard.prototype.render = function () {
   fittedInformationRender.call(this);
   const root = this.contentEl;
   this.fitInformation = () => {
+    const detail = root.querySelector(".al-detail");
+    const head = root.querySelector(".al-detail-head");
+    const top = root.querySelector(".al-top>.al-actions");
+    if (detail && top) {
+      // Use the same content edge and native scrollbar gutter even when the
+      // empty state has no review card or scrolling workspace yet.
+      const probe = root.ownerDocument.createElement("div");
+      probe.classList.add("al-scrollbar-probe");
+      root.appendChild(probe);
+      const gutter = probe.offsetWidth - probe.clientWidth;
+      probe.remove();
+      const style = getComputedStyle(detail);
+      const right = detail.getBoundingClientRect().right -
+        parseFloat(style.paddingRight || "0") -
+        parseFloat(style.borderRightWidth || "0") - gutter;
+      for (const element of [head, top].filter(Boolean)) {
+        element.style.setProperty("padding-right",
+          Math.max(0, element.getBoundingClientRect().right - right) + "px");
+      }
+    }
     const body = root.querySelector(".al-flat-workspace"),
       panel = root.querySelector(".al-section-trend");
     if (!body || !panel) return;
@@ -1436,24 +1493,12 @@ Dashboard.prototype.render = function () {
     panel.style.setProperty("height", height + "px");
     for (const guest of panel.querySelectorAll("webview"))
       guest.style.setProperty("height", Math.max(120, height - 70) + "px");
-    const target = root.querySelector(".al-section-trend .al-status-buttons");
-    const head = root.querySelector(".al-detail-head");
-    const top = root.querySelector(".al-top>.al-actions");
-    if (target && head && top) {
-      const right = target.getBoundingClientRect().right;
-      for (const element of [head, top]) {
-        const edge = element.getBoundingClientRect().right;
-        element.style.paddingRight =
-          Math.max(0, edge - right + (element === top ? 1 : 0)) + "px";
-      }
-    }
   };
   if (!this.informationSizeObserver) {
-    this.informationSizeObserver = new ResizeObserver(() =>
-      this.fitInformation(),
-    );
-    this.informationSizeObserver.observe(root);
-    this.register(() => this.informationSizeObserver.disconnect());
+    this.informationSizeObserver = true;
+    const resize = () => window.requestAnimationFrame(() => this.fitInformation());
+    window.addEventListener("resize", resize);
+    this.register(() => window.removeEventListener("resize", resize));
   }
   window.requestAnimationFrame(() => this.fitInformation());
 };
@@ -1478,81 +1523,105 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
     .sort((a, b) => a.sort - b.sort);
   const number = normal.findIndex((e) => e.id === episode.id) + 1;
   if (number < 1) throw Error("无法确定本季集数");
-  const response = await this.http.json(
-    "https://api.bilibili.com/x/web-interface/search/type?search_type=video&keyword=" +
-      encodeURIComponent(show.title + " " + String(number).padStart(2, "0")),
-    "GET",
-    undefined,
-    { Referer: "https://www.bilibili.com/" },
-  );
-  if (response.code !== 0) throw Error("B站搜索失败 " + response.code);
-  const norm = (text) =>
-    String(text)
-      .normalize("NFKC")
-      .replace(/[\s\p{P}\p{S}]/gu, "")
-      .toLowerCase();
+  const candidates = new Map();
+  for (const name of C.biliNames(show)) {
+    try {
+      for (let page = 1; page <= 2; page++) {
+        const response = await this.http.json(
+          "https://api.bilibili.com/x/web-interface/search/type?search_type=video&keyword=" +
+            encodeURIComponent(name + " 第" + number + "话") +
+            "&page=" +
+            page,
+          "GET",
+          undefined,
+          { Referer: "https://www.bilibili.com/" },
+        );
+        if (response.code !== 0) {
+          C.record(this.state, "B站来源搜索失败 " + response.code);
+          break;
+        }
+        for (const candidate of response.data?.result || [])
+          if (uploaders.has(Number(candidate.mid)))
+            candidates.set(candidate.bvid, candidate);
+        if (page >= Number(response.data?.numPages || 1)) break;
+      }
+    } catch (error) {
+      C.record(this.state, "B站来源检索：" + error.message);
+    }
+  }
   const sources = [],
     comments = new Map();
-  for (const candidate of response.data?.result || []) {
-    if (!uploaders.has(Number(candidate.mid))) continue;
-    const title = new DOMParser().parseFromString(candidate.title, "text/html")
-      .body.textContent;
-    const season = show.title.match(/第[一二三四五六七八九十0-9]+季/);
-    const base = show.title.replace(/第[一二三四五六七八九十0-9]+季/g, "");
-    if (
-      !norm(title).includes(norm(base)) ||
-      (season && !norm(title).includes(norm(season[0])))
-    )
-      continue;
-    if (/解说|预告|混剪|盘点|速看|reaction/i.test(title)) continue;
-    const detail = await this.http.json(
-      "https://api.bilibili.com/x/web-interface/view?bvid=" +
-        encodeURIComponent(candidate.bvid),
-    );
-    if (detail.code !== 0) continue;
-    for (const page of detail.data?.pages || []) {
-      const ep = C.parseEpisode(page.part) ?? C.parseEpisode(title);
-      if (ep !== number || page.duration < 600) continue;
-      const play = await this.http.json(
-        "https://api.bilibili.com/x/player/playurl?bvid=" +
-          candidate.bvid +
-          "&cid=" +
-          page.cid +
-          "&fnval=16",
+  for (const candidate of candidates.values()) {
+    try {
+      if (!uploaders.has(Number(candidate.mid))) continue;
+      const title = new DOMParser().parseFromString(
+        candidate.title,
+        "text/html",
+      ).body.textContent;
+      if (!C.biliTitleMatches(show, title)) continue;
+      const detail = await this.http.json(
+        "https://api.bilibili.com/x/web-interface/view?bvid=" +
+          encodeURIComponent(candidate.bvid),
       );
-      const audioUrl = play.data?.dash?.audio?.at(-1)?.baseUrl;
-      if (!audioUrl) throw Error("来源音轨不可用");
-      const calibration =
-        this.state.settings.calibrateDanmaku === false
-          ? { offsetSeconds: 0, disabled: true }
-          : await this.alignSourceAudio(audioUrl, file.path);
-      const result = await this.http.request(
-        "https://comment.bilibili.com/" + page.cid + ".xml",
-      );
-      const doc = new DOMParser().parseFromString(result.text, "text/xml");
-      if (
-        doc.querySelector("parsererror") ||
-        doc.documentElement.tagName !== "i"
-      )
-        throw Error("B站弹幕格式错误");
-      for (const node of doc.querySelectorAll("d")) {
-        const fields = node.getAttribute("p").split(",");
-        const stamp = Number(fields[0]) + calibration.offsetSeconds;
-        if (stamp < 0) continue;
-        fields[0] = String(stamp);
-        node.setAttribute("p", fields.join(","));
-        comments.set(
-          node.getAttribute("p") + "|" + node.textContent,
-          new XMLSerializer().serializeToString(node),
-        );
+      if (detail.code !== 0) continue;
+      if (!uploaders.has(Number(detail.data?.owner?.mid))) continue;
+      if (!C.biliTitleMatches(show, detail.data?.title || "")) continue;
+      for (const page of detail.data?.pages || []) {
+        try {
+          const ep = C.parseEpisode(page.part) ?? C.parseEpisode(title);
+          if (ep !== number || page.duration < 600) continue;
+          let calibration = { offsetSeconds: 0, disabled: true };
+          if (this.state.settings.calibrateDanmaku !== false) {
+            const play = await this.http.json(
+              "https://api.bilibili.com/x/player/playurl?bvid=" +
+                candidate.bvid +
+                "&cid=" +
+                page.cid +
+                "&fnval=16",
+            );
+            const audioUrl = play.data?.dash?.audio?.at(-1)?.baseUrl;
+            if (!audioUrl) throw Error("来源音轨不可用");
+            calibration = await this.alignSourceAudio(audioUrl, file.path);
+          }
+          const result = await this.http.request(
+            "https://comment.bilibili.com/" + page.cid + ".xml",
+          );
+          const doc = new DOMParser().parseFromString(result.text, "text/xml");
+          this.filterDanmaku?.(doc);
+          if (
+            doc.querySelector("parsererror") ||
+            doc.documentElement.tagName !== "i"
+          )
+            throw Error("B站弹幕格式错误");
+          for (const node of doc.querySelectorAll("d")) {
+          const fields = node.getAttribute("p").split(",");
+        const identity = String(page.cid) + ":" + (fields[7] || fields.join(",") + "|" + node.textContent);
+        node.setAttribute("anilink-key", identity);
+            const stamp = Number(fields[0]) + calibration.offsetSeconds;
+            if (stamp < 0) continue;
+            fields[0] = String(stamp);
+            node.setAttribute("p", fields.join(","));
+            comments.set(
+          identity,
+              new XMLSerializer().serializeToString(node),
+            );
+          }
+          sources.push({
+            bvid: candidate.bvid,
+            cid: page.cid,
+            calibration,
+            mid: candidate.mid,
+            title,
+          });
+        } catch (error) {
+          C.record(
+            this.state,
+            "弹幕来源 " + candidate.bvid + "：" + error.message,
+          );
+        }
       }
-      sources.push({
-        bvid: candidate.bvid,
-        cid: page.cid,
-        calibration,
-        mid: candidate.mid,
-        title,
-      });
+    } catch (error) {
+      C.record(this.state, "弹幕来源 " + candidate.bvid + "：" + error.message);
     }
   }
   if (!sources.length || !comments.size)
@@ -1570,6 +1639,14 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
       existing,
       { flag: "wx" },
     );
+  if (existing) {
+    const old = new DOMParser().parseFromString(existing, "text/xml");
+    if (old.querySelector("parsererror")) throw Error("已有弹幕 XML 无法解析，已保留原文件");
+    for (const node of old.querySelectorAll("d")) {
+      const identity = node.getAttribute("anilink-key") || node.getAttribute("p") + "|" + node.textContent;
+      if (!comments.has(identity)) comments.set(identity, new XMLSerializer().serializeToString(node));
+    }
+  }
   await fs.writeFile(
     target,
     '<?xml version="1.0" encoding="UTF-8"?><i>' +
@@ -1588,9 +1665,10 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
   await this.persist();
   return { sources, count: comments.size, elapsedMs: Date.now() - started };
 };
-const uploaderPlay = AniLink.prototype.play;
 AniLink.prototype.play = async function (show, episode, file) {
+  if (file.remotePath) await this.cacheRemoteVideo(file);
   let cached = !!episode.danmaku?.biliMatchedAt;
+  if (this.state.settings.biliOfficialFirst !== false && !episode.danmaku?.official && !episode.danmaku?.officialCheckedAt) cached = false;
   if (cached) {
     try {
       await fs.access(file.path.replace(/\.[^.]+$/, ".xml"));
@@ -1608,10 +1686,24 @@ AniLink.prototype.play = async function (show, episode, file) {
       await this.prepareUploaderDanmaku(show, episode, file);
     } catch (error) {
       C.record(this.state, "UP主弹幕匹配：" + error.message);
-      if (this.state.settings.calibrateDanmaku !== false) throw error;
     }
   }
-  return uploaderPlay.call(this, show, episode, file);
+  const result = await launchLocalMedia.call(this, show, episode, file);
+  if (show.episodes && !this.danmakuPrefetchRunning) {
+    this.danmakuPrefetchRunning = true;
+    this.background("后续剧集弹幕", async () => {
+      try {
+        for (const next of show.episodes.filter((item) => item.type === 0 && !item.watched && item.sort > episode.sort)) {
+          if (this.disposed) break;
+          const media = next.files?.find((item) => item.progress === 1 && item.localExists !== false);
+          if (!media) continue;
+          try { await this.prepareUploaderDanmaku(show, next, media); }
+          catch (error) { C.record(this.state, "预抓取弹幕：" + error.message); }
+        }
+      } finally { this.danmakuPrefetchRunning = false; }
+    });
+  }
+  return result;
 };
 
 AniLink.prototype.suspendSearch = function (modal) {
@@ -1752,51 +1844,34 @@ AniLink.prototype.settingsModal = function () {
     add(qb, "qbPassword", "密码", "password");
     const directory = add(qb, "downloadRoot", "下载目录");
     this.pathPicker(directory, true);
-    const storage = section("媒体存储与路径映射");
-    const mode = select(storage, "媒体位置", settings.storageMode || "local", {
-      local: "本机磁盘",
-      smb: "SMB / Windows 共享（UNC 或映射盘）",
-      nfs: "NFS 挂载盘",
-      webdav: "WebDAV 挂载盘或同步目录",
-      sftp: "SFTP 挂载盘或同步目录",
-      ftps: "FTP / FTPS 挂载盘或同步目录",
-      rclone: "rclone 挂载盘或同步目录",
+    const storage = section("远程服务");
+    inputs.remoteEnabled = select(storage, "启用远程媒体", String(!!settings.remoteEnabled), { false: "关闭", true: "开启" });
+    inputs.remoteProtocol = select(storage, "服务类型", settings.remoteProtocol || "webdav", {
+      webdav: "WebDAV", sftp: "SFTP", ftp: "FTP", ftps: "FTPS", smb: "SMB",
     });
-    inputs.storageMode = mode;
-    add(storage, "storageLabel", "连接名称（可选）");
-    add(storage, "remoteRoot", "下载器路径前缀");
-    const localRoot = add(storage, "localRoot", "本机可访问路径前缀");
-    this.pathPicker(localRoot, true);
-    const storageHelp = storage.createEl("p", {
-      text: "AniLink 只读取 Windows 可访问的文件路径，不直接保存远端协议账号或密码。SMB 可填 UNC（\\服务器\共享）或映射盘；NFS、WebDAV、SFTP、FTP/FTPS 请先用系统客户端或 rclone 挂载/同步为本机目录。将下载器路径前缀映射到该目录，例如 /downloads → W:\Anime。",
-      cls: "al-muted",
-    });
-    const mappingStatus = storage.createEl("p", { cls: "al-muted" });
-    const checkMapping = async () => {
-      const target = localRoot.value.trim();
-      if (!target) {
-        mappingStatus.setText("尚未填写本机可访问路径前缀。");
-        return;
-      }
-      try {
-        await fs.access(target);
-        mappingStatus.setText("本机路径可访问。");
-      } catch {
-        mappingStatus.setText("本机路径当前不可访问；请检查挂载、映射盘或同步客户端。");
-      }
-    };
-    button(storage, "检查本机路径", () => this.run(checkMapping));
-    mode.onchange = () => {
-      const label = mode.options[mode.selectedIndex]?.text || "该连接";
-      storageHelp.setText(`${label}：先由 Windows 或挂载工具提供本机目录；AniLink 只使用下方路径映射读取媒体，不会向远端服务保存或发送凭据。`);
-    };
+    add(storage, "remoteAddress", "服务地址");
+    add(storage, "remoteUser", "用户名");
+    const remotePassword = add(storage, "remotePassword", "密码", "password");
+    const passwordRow = remotePassword.parentElement.createDiv("al-token-row");
+    const passwordBox = passwordRow.createDiv("al-token-input");
+    passwordBox.appendChild(remotePassword);
+    const readRemote = () => ({ ...settings, ...Object.fromEntries(Object.entries(inputs).map(([key, node]) => [key, node.value.trim()])) });
+    const remoteStatus = storage.createEl("p", { cls: "al-muted" });
+    button(passwordRow, "检查连接", () => this.run(async () => {
+      await this.remoteDirectories(readRemote(), inputs.remoteDirectory.value || "/");
+      remoteStatus.setText("连接成功");
+    }));
+    const remoteDirectory = add(storage, "remoteDirectory", "远程目录");
+    const directoryRow = remoteDirectory.parentElement.createDiv("al-path-picker");
+    directoryRow.appendChild(remoteDirectory);
+    button(directoryRow, "选择路径", () => this.chooseRemoteDirectory(readRemote(), remoteDirectory));
     qb.createEl("p", {
       text: "在 qBittorrent 工具 → 选项 → Web UI 中启用服务，自行设置用户名和密码，然后填写到这里。",
       cls: "al-muted",
     });
     const player = section("播放器");
     player.createEl("p", {
-      text: "弹弹play支持自动读取同名XML弹幕。其他支持命令行打开视频的播放器可播放视频，弹幕载入需对应扩展。",
+      text: "推荐使用弹弹play；PotPlayer、mpv、VLC等视频播放器，需要安装对应弹幕扩展。",
       cls: "al-muted",
     });
     const executable = add(player, "playerExe", "程序路径");
@@ -1819,6 +1894,7 @@ AniLink.prototype.settingsModal = function () {
       if (!/^\d+(?:[\s,，]+\d+)*$/.test(values.biliUploaders))
         throw Error("请输入有效的 UP 主 UID");
       Object.assign(settings, values);
+      settings.remoteEnabled = values.remoteEnabled === "true";
       await this.persist();
     };
     button(
@@ -2025,13 +2101,16 @@ AniLink.prototype.biliAccountPanel = function (el) {
       const result = await this.http.json(
         "https://api.bilibili.com/x/web-interface/nav",
       );
-      if (result.code !== 0 || !result.data?.isLogin) {
+      const loggedIn = result.code === 0 && result.data?.isLogin;
+      for (const control of actions.children) {
+        if (control.textContent === "登录") control.hidden = !!loggedIn;
+        if (control.textContent === "退出登录") control.hidden = !loggedIn;
+      }
+      if (!loggedIn) {
         profile.setText("未登录");
         return;
       }
       const user = result.data;
-      const login = [...actions.children].find((b) => b.textContent === "登录");
-      if (login) login.hidden = true;
       if (user.face)
         profile.createEl("img", {
           attr: { src: user.face, referrerpolicy: "no-referrer" },
@@ -2042,7 +2121,10 @@ AniLink.prototype.biliAccountPanel = function (el) {
       C.record(this.state, error.message);
     }
   };
-  button(actions, "登录", () => this.websiteLogin("bili"));
+  button(actions, "登录", () => {
+    this.biliProfileRefresh = refresh;
+    this.websiteLogin("bili");
+  });
   button(actions, "测试登录状态", () => this.run(refresh));
   button(actions, "退出登录", () =>
     this.run(async () => {
@@ -2057,7 +2139,7 @@ AniLink.prototype.biliAccountPanel = function (el) {
       await refresh();
     }),
   );
-  this.run(refresh);
+  refresh().catch((error) => profile.setText("登录状态读取失败：" + error.message));
 };
 const detectPlayerOnload = AniLink.prototype.onload;
 AniLink.prototype.onload = async function () {
@@ -2091,6 +2173,8 @@ AniLink.prototype.websiteLogin = function (service) {
         window.clearInterval(timer);
         modal.close();
         new Notice("已登录 " + result.data.uname);
+        await this.biliProfileRefresh?.();
+        this.biliProfileRefresh = null;
       }
     } catch  { /* Best-effort optional operation; retain the existing state on failure. */ } finally {
       pending = false;
@@ -2197,18 +2281,14 @@ AniLink.prototype.settingsModal = function () {
   for (const p of modal.contentEl.querySelectorAll("p"))
     if (p.textContent.includes("弹弹play支持"))
       p.setText(
-        "弹弹play（视频与 XML 弹幕）；PotPlayer、mpv、VLC（视频播放，弹幕需要各自扩展）。",
+        "推荐使用弹弹play；PotPlayer、mpv、VLC等视频播放器，需要安装对应弹幕扩展。",
       );
   const player = [...modal.contentEl.querySelectorAll(".al-connection-section")].find(
     (section) => section.querySelector("h3")?.textContent === "播放器",
   );
   if (!player) return;
   const calibration = player.createDiv("al-calibration-settings");
-  calibration.createEl("strong", { text: "弹幕偏移纠正" });
-  calibration.createEl("p", {
-    text: "按来源音轨校准并写入 XML，仅在播放并抓取弹幕时执行。",
-    cls: "al-muted",
-  });
+  calibration.createEl("h3", { text: "弹幕偏移纠正" });
   const enabled = calibration.createEl("input", { attr: { type: "checkbox" } });
   enabled.checked = this.state.settings.calibrateDanmaku !== false;
   const label = calibration.createEl("label", { text: "播放前校准弹幕" });
@@ -2217,18 +2297,18 @@ AniLink.prototype.settingsModal = function () {
     this.state.settings.calibrateDanmaku = enabled.checked;
     await this.persist();
   };
-  const status = calibration.createEl("p", {
-    text: "正在检查 Python、NumPy 与 FFmpeg…",
-    cls: "al-muted",
-  });
-  const actions = calibration.createDiv("al-actions");
+  const status = calibration.createEl("p", { cls: "al-calibration-status" });
+  const check = calibration.createDiv("al-actions al-calibration-actions");
+  const installers = calibration.createDiv("al-actions al-calibration-installers");
+  const installButtons = {};
   const inspect = async () => {
     const result = await this.calibrationDependencies();
     status.setText(`Python：${result.python ? "已就绪" : "未找到"}；NumPy：${result.numpy ? "已就绪" : "未安装"}；FFmpeg：${result.ffmpeg ? "已就绪" : "未找到"}`);
+    for (const [key, control] of Object.entries(installButtons)) control.hidden = result[key];
     return result;
   };
-  button(actions, "检查依赖", () => this.run(inspect));
-  button(actions, "安装 NumPy", () =>
+  installButtons.python = button(installers, "安装 Python", () => this.openWebsite("https://www.python.org/downloads/windows/"));
+  installButtons.numpy = button(installers, "安装 NumPy", () =>
     this.run(async () => {
       if (!(await this.calibrationDependencies()).python)
         throw Error("未找到 Python，请先安装 Python 后重新打开 Obsidian");
@@ -2236,6 +2316,9 @@ AniLink.prototype.settingsModal = function () {
       await inspect();
     }),
   );
+  installButtons.ffmpeg = button(installers, "安装 FFmpeg", () => this.openWebsite("https://ffmpeg.org/download.html"));
+  for (const control of Object.values(installButtons)) control.hidden = true;
+  button(check, "检查依赖", () => this.run(inspect));
   inspect().catch(() => status.setText("无法检查依赖"));
 };
 AniLink.prototype.calibrationDependencies = async function () {
@@ -2305,6 +2388,7 @@ AniLink.prototype.ensureDownloader = async function ({ allowStart = true } = {})
   if (!this.downloaderStarting)
     this.downloaderStarting = (async () => {
       await this.openDownloader();
+      this.downloaderStartedByAniLink = true;
       for (let i = 0; i < 30; i++) {
         await new Promise((r) => window.setTimeout(r, 500));
         try {
@@ -2329,9 +2413,10 @@ const responsiveDashboardRender = Dashboard.prototype.render;
 Dashboard.prototype.render = function () {
   responsiveDashboardRender.call(this);
   const root = this.contentEl;
+  root.querySelectorAll(".al-mobile-back").forEach((back) => back.remove());
   root.classList.toggle("al-mobile-detail", this.mobilePane === "detail");
   const detail = root.querySelector(".al-detail");
-  if (!detail || this.mobilePane !== "detail") return;
+  if (!Platform?.isMobile || !detail || this.mobilePane !== "detail") return;
 
   const head = detail.querySelector(".al-detail-head");
   if (!head) return;

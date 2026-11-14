@@ -9,7 +9,7 @@ assert.equal(manifest.id, "anilink");
 assert.equal(manifest.version, pkg.version);
 assert.equal(versions[manifest.version], manifest.minAppVersion);
 assert.equal(manifest.isDesktopOnly, true);
-assert.match(manifest.description, /\.$/);
+assert.match(manifest.description, /[.。]$/);
 assert.ok(manifest.description.length <= 250);
 const source = fs.readFileSync("main.js", "utf8");
 new vm.Script(source);

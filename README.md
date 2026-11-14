@@ -2,13 +2,13 @@
 
 <div align="center">
 
-**接住每一次更新**
+<img src="assets/branding/anilink-icon-white.svg" alt="AniLink 图标" width="96" />
+
+中文 | [English](README_EN.md)
 
 [下载插件](https://github.com/beimohai/AniLink-Obsidian/releases/latest) · [使用流程](docs/WORKFLOW.md) · [更新日志](CHANGELOG.md) · [反馈问题](https://github.com/beimohai/AniLink-Obsidian/issues)
 
 </div>
-
-中文 | [English](README_EN.md)
 
 ## 项目简介
 
@@ -20,7 +20,21 @@ AniLink 是一款面向 Windows 桌面端的 [Obsidian](https://obsidian.md/) �
 - **进度与评价**：手动“看到这里”，维护 Bangumi 收藏状态、评分和短评，后台队列推送修改。
 - **番剧信息**：切换 Bangumi、番库、评分趋势预览，也可以打开对应网页。
 
-作者：[北漠海](https://space.bilibili.com/1065768987) · 当前版本 **1.0.3** · 更新日期 **2026-11-12**
+作者：[北漠海](https://space.bilibili.com/1065768987) · 当前版本 **1.0.5** · 更新日期 **2026-11-14**
+
+## 当前功能与设置
+
+- 通用设置提供操作日志范围、保留时间和默认番剧选择。
+- Bangumi 支持收藏、进度、评分、短评推送与拉取，以及定时同步和冲突选择。网页镜像只切换网页域名，API 使用官方服务。
+- qBittorrent 保存每部番剧的 RSS 规则，可配置登录检查和下载完成后的空闲退出。
+- 字幕组选择提供独立的自定义搜索。自定义 RSS 提供保存目录、开始状态、重复间隔和资源更新策略。
+- 资源更新策略支持保留当前规则、仅下载最新修订版，以及仅替换未看集。已看集不会自动补下载，多集种子保留保护。
+- 本地管理提供媒体库路径、三档自动清理和删除种子开关。远程库通过 rclone 访问，可选 Kodi、Jellyfin、Emby 播放控制。
+- bilibili 支持账号资料展示、官方番剧弹幕优先、UP 主来源和屏蔽规则同步。
+
+### 使用资源更新策略
+
+在订阅区域打开“自定义 RSS”，选择“资源更新策略”。修订号从资源标题的 v2、v3 等编号识别。插件运行时每十分钟检查一次已启用该策略的订阅。自动替换只处理能唯一映射的未看分集，关联其他分集的种子会保留。Obsidian 关闭期间仅运行 qBittorrent 自身规则。
 
 插件仍在持续完善，网络服务、浏览器预览和播放器兼容性可能因环境而异。欢迎提供最小复现步骤，勿在公开反馈中上传 Token、Cookie 或完整私人日志。
 
@@ -30,11 +44,11 @@ AniLink 是一款面向 Windows 桌面端的 [Obsidian](https://obsidian.md/) �
 
 目前尚未进入 Obsidian 社区插件目录，请从 [GitHub Releases](https://github.com/beimohai/AniLink-Obsidian/releases/latest) 下载 `main.js`、`manifest.json`、`styles.css`，放入库的 `.obsidian/plugins/anilink/`，重新加载 Obsidian 后启用 AniLink。
 
-1.0.1 起音频校准脚本内置于 `main.js`，首次校准时写入插件目录，不再需要单独下载 Python 脚本。更新时替换上述三个文件，保留个人配置与媒体文件。请勿把源码压缩包当作可直接安装的插件。
+1.0.1 起音频校准脚本内置于 `main.js`，首次校准时写入插件目录。使用 Windows 登录启动和自动退出功能时，还需将安装包中的 `download-scheduler.ps1`、`install-scheduler.ps1` 放入同一插件目录。更新时保留个人配置与媒体文件。
 
 ### 依赖安装与连接配置
 
-从右上角打开“连接配置”。仅需配置自己实际使用的功能；关闭弹窗不会保存修改。AniLink 不需要其他 Obsidian 社区插件，也不依赖作者电脑上的固定路径。
+从 Obsidian 设置中打开 AniLink，按需配置所用服务。设置修改后自动保存。AniLink 不需要其他 Obsidian 社区插件。
 
 | 功能 | 依赖与安装 | 连接配置中的操作 |
 | --- | --- | --- |
@@ -49,7 +63,7 @@ AniLink 是一款面向 Windows 桌面端的 [Obsidian](https://obsidian.md/) �
 | WebDAV、SFTP、FTP/FTPS | 用 Windows 客户端、同步工具或 [rclone](https://rclone.org/) 将远端挂载或同步为本机目录。 | 选择对应协议，填写下载器路径前缀和本机挂载点，并点击“检查本机路径”。AniLink 不保存远端账号、密码或 URL。 |
 | rclone | 安装 rclone，先在终端完成 `rclone config`，再用 `rclone mount remote: X:` 或同步命令创建本机目录。 | 选择 rclone，填写本机挂载点。挂载在 Obsidian 启动后断开时，检查会明确提示路径不可访问。 |
 
-Bangumi 网页可因网络环境访问困难，但不能把网页镜像简单当作 API 镜像：本插件需要可鉴权、可写入收藏与分集进度的官方 v0 API。当前未验证到兼容的替代端点，因此不会提供会造成搜索或同步失效的“镜像站开关”。网页预览可改为默认浏览器，或直接关闭番剧信息面板。
+Bangumi 设置支持选择网页域名，预览和打开网页使用所选站点。搜索、收藏和分集进度通过官方 v0 API 处理。
 
 建议为 AniLink 使用独立媒体目录，不要将个人文档或多个番剧混放在同一番剧目录内。自动清理会实际删除媒体文件。
 
@@ -67,7 +81,13 @@ Bangumi 网页可因网络环境访问困难，但不能把网页镜像简单当
 
 RSS 规则保存在 qBittorrent，只有下载器运行时才会检查与下载。Obsidian 关闭后插件自身不会继续轮询。手动下载可在已配置程序路径时尝试启动下载器。
 
-“开机检查、下载完成退出、空闲退出”需要另行配置系统启动或调度，插件默认安装不会创建 Windows 启动项。不要把插件中的下载策略选项理解为已经安装系统调度服务。其他下载器尚无等价适配。
+qBittorrent 设置提供 Windows 登录启动开关，以及检查订阅、下载完成退出和空闲退出设置。启用登录启动时插件创建 Windows 启动项，运行时由随插件分发的 PowerShell 调度脚本执行。Obsidian 关闭后已配置的启动项仍可运行。
+
+### 官方弹幕与删减时间
+
+“播放器与弹幕”中的“优先官方番剧弹幕”会尝试正版及港澳台来源，区域访问取决于当前网络出口和账号权限。支持《异世界舅舅》与官方名称《奇幻世界舅舅》的对应。播放准备期间按钮和提示显示弹幕处理状态，Windows 本地播放器启动后会尝试移至主屏并置前。
+
+官方弹幕采用 [AniClip](https://github.com/bili-vd-bak/aniclip) 的删减时间数据，核对集数与来源 CID 后，对有时长的视频删减片段分段延后弹幕。画面替换条目保持原时间。该对齐以本地视频保留被删片段为前提，已有同名 XML 在替换前备份。数据覆盖范围和准确度由上游决定，原数据由汇总酱整理并按 CC BY-NC-SA 4.0 许可提供。
 
 ## 自定义与数据管理
 

@@ -15,7 +15,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
         e.files?.some((f) => f.progress === 1 && f.localExists !== false),
     ).length;
   body.createEl("p", {
-    text: `已看 ${watched} / ${s.total || normal.length || "待定"} 集 · ${ready} 集已下载待看`,
+    text: `已看 ${watched} / ${s.total || normal.length || "待定"} 集 · ${ready} 集待看`,
     cls: "al-episode-summary",
   });
   if (normal.length && watched === normal.length && s.status !== 2)
@@ -112,17 +112,12 @@ Dashboard.prototype.renderDetail = function (el, s) {
     );
   const mark = button(
     actions,
-    e.watched
-      ? files.length && p.state.settings.cleanupAfterWatch !== false
-        ? "清理已看文件"
-        : "已看到这里"
-      : "看到这里",
+    e.watched ? "已看到这里" : "看到这里",
     () => p.run(() => p.markThrough(s, e)),
   );
   mark.disabled =
     !!future ||
-    (e.watched &&
-      (!files.length || p.state.settings.cleanupAfterWatch === false));
+    e.watched;
   if (e.watched)
     button(actions, "设为未看", () => p.run(() => p.markWatched(s, e, false)));
   if (files.length) {

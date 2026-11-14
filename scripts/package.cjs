@@ -12,7 +12,7 @@ const manifest = JSON.parse(fs.readFileSync("manifest.json")),
 fs.mkdirSync(target, { recursive: true });
 for (const name of fs.readdirSync(target))
   if (
-    !["main.js", "manifest.json", "styles.css", "align-audio.py"].includes(name)
+    !["main.js", "manifest.json", "styles.css", "align-audio.py", "download-scheduler.ps1", "install-scheduler.ps1"].includes(name)
   )
     throw Error("Unexpected file in package: " + name);
 const sums = [];
@@ -21,8 +21,10 @@ for (const name of [
   "manifest.json",
   "styles.css",
   "align-audio.py",
+  "download-scheduler.ps1",
+  "install-scheduler.ps1",
 ]) {
-  const source = name === "align-audio.py" ? path.join("scripts", name) : name;
+  const source = /\.(py|ps1)$/.test(name) ? path.join("scripts", name) : name;
   fs.copyFileSync(source, path.join(target, name));
   sums.push(
     crypto.createHash("sha256").update(fs.readFileSync(source)).digest("hex") +

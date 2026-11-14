@@ -4,6 +4,32 @@ const assert = require("node:assert/strict");
 const fs = require("fs");
 const vm = require("vm");
 const C = require("../core");
+test("verified Bilibili translation matches the correct cour and rejects other seasons", () => {
+  const show = { id: 634210, title: "魔法姐妹露露特莉莉 第2部分", name: "魔法の姉妹ルルットリリィ 第2クール" };
+  assert.ok(C.biliTitleMatches(show, "『魔法的姐妹露露和莉莉 第二季』第5话"));
+  assert.equal(C.parseEpisode("『魔法的姐妹露露和莉莉 第二季』第5话"), 5);
+  assert.equal(C.biliTitleMatches(show, "『魔法的姐妹露露和莉莉 第一季』第5话"), false);
+  assert.equal(C.biliTitleMatches(show, "『魔法的姐妹露露和莉莉 第二季』第5话 解说"), false);
+  assert.equal(C.biliTitleMatches({ ...show, id: 501796, title: "魔法姐妹露露特莉莉", name: "魔法の姉妹ルルットリリィ" }, "『魔法的姐妹露露和莉莉 第二季』第5话"), false);
+});
+test("optional danmaku failure still launches local media", async () => {
+  const source = fs.readFileSync("src/ux.js", "utf8");
+  const start = source.indexOf("AniLink.prototype.play = async function (show, episode, file)");
+  const end = source.indexOf("AniLink.prototype.suspendSearch", start);
+  let launched = 0;
+  const Plugin = function () {};
+  vm.runInNewContext(source.slice(start, end), {
+    AniLink: Plugin,
+    C,
+    fs: { access: async () => {} },
+    launchLocalMedia: async () => { launched++; },
+  });
+  const p = new Plugin();
+  p.state = C.defaults();
+  p.prepareUploaderDanmaku = async () => { throw Error("没有匹配来源"); };
+  await p.play({}, {}, { path: "D:/Anime/episode.mkv" });
+  assert.equal(launched, 1);
+});
 function fixture() {
   return C.newShow(
     { id: 42, name: "Star Rail", name_cn: "星海列车", eps: 12 },
@@ -170,59 +196,6 @@ test("foreground status clicks persist while a remote request is still pending",
   assert.equal(p.state.queue[0].payload.type, 1);
   release();
   await Promise.all([...p.backgroundTasks.values()]);
-});
-test("two device runtime exchange retains offline edits and skips a partially written file", async () => {
-  const M = require("../src/sync-model"),
-    files = new Map(),
-    dirs = new Set();
-  const adapter = {
-    exists: async (p) => dirs.has(p) || files.has(p),
-    mkdir: async (p) => {
-      dirs.add(p);
-    },
-    list: async (folder) => ({
-      files: [...files.keys()].filter((k) => k.startsWith(folder + "/")),
-    }),
-    read: async (p) => files.get(p),
-    write: async (p, v) => {
-      files.set(p, v);
-    },
-    stat: async (p) => ({ size: files.get(p).length }),
-  };
-  const makeDevice = (id) => {
-    const p = plugin(harness().http);
-    p.state.shows = [fixture()];
-    p.state.settings.deviceSync = true;
-    p.state.settings.syncGroup = "test";
-    p.deviceId = id.repeat(32);
-    p.app = { vault: { adapter } };
-    p.deviceBaseline = M.project(p.state);
-    p.records = M.capture({}, {}, p.deviceBaseline, p.deviceId);
-    p.persist = async () => {
-      const next = M.project(p.state);
-      p.records = M.capture(p.records, p.deviceBaseline, next, p.deviceId);
-      p.deviceBaseline = next;
-    };
-    return p;
-  };
-  const a = makeDevice("a"),
-    b = makeDevice("b");
-  a.state.shows[0].episodes[0].watched = true;
-  b.state.shows[0].episodes[1].watched = true;
-  b.state.shows[0].rate = 9;
-  files.set("AniLink-sync/test/" + "c".repeat(32) + ".json", "{");
-  await a.exchangeDevices();
-  await b.exchangeDevices();
-  await a.exchangeDevices();
-  assert.ok(a.state.shows[0].episodes.slice(0, 2).every((e) => e.watched));
-  assert.equal(a.state.shows[0].rate, 9);
-  assert.equal(b.state.shows[0].rate, 9);
-  assert.ok(a.state.events.some((e) => e.message.includes("暂未合并")));
-  assert.ok(![...files.values()].join("").includes("mock-token"));
-  b.state.shows[0].episodes[0].watched = false;
-  await b.exchangeDevices();
-  await a.exchangeDevices();
-  assert.equal(a.state.shows[0].episodes[0].watched, false);
 });
 test("release parsing refuses batches, detects common subtitle naming and revisions", () => {
   for (const [title, num] of [

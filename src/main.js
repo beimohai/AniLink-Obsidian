@@ -7,6 +7,8 @@ const {
   requestUrl,
   Setting,
   PluginSettingTab,
+  Platform,
+  addIcon,
 } = require("obsidian");
 const { shell } = require("electron");
 const fs = require("fs/promises");
@@ -98,7 +100,7 @@ class Dashboard extends ItemView {
     this.filter = "watch";
     this.query = "";
     this.tab = "episodes";
-    this.selected = null;
+    this.selected = p.state.settings.openFirstShow ? p.state.shows[0]?.id || null : null;
   }
   getViewType() {
     return VIEW;
@@ -107,7 +109,7 @@ class Dashboard extends ItemView {
     return "AniLink";
   }
   getIcon() {
-    return "tv";
+    return "anilink-logo";
   }
   async onOpen() {
     this.render();
@@ -127,7 +129,6 @@ class Dashboard extends ItemView {
     button(actions, "刷新整个插件", () => p.run(() => p.refresh(true)));
     button(actions, `任务 ${p.state.queue.length}`, () => p.jobs());
     button(actions, "设置", () => p.settingsModal());
-    button(actions, "同步管理", () => p.syncModal());
     button(actions, "RSS 订阅", () => p.subscriptionsManager());
 
     const layout =
@@ -317,7 +318,6 @@ class Dashboard extends ItemView {
       // Episode content is rendered by the dedicated progress panel.
     } else if (this.tab === "subscription") {
       const sub = s.subscription;
-      if (s.rssError) body.createEl("p", { text: s.rssError, cls: "al-muted" });
       body.createEl("h3", {
         text: sub.feed ? (sub.enabled ? "订阅中" : "已暂停") : "未订阅",
       });
@@ -331,15 +331,16 @@ class Dashboard extends ItemView {
       if (sub.feed) {
         const tags = body.createDiv("al-version-tags");
         for (const value of [
+          sub.profile?.quality || sub.quality,
           sub.profile?.language || sub.language,
           sub.profile?.codec,
           sub.profile?.subtitle,
         ].filter((v) => v && v !== "未标注"))
           tags.createSpan({ text: value });
       }
-      button(body, "选择字幕组", () => p.subscriptionModal(s), "mod-cta");
+      button(body, sub.feed ? "更换字幕组" : "选择字幕组", () => p.subscriptionModal(s), "mod-cta");
       if (sub.feed) {
-        button(body, sub.enabled ? "暂停订阅" : "恢复订阅", () =>
+        button(body, sub.enabled ? "暂停" : "恢复", () =>
           p.run(async () => {
             const next = { ...sub, enabled: !sub.enabled };
             await p.installSubscription(s, next);
@@ -347,7 +348,7 @@ class Dashboard extends ItemView {
             await p.persist();
           }),
         );
-        button(body, "移除订阅", () =>
+        button(body, "移除", () =>
           p.confirm(
             "移除自动订阅？",
             "将移除这部番剧的 RSS 和规则，保留已下载文件、观看与评价记录。",
@@ -363,6 +364,7 @@ class Dashboard extends ItemView {
               }),
           ),
         );
+        button(body, "自定义 RSS", () => p.customRssModal(s));
       }
       button(body, "打开下载器", () => p.run(() => p.openDownloader()));
     } else if (this.tab === "danmaku") {
@@ -383,14 +385,15 @@ class Dashboard extends ItemView {
         comment: s.comment,
         private: s.private,
       };
-      const rate = select(body, "评分", draft.rate, {
+      const reviewOptions = body.createDiv("al-review-options");
+      const rate = select(reviewOptions, "评分", draft.rate, {
         0: "未评分",
         ...Object.fromEntries(
           Array.from({ length: 10 }, (_, i) => [i + 1, `${i + 1} 分`]),
         ),
       });
       const comment = field(body, "短评", draft.comment, "textarea");
-      const privacy = select(body, "可见性", draft.private ? "1" : "0", {
+      const privacy = select(reviewOptions, "可见性", draft.private ? "1" : "0", {
         0: "公开",
         1: "私密",
       });
@@ -453,7 +456,8 @@ class AniLink extends Plugin {
     this.saveChain = Promise.resolve();
     this.http = new C.Http(requestUrl);
     this.registerView(VIEW, (leaf) => new Dashboard(leaf, this));
-    this.addRibbonIcon("tv", "打开 AniLink", () => this.open());
+    addIcon("anilink-logo", ANI_ICON_BODY);
+    this.addRibbonIcon("anilink-logo", "打开 AniLink", () => this.open());
     this.addCommand({
       id: "open",
       name: "打开追番中心",
@@ -462,7 +466,7 @@ class AniLink extends Plugin {
     this.addCommand({
       id: "refresh",
       name: "刷新下载与待同步任务",
-      callback: () => this.run(() => this.refresh(true)),
+      callback: () => this.refreshAndReopen(),
     });
     // Commands deliberately define no `hotkeys`: Obsidian exposes them in its
     // native shortcut editor, while users keep full control over assignments.
@@ -519,6 +523,19 @@ class AniLink extends Plugin {
       await leaf.setViewState({ type: VIEW, active: true });
     }
     this.app.workspace.revealLeaf(leaf);
+  }
+  async refreshAndReopen() {
+    return this.run(async () => {
+      await this.refresh(true);
+      const leaves = [...this.app.workspace.getLeavesOfType(VIEW)];
+      for (const leaf of leaves) {
+        const drafts = leaf.view.reviewDrafts;
+        await leaf.setViewState({ type: "empty" });
+        await leaf.setViewState({ type: VIEW, active: true });
+        leaf.view.reviewDrafts = drafts;
+      }
+      if (!leaves.length) await this.open();
+    });
   }
   redraw() {
     for (const l of this.app.workspace.getLeavesOfType(VIEW)) {
@@ -668,22 +685,22 @@ class AniLink extends Plugin {
     await this.persist();
     await this.sync();
   }
-  subscriptionModal(s) {
+  customRssModal(s) {
     if (s.demo) {
       new Notice("演练模式不创建真实订阅");
       return;
     }
-    new Panel(this, "配置字幕组与订阅范围", (el, m) => {
+    new Panel(this, "自定义 RSS", (el, m) => {
       m.modalEl.addClass("al-custom-rss");
       const form = el.createDiv("al-rss-form");
       const actions = el.createDiv("al-actions al-form-footer");
       const sub = s.subscription;
       const feed = field(form, "RSS 地址", sub.feed);
-      const keyword = field(form, "番剧关键词", sub.keyword);
-      const group = field(form, "字幕组", sub.group);
-      const quality = field(form, "画质关键词", sub.quality);
-      const language = field(form, "字幕语言关键词", sub.language);
-      const exclude = field(form, "排除关键词，用 | 分隔", sub.exclude);
+      const keyword = { value: sub.keyword || "" };
+      const group = { value: sub.group || "" };
+      const quality = { value: sub.quality || "" };
+      const language = { value: sub.language || "" };
+      const exclude = { value: sub.exclude || "" };
       const range = form.createDiv("al-two");
       const start = field(range, "起始集", sub.start, "number"),
         end = field(range, "结束集", sub.end, "number");
@@ -696,13 +713,18 @@ class AniLink extends Plugin {
         0: "仅保存配置，不下载",
         1: "自动下载",
       });
-      el.createEl("p", {
-        text: "多个关键词必须全部命中。首版自动排除合集与范围包；无法识别的文件可手动绑定。qBittorrent 自身集数识别与页面预览可能有差异，请先查看样本。",
-        cls: "al-muted",
-      });
-      const groups = form.createDiv("al-rss-groups");
+      enabled.value = sub.enabled ? "1" : "0";
+      const paused = select(form, "添加下载任务后", sub.addPaused ? "1" : "0", { 0: "立即开始", 1: "暂停等待手动开始" });
+      const ignoreDays = field(form, "同集重复下载间隔（天）", sub.ignoreDays || 0, "number");
+      const revisions = select(form, "资源更新策略", sub.revisionPolicy || "standard", { standard: "按当前订阅规则", latest: "仅下载当前最新版本", upgrade: "未看集自动更新，已看集保留" });
+      form.createEl("p", { text: "最新版本按标题中的 v2、v3 等修订号识别。自动更新只处理未看的同一集。", cls: "setting-item-description" });
       const result = form.createDiv("al-results");
       const read = () => ({
+        customized: true,
+        profile: sub.profile,
+        addPaused: paused.value === "1",
+        ignoreDays: Math.max(0, Number(ignoreDays.value) || 0),
+        revisionPolicy: revisions.value,
         feed: feed.value.trim(),
         keyword: keyword.value.trim(),
         group: group.value.trim(),
@@ -723,23 +745,6 @@ class AniLink extends Plugin {
             text: "正在刷新 RSS，首次获取可能需要稍等后再次预览…",
           });
           const rows = await this.qb().articles(s, draft);
-          groups.empty();
-          const names = [
-            ...new Set(
-              rows
-                .map((a) => a.title.match(/^\[([^\]]+)\]/)?.[1])
-                .filter(Boolean),
-            ),
-          ];
-          if (names.length) {
-            const picker = select(groups, "从 RSS 中选择字幕组", "", {
-              "": "手动填写 / 不限",
-              ...Object.fromEntries(names.map((n) => [n, n])),
-            });
-            picker.onchange = () => {
-              group.value = picker.value;
-            };
-          }
           result.empty();
           if (!rows.length)
             result.createEl("p", { text: "RSS 暂无条目，请稍后再次预览。" });
@@ -755,6 +760,7 @@ class AniLink extends Plugin {
         () =>
           this.run(async () => {
             const draft = read();
+            draft.customized = true;
             C.buildRule(s, draft);
             await this.installSubscription(s, draft);
             s.subscription = draft;
@@ -1106,4 +1112,6 @@ class Connections extends PluginSettingTab {
       );
   }
 }
+// Preserve the media launcher independently of optional network enrichment.
+const launchLocalMedia = AniLink.prototype.play;
 module.exports = AniLink;

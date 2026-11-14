@@ -184,6 +184,7 @@
 .al-modal .modal-content {
   padding-bottom: 16px;
 }
+.al-modal .modal-content > h2 { margin: 0 0 10px; }
 .al-field {
   display: flex;
   flex-direction: column;
@@ -270,6 +271,7 @@
 }
 .al-root {
   container-type: inline-size;
+  container-name: anilink-dashboard;
 }
 .al-layout {
   grid-template-columns: minmax(210px, 0.75fr) minmax(300px, 1.25fr);
@@ -2716,9 +2718,13 @@
 .al-root .al-section-review { justify-self: stretch; }
 .al-root .al-section-subscription .al-subscription-actions,
 .al-root .al-section-review .al-review-actions { width: 100%; }
-.al-root .al-section-subscription .al-subscription-actions { justify-content: flex-end; }
+.al-root .al-inline-subscription .al-subscription-actions { justify-content: flex-start; }
 .al-root .al-section-review .al-header-status { margin-left: auto; }
 .al-root .al-information-empty { margin: 18px 0; text-align: center; }
+.al-root .al-section-review > .al-actions:empty { display: none; }
+.al-root .al-section-review > .al-field { margin: 0 0 10px; }
+.al-root .al-section-review > h3 { margin-bottom: 10px; }
+.al-root .al-inline-subscription .al-subscription-actions > button { margin-left: 0; }
 
 /* Compact, readable sync and connection dialogs. */
 .al-sync-modal.modal { width: 440px; max-width: min(92vw, 440px); }
@@ -2759,10 +2765,60 @@
 }
 .al-preferences-modal .al-actions { justify-content: flex-start; }
 
+.al-root .al-mobile-back {
+  display: none;
+}
+.al-scrollbar-probe {
+  position: absolute;
+  visibility: hidden;
+  width: 100px;
+  height: 100px;
+  overflow: scroll;
+}
+.al-root .al-specials summary { display: list-item; list-style: disclosure-closed inside; }
+.al-root .al-specials[open] summary { list-style-type: disclosure-open; }
+.al-root .al-section-trend > .al-actions { gap: 12px; }
+.al-root .al-section-trend > .al-actions > button { margin-right: 0; }
+.al-root .al-card strong { padding-right: 0; }
+.al-root .al-card.al-has-unwatched strong { padding-right: 56px; }
+.al-root .al-card > div { justify-content: flex-start; gap: 3px; }
+.al-root .al-card > div > :is(p, progress) { margin-top: 0; margin-bottom: 0; }
+.al-root .al-card > div > progress { margin-top: auto; }
+.al-sync-modal.modal { width: 350px; }
+.al-sync-modal .al-sync-toolbar { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+.al-sync-modal .al-sync-toolbar button { width: auto !important; min-width: 180px; }
+.al-sync-modal .modal-content > .al-muted { white-space: pre-line; line-height: 1.8; }
+.al-sync-modal .modal-title,
+.al-refined-connections .modal-title:empty { display: none; }
+.al-sync-modal .modal-content > h2,
+.al-refined-connections .modal-content > h2 { margin: 0 0 14px; }
+.al-sync-modal .modal-content,
+.al-refined-connections .modal-content { margin-top: 0; padding-top: 0; }
+.al-refined-connections { --al-path-button-width: 96px; }
+.al-refined-connections .al-token-row > button,
+.al-refined-connections .al-path-picker > button { width: var(--al-path-button-width); margin: 0; }
+.al-refined-connections .al-connection-section > .al-field > :is(input,select),
+.al-refined-connections .al-connection-section > .al-field > .al-token-input { width: calc(100% - var(--al-path-button-width) - 10px); }
+.al-refined-connections .al-path-picker { gap: 10px; }
+.al-refined-connections .al-password-eye { margin: 0; padding: 4px; transform: none; top: auto; bottom: 4px; }
+.al-refined-connections .al-token-input > .al-password-eye { top: auto; bottom: 4px; }
+.al-refined-connections .al-token-row { gap: 10px; }
+.al-refined-connections .al-token-row > .al-token-input { flex: 1; min-width: 0; }
+.al-refined-connections .al-token-row > button { width: var(--al-path-button-width); flex: none; }
+.al-refined-connections .al-token-input > input { width: 100%; height: 34px; }
+.al-refined-connections .al-connection-section > .al-field > input[type="password"],
+.al-refined-connections .al-connection-section > .al-field > input[type="text"] { height: 34px; }
+.al-refined-connections .al-connection-section > .al-field > .al-password-eye { right: calc(var(--al-path-button-width) + 16px); }
+.al-calibration-settings { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 10px; }
+.al-calibration-settings > :is(h3,label) { grid-column: 1 / -1; }
+.al-calibration-settings > p { margin: 0; }
+.al-calibration-settings > .al-actions { justify-content: flex-end; }
+.al-calibration-settings > .al-actions > button:last-child { width: 96px; margin: 0; }
+
 /* Responsive dashboard: a comfortable two-pane layout in a narrowed desktop
    leaf, then an explicit master/detail flow on phones.  These final rules are
    deliberately scoped to the dashboard to avoid affecting Obsidian itself. */
-@container (min-width: 621px) and (max-width: 920px) {
+@container anilink-dashboard (min-width: 621px) and (max-width: 920px) {
   .al-root .al-layout {
     grid-template-columns: minmax(235px, 0.9fr) minmax(0, 1.1fr);
     gap: 10px;
@@ -2793,7 +2849,7 @@
   }
 }
 
-@container (max-width: 620px) {
+@container anilink-dashboard (max-width: 620px) {
   .al-root {
     height: auto;
     overflow: auto !important;
@@ -2856,7 +2912,7 @@
     display: none;
   }
 
-  .al-root.al-mobile-detail .al-mobile-back {
+  body.is-mobile .al-root.al-mobile-detail .al-mobile-back {
     display: inline-flex;
     grid-column: 1;
     grid-row: 1;
@@ -2913,3 +2969,172 @@
     height: 100px;
   }
 }
+
+/* Full-width desktop details retain two columns, regardless of the nested
+   detail container's width. Narrow-leaf rules use the dashboard container. */
+@container anilink-dashboard (min-width: 921px) {
+  .al-root .al-flat-workspace {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Final dialog geometry: explicit rules override the earlier experimental variants. */
+.al-sync-modal.modal { width: 350px; max-width: 92vw; }
+.al-sync-modal .modal-content { padding-top: 0; }
+.al-sync-modal .modal-title { display: none; }
+.al-sync-modal .modal-content > h2 { margin: 0 0 10px; }
+.al-sync-status { margin: 0 0 12px; }
+.al-sync-status p { margin: 0; line-height: 1.65; }
+.al-sync-modal .al-sync-toolbar { display: flex !important; flex-direction: column; align-items: center; gap: 8px; margin: 0; }
+.al-sync-modal .al-sync-toolbar button { width: 180px !important; min-width: 0; margin: 0; }
+.al-refined-connections .modal-content { padding-top: 0; }
+.al-refined-connections .modal-title { display: none; }
+.al-refined-connections .modal-content > h2 { margin: 0 0 8px; }
+.al-refined-connections .al-connection-section { padding: 10px 0; }
+.al-refined-connections .al-connection-section:first-child { padding-top: 0; }
+.al-refined-connections .al-connection-section h3, .al-refined-connections .al-calibration-settings h3 { margin: 0 0 8px; font-size: var(--font-ui-medium); font-weight: var(--font-semibold); }
+.al-refined-connections .al-connection-section > .al-field { width: 100%; box-sizing: border-box; }
+.al-refined-connections .al-connection-section > .al-field > :is(input, select), .al-refined-connections .al-connection-section > .al-field > .al-token-input { width: 100%; box-sizing: border-box; height: 34px; }
+.al-refined-connections .al-token-row, .al-refined-connections .al-path-picker { width: 100%; gap: 10px; }
+.al-refined-connections .al-token-row > .al-field, .al-refined-connections .al-token-row > .al-token-input, .al-refined-connections .al-path-picker input { flex: 1 1 0; min-width: 0; width: auto; }
+.al-refined-connections .al-token-row > button, .al-refined-connections .al-path-picker > button { width: 96px; height: 34px; min-height: 34px; box-sizing: border-box; margin: 0; flex: 0 0 96px; }
+.al-refined-connections .al-token-input > .al-password-eye, .al-refined-connections .al-password-eye { right: 5px; bottom: 4px; width: 26px; height: 26px; min-height: 26px; padding: 4px; border: 0; background: transparent; box-shadow: none; margin: 0; }
+.al-refined-connections .al-token-input input { width: 100%; height: 34px; padding-right: 70px; }
+.al-calibration-settings { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 10px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--background-modifier-border); }
+.al-calibration-settings > :is(h3, label) { grid-column: 1 / -1; }
+.al-calibration-settings > label { margin: 0; }
+.al-calibration-status { margin: 0; line-height: 1.65; }
+.al-calibration-actions { justify-content: flex-end; margin: 0; }
+.al-calibration-actions button { margin: 0; }
+
+/* Request-specific final layout: overrides earlier experimental variants. */
+.al-root .al-inline-subscription .al-subscription-meta,
+.al-root .al-inline-subscription .al-version-tags,
+.al-root .al-inline-subscription .al-subscription-actions { margin: 8px 0 0; }
+.al-root .al-inline-subscription progress { margin-top: 18px; }
+.al-sync-modal .modal-content > h2 { margin-top: 0; }
+.al-sync-modal .al-sync-status { margin: 0 0 14px; }
+.al-sync-modal .al-sync-status p { display: block; margin: 0; }
+.al-sync-modal .al-sync-toolbar { flex-direction: column !important; align-items: stretch; }
+.al-sync-modal .al-sync-toolbar button { width: 100% !important; }
+.al-refined-connections .modal-content > h2 { margin-top: 0; }
+.al-refined-connections .al-token-row, .al-refined-connections .al-path-picker { display: flex; align-items: end; gap: 10px; width: 100%; }
+.al-refined-connections .al-token-row > .al-token-input, .al-refined-connections .al-path-picker > .al-field { flex: 1 1 auto; min-width: 0; }
+.al-refined-connections .al-token-row > button, .al-refined-connections .al-path-picker > button { flex: 0 0 96px; width: 96px; }
+.al-refined-connections .al-password-eye { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; min-height: 26px; padding: 0; }
+.al-refined-connections .al-calibration-settings h3 { font: inherit; font-size: var(--font-ui-medium); font-weight: var(--font-semibold); }
+.al-calibration-settings > p { grid-column: 1; }
+.al-calibration-settings > .al-calibration-actions { grid-column: 2; }
+.al-calibration-actions > button:last-child { width: 96px; min-width: 96px; }
+
+/* Compact sync and connection controls.  Keep all controls aligned to their
+   enclosing text column rather than centring independently. */
+.al-sync-modal.modal { width: 310px; max-width: 92vw; }
+.al-sync-modal .modal-content { padding-top: 0; }
+.al-sync-modal .al-sync-toolbar { align-items: stretch; gap: 7px; }
+.al-sync-modal .al-sync-toolbar button { width: 100% !important; }
+
+.al-refined-connections { --al-side-action-width: 88px; }
+.al-refined-connections .al-token-row > button,
+.al-refined-connections .al-path-picker > button {
+  width: var(--al-side-action-width);
+  min-width: var(--al-side-action-width);
+  flex-basis: var(--al-side-action-width);
+}
+.al-refined-connections .al-token-row,
+.al-refined-connections .al-path-picker { gap: 8px; }
+.al-calibration-settings > .al-calibration-actions { grid-column: 2; justify-content: end; }
+.al-calibration-actions > button:last-child { width: var(--al-side-action-width); min-width: var(--al-side-action-width); }
+.al-calibration-installers { grid-column: 1 / -1; justify-content: flex-start; margin: 0; gap: 8px; }
+.al-calibration-installers button { margin: 0; }
+
+/* Native settings follow the same grouped Setting layout as the bookkeeping
+   plugin.  The dependency installers are intentionally a separate left-aligned
+   row so they never occupy space while all dependencies are available. */
+.al-settings-v2 .setting-item-heading {
+  position: relative;
+  margin: 26px 0 10px;
+  padding-left: 13px;
+  font-size: var(--font-ui-medium);
+}
+.al-settings-v2 .setting-item-heading::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 4px;
+  height: 26px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  background: var(--interactive-accent);
+}
+.al-settings-v2 .setting-item-heading:first-child { margin-top: 0; }
+.al-settings-v2 .setting-item-control { width: 372px; min-width: 372px; position: relative; display: flex; justify-content: flex-end; gap: 8px; }
+.al-settings-v2 .setting-item-control > input[type="text"],
+.al-settings-v2 .setting-item-control > input[type="password"] { flex: 0 0 280px; width: 280px; min-width: 280px; box-sizing: border-box; }
+.al-settings-v2 .setting-item:not(.al-setting-has-side-action) .setting-item-control > input[type="text"],
+.al-settings-v2 .setting-item:not(.al-setting-has-side-action) .setting-item-control > input[type="password"] { margin-right: 92px; }
+.al-settings-v2 .setting-item-control > button:not(.clickable-icon) { flex: 0 0 84px; width: 84px; min-width: 84px; white-space: nowrap; }
+.al-settings-v2 .setting-item-control > .clickable-icon { position: absolute; z-index: 1; right: 92px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; }
+.al-settings-v2 .setting-item:has(input[type="password"]) .setting-item-control > input { padding-right: 32px; }
+.al-settings-v2 .al-settings-dependency { margin: 8px 0 14px; }
+.al-settings-v2 .al-settings-dependency .setting-item-heading { margin-top: 0; }
+.al-settings-v2 .al-calibration-installers { justify-content: flex-start; margin: 0 0 8px; }
+.al-settings-v2 .setting-item-info { flex: 1 1 auto; min-width: 160px; }
+.al-settings-v2 .setting-item-description { white-space: normal; overflow: visible; text-overflow: clip; max-width: none; }
+.al-settings-v2 .setting-item-control { min-width: 0; width: auto; flex: 0 0 auto; }
+.al-settings-v2 .setting-item:not(.al-setting-has-side-action) .setting-item-control > input { margin-right: 0 !important; }
+.al-settings-v2 .setting-item-control > .clickable-icon { right: 4px; }
+.al-settings-v2 [hidden] { display: none !important; }
+.al-root .al-inline-subscription .al-subscription-meta { margin-top: 8px; margin-bottom: 8px; }
+.al-root .al-specials { margin: 6px 0 0; }
+.al-root .al-specials summary { min-height: 22px; }
+.al-root .al-specials + .al-episode-detail { margin-top: 8px; }
+.al-root .al-inline-subscription > h3 { margin-bottom: 8px; }
+.al-root .al-inline-subscription .al-subscription-meta { margin: 0 0 8px; }
+.al-root .al-inline-subscription .al-subscription-meta p { margin: 0; }
+.al-settings-v2 .setting-item-control > .clickable-icon { padding: 3px; margin: 0; top: 50%; transform: translateY(-50%); }
+.al-settings-v2 .setting-item-control > input { padding-right: 34px; }
+.al-settings-v2 .setting-item-control > button:not(.clickable-icon) { width: auto; min-width: 0; flex: 0 0 auto; padding: var(--size-4-1) var(--size-4-3); }
+.al-author-links { margin-top: 18px; padding-top: 10px; border-top: 1px solid var(--background-modifier-border); }
+.al-author-links .setting-item, .al-community-modal .setting-item { display: flex; align-items: center; width: 100%; }
+.al-community-modal { width: min(720px, calc(100vw - 24px)); }
+.al-community-modal .al-community-image { display: block; width: 100%; height: min(50vh, 480px); object-fit: contain; margin: 0 auto 10px; }
+.al-settings-v2 .al-settings-conditional { overflow: hidden; }
+.al-settings-v2 .al-settings-conditional[hidden] { display: none !important; }
+.al-settings-v2 .setting-item:not(.setting-item-heading) { margin: 8px 0; padding: 16px; }
+.al-settings-v2 .setting-item-name { font-size: var(--font-ui-medium); }
+.al-plugin-settings.al-settings-v2 { padding-inline: 28px; max-width: 1120px; width: 100%; margin-inline: auto; box-sizing: border-box; }
+.al-settings-v2 .al-settings-section-header { margin: 28px 0 0; padding: 0 0 8px; border: 0; border-bottom: 2px solid var(--background-modifier-border); border-radius: 0; }
+.al-settings-v2 .al-settings-section-header::before { top: 1px; bottom: 9px; left: -12px; width: 4px; height: auto; transform: none; border-radius: 999px; }
+.al-settings-v2 .setting-item-control { position: static; flex: 0 1 360px; min-width: 0; gap: 8px; flex-wrap: wrap; }
+.al-settings-v2 .setting-item-control > input[type="text"],
+.al-settings-v2 .setting-item-control > input[type="password"] { flex: 1 1 180px; min-width: 0; width: 100%; padding-right: 8px; }
+.al-settings-v2 .setting-item-control > .clickable-icon { position: static; flex: 0 0 26px; transform: none; margin: 0; }
+.al-settings-v2 .al-bili-profile { display: flex; align-items: center; gap: 10px; margin: 12px 0; }
+.al-settings-v2 .al-bili-profile img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+.al-source-modal, .al-version-modal { width: min(620px, calc(100vw - 24px)); }
+.al-settings-v2 .setting-item-control { flex-basis: 430px; }
+.al-settings-v2 .setting-item-control > select { width: 100%; min-width: 210px; max-width: 430px; }
+.al-review-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.al-review-options .al-field { margin: 0 0 12px; }
+.al-review-options select { width: 100%; height: 34px; }
+.al-root .al-inline-subscription .al-subscription-meta { margin: 0 0 8px; }
+.al-root .al-inline-subscription .al-version-tags { margin: 8px 0; }
+.al-plugin-footer { display: grid; grid-template-columns: auto minmax(0,auto); justify-content: center; align-items: center; gap: 13px; margin: 20px auto 8px; padding: 16px 10px 4px; color: var(--text-muted); }
+.al-plugin-footer-logo, .al-plugin-footer-logo svg { width: 64px; height: 64px; }
+.al-plugin-footer-details { display: grid; gap: 2px; text-align: left; }
+.al-plugin-footer-details > :first-child { font-weight: var(--font-semibold); color: var(--text-normal); }
+.al-plugin-footer-license { grid-column: 1/-1; text-align: center; font-size: var(--font-ui-smaller); color: var(--text-faint); }
+.al-plugin-footer-logo, .al-plugin-footer-logo svg { width: 160px; height: 160px; }
+.al-settings-v2 .setting-item { box-sizing: border-box; }
+.al-settings-v2 .setting-item-info { min-width: 160px; flex: 1 1 45%; }
+.al-settings-v2 .setting-item-control { flex: 0 1 55%; max-width: 55%; flex-wrap: nowrap; }
+.al-settings-v2 .setting-item-control > select { min-width: 0; width: 100%; }
+.al-settings-v2 .setting-item-control > input[type="text"], .al-settings-v2 .setting-item-control > input[type="password"] { flex: 1 1 0; min-width: 0; width: 0; padding-right: 8px; }
+.al-settings-v2 .setting-item-control > button { flex: 0 0 auto; }
+.al-settings-v2 .al-bili-profile { min-height: 48px; }
+.al-root .al-web-pending { visibility: visible; }
+.al-root .al-web-loading { pointer-events: none; }
+.al-footer { min-height: 26px; padding-top: 3px; }
+.al-source-modal, .al-version-modal { width: min(620px, calc(100vw - 24px)); }

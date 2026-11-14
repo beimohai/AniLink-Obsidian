@@ -149,6 +149,7 @@ AniLink.prototype.installSubscription = async function (s, sub) {
   const backend = sub.backend || this.state.settings.defaultBackend || "native";
   if (backend === "native") {
     await this.qb().install(s, sub);
+    await this.armIdleShutdown();
     delete s.rssError;
     delete s.ruleError;
     return;
@@ -157,6 +158,7 @@ AniLink.prototype.installSubscription = async function (s, sub) {
     throw Error("请先移除旧订阅，再更换来源");
   const native = { ...sub, enabled: false };
   await this.qb().install(s, native);
+  await this.armIdleShutdown();
   const result = await (backend === "ani" ? this.ani() : this.ab()).install(
     s,
     sub,

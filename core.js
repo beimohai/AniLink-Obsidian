@@ -20,6 +20,10 @@ const defaults = () => ({
     playerUrl: "http://127.0.0.1:80",
     playerToken: "",
     downloadRoot: "",
+    libraryRoot: "",
+    cleanupMode: "watched",
+    downloadMode: "off",
+    idleMinutes: 10,
     remoteRoot: "",
     localRoot: "",
     storageMode: "local",
@@ -80,6 +84,17 @@ function parseEpisode(name) {
 function feedPath(show) {
   return `AniLink-${show.id}`;
 }
+function episodeRanges(values) {
+  const numbers = [...new Set(values)].sort((a,b) => a-b);
+  const ranges = [];
+  for (let i = 0; i < numbers.length; i++) {
+    const first = numbers[i];
+    let last = first;
+    while (i + 1 < numbers.length && numbers[i + 1] === last + 1) last = numbers[++i];
+    ranges.push(first === last ? String(first) : first + "-" + last);
+  }
+  return ranges.join("、");
+}
 function ruleName(show) {
   return `AniLink-${show.id}`;
 }
@@ -132,6 +147,7 @@ function buildRule(show, sub = show.subscription) {
         .map(esc),
     );
   for (const t of show.blockedTitles || []) excludes.push(`^${esc(t)}$`);
+  for (const title of sub.supersededTitles || []) excludes.push(`^${esc(title)}$`);
   // qBittorrent's episodeFilter only supports season notation (e.g. 1x01-12;),
   // so enforce anime release numbering in the title regex instead.
   const numbers = Array.from({ length: end - start + 1 }, (_, i) => start + i)
@@ -161,7 +177,8 @@ function buildRule(show, sub = show.subscription) {
     affectedFeeds: [sub.feed],
     assignedCategory: feedPath(show),
     savePath: sub.savePath || "",
-    addPaused: false,
+    addPaused: !!sub.addPaused,
+    ignoreDays: Math.max(0, Number(sub.ignoreDays) || 0),
   };
 }
 function previewMatch(title, sub) {
@@ -197,6 +214,34 @@ function localPath(file, settings) {
   }
   return file;
 }
+function biliNames(show) {
+  // Verified alternate translation used by the configured uploader for this
+  // Bangumi subject. Keep it scoped to the stable ID to avoid fuzzy matches.
+  const verified = Number(show.id) === 634210
+    ? ["魔法的姐妹露露和莉莉 第二季"]
+    : [];
+  const official = show.title === "异世界舅舅" ? ["奇幻世界舅舅"] : [];
+  return [...new Set([show.title, show.name, ...(show.biliAliases || []), ...verified, ...official].filter(Boolean))];
+}
+function biliTitleMatches(show, title) {
+  const seasonPattern = /第\s*([0-9一二三四五六七八九十]+)\s*(?:部分|クール|季|期)|(?:season|part)\s*(\d+)/i;
+  const season = (text) => {
+    const match = String(text || "").match(seasonPattern);
+    if (!match) return null;
+    const value = match[1] || match[2];
+    return /^\d+$/.test(value) ? Number(value) : "一二三四五六七八九十".indexOf(value) + 1 || null;
+  };
+  const normalize = (text) => String(text).normalize("NFKC")
+    .replace(seasonPattern, "").replace(/[\s\p{P}\p{S}]/gu, "").toLowerCase();
+  if (/解说|預告|预告|混剪|盘点|速看|reaction|AMV|MAD/i.test(title)) return false;
+  const expected = season(show.title) || season(show.name) || 1;
+  const actual = season(title) || 1;
+  if (actual !== expected) return false;
+  return biliNames(show).some((name) => {
+    const base = normalize(name);
+    return base.length >= 3 && normalize(title).includes(base);
+  });
+}
 function queueJob(state, job) {
   const found = state.queue.find((x) => x.key === job.key);
   if (found) {
@@ -217,6 +262,10 @@ function queueJob(state, job) {
   return item;
 }
 function record(state, message) {
+  message = String(message);
+  if (state.settings.logScope === "errors" && !/失败|错误|异常|拒绝|超时|未找到|error|fail|ERR_/i.test(message)) return;
+  const retention = { day: 86400000, week: 604800000 }[state.settings.logRetention];
+  if (retention) state.events = state.events.filter((event) => Date.now() - event.at < retention);
   if (/ERR_CONNECTION_REFUSED/i.test(message)) {
     message =
       "服务连接被拒绝：请检查下载器是否运行、Web UI 是否启用及端口是否正确";
@@ -618,10 +667,13 @@ module.exports = {
   esc,
   baseUrl,
   parseEpisode,
+  biliNames,
+  biliTitleMatches,
   resolveEpisode,
   releaseTags,
   sourceQueries,
   feedPath,
+  episodeRanges,
   ruleName,
   buildRule,
   previewMatch,

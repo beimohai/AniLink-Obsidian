@@ -122,13 +122,33 @@ AniLink.prototype.markThrough = async function (s, target) {
     });
   }
   await this.persist();
-  if (this.state.settings.cleanupAfterWatch !== false)
-    await this.cleanupWatched(s, affected);
+  const cleanupMode = this.state.settings.cleanupMode ||
+    (this.state.settings.cleanupAfterWatch === false ? "none" : "watched");
+  if (cleanupMode === "current") await this.cleanupWatched(s, [target]);
+  else if (cleanupMode === "watched") await this.cleanupWatched(s, affected);
   C.record(this.state, `${s.title}：已看到第 ${target.ep || target.sort} 集`);
   await this.persist();
   this.background("Bangumi 推送", () => this.sync());
 };
 AniLink.prototype.cleanupWatched = async function (s, episodes) {
+  for (const episode of episodes.filter((item) => item.watched)) {
+    for (const file of [...(episode.files || [])]) {
+      if (file.progress !== 1 || (file.hash && !file.localOnly)) continue;
+      if (file.remotePath) await this.deleteRemoteMedia(file);
+      const xml = file.path.slice(0, file.path.lastIndexOf(".")) + ".xml";
+      const danmakuPaths = new Set([xml, ...(episode.danmaku?.ownedPaths || [])]);
+      for (const target of [...danmakuPaths, file.path]) {
+        try { await fs.unlink(target); }
+        catch (error) { if (error.code !== "ENOENT") throw error; }
+      }
+      episode.files = episode.files.filter((item) => item !== file);
+      await this.persist();
+    }
+    // Remove the binding only after every local/remote file belonging to this
+    // episode has had its XML companions cleaned up.
+    if (!(episode.files || []).some((file) => file.progress === 1))
+      delete episode.danmaku;
+  }
   const files = allFiles(s),
     hashes = new Set(
       episodes
@@ -174,13 +194,21 @@ AniLink.prototype.cleanupWatched = async function (s, episodes) {
           s.blockedTitles.push(f.taskTitle);
       await this.persist();
       if (s.subscription.feed) await this.qb().setRule(s);
-      await this.qb().delete(hash);
+      if (this.state.settings.deleteTorrentWithFiles !== false) {
+        await this.qb().delete(hash);
+      } else {
+        await this.qb().call("torrents/stop", { hashes: hash });
+        for (const media of group) {
+          try { await fs.unlink(media.path); }
+          catch (error) { if (error.code !== "ENOENT") throw error; }
+        }
+      }
       for (const e of s.episodes) {
         for (const f of (e.files || []).filter((f) => f.hash === hash)) {
           const xml = f.path?.replace(/\.[^.]+$/, ".xml");
-          if (xml && e.danmaku?.ownedPaths?.includes(xml)) {
+          if (xml) {
             await fs.unlink(xml).catch(() => {});
-            e.danmaku.ownedPaths = e.danmaku.ownedPaths.filter(
+            if (e.danmaku?.ownedPaths) e.danmaku.ownedPaths = e.danmaku.ownedPaths.filter(
               (p) => p !== xml,
             );
           }

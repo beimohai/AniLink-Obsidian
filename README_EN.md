@@ -1,6 +1,12 @@
 # AniLink
 
 <div align="center">
+<img src="assets/branding/anilink-icon-white.svg" alt="AniLink logo" width="96" />
+
+[中文](README.md) | English
+</div>
+
+<div align="center">
 
 **Anime subscriptions, downloads, playback and progress in Obsidian**
 

@@ -118,7 +118,7 @@ const pullLocalFirst = AniLink.prototype.pullAccount;
 AniLink.prototype.pullAccount = async function () {
   if (this.importPolicy === "remote") return pullLocalFirst.call(this);
   if (!this.state.settings.bgmToken) throw Error("请先填写 Bangumi Token");
-  await this.sync();
+  if (this.state.settings.bgmConflictPolicy !== "remote") await this.sync();
   const bgm = this.bgm(),
     me = await bgm.call("/v0/me"),
     rows = await bgm.pages(
@@ -144,6 +144,15 @@ AniLink.prototype.pullAccount = async function () {
       added++;
     } else if (JSON.stringify(fieldsOf(s)) !== JSON.stringify(remote)) {
       s.remoteConflict = remote;
+      if (this.state.settings.bgmConflictPolicy === "remote") {
+        Object.assign(s, remote);
+        this.state.queue = this.state.queue.filter((job) => job.showId !== s.id || job.kind !== "collection");
+        s.remoteConflict = null;
+        s.syncBase = remote;
+      } else if (this.state.settings.bgmConflictPolicy === "local") {
+        C.queueJob(this.state, { key: "collection:" + s.id, kind: "collection", showId: s.id, payload: { type: s.status, rate: s.rate, comment: s.comment, private: s.private } });
+        s.remoteConflict = null;
+      }
       conflicts.push(id);
     } else {
       s.remoteConflict = null;
@@ -184,17 +193,18 @@ AniLink.prototype.resolveConflict = async function (s, remote) {
 };
 AniLink.prototype.syncModal = function () {
   new Panel(this, "同步管理", (el, m) => {
-    el.createEl("p", {
-      text: `待推送 ${this.state.queue.length} 项 · 上次推送 ${time(this.state.lastPush)}`,
-      cls: "al-muted",
-    });
+    m.modalEl.addClass("al-sync-modal");
+    const status = el.createDiv("al-sync-status al-muted");
+    status.createEl("p", { text: `待推送 ${this.state.queue.length} 项` });
+    status.createEl("p", { text: `上次推送 ${time(this.state.lastPush)}` });
+    const actions = el.createDiv("al-sync-toolbar");
     button(
-      el,
+      actions,
       "推送本地修改",
       () => this.background("Bangumi 推送", () => this.sync()),
       "mod-cta",
     );
-    button(el, "检查远端收藏", () =>
+    button(actions, "检查远端收藏", () =>
       this.background("检查远端", async () => {
         await this.syncBangumi();
         m.close();
@@ -202,7 +212,7 @@ AniLink.prototype.syncModal = function () {
       }),
     );
     if (!this.state.lastAccountSync)
-      button(el, "首次导入收藏与进度", () =>
+      button(actions, "首次导入收藏与进度", () =>
         this.background("导入收藏", async () => {
           this.importPolicy = "remote";
           try {
@@ -231,7 +241,7 @@ AniLink.prototype.syncModal = function () {
         row.remove();
       });
     }
-    button(el, "查看日志", () => {
+    button(actions, "查看日志", () => {
       m.close();
       this.logsModal();
     });

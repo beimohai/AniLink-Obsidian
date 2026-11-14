@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs><mask id="clear"><rect width="1024" height="1024" fill="white"/><g transform="rotate(43 745 725)" fill="none" stroke="black" stroke-width="68"><rect x="699" y="574" width="92" height="174" rx="46"/><rect x="699" y="702" width="92" height="174" rx="46"/></g></mask></defs>
+<g fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+<g mask="url(#clear)"><rect x="176" y="192" width="638" height="568" rx="82"/><path d="M176 310H814"/></g>
+<path d="M250 660H590"/>
+</g>
+<g fill="#fff"><circle cx="257" cy="252" r="21"/><circle cx="325" cy="252" r="21"/><rect x="398" y="375" width="66" height="202" rx="33"/><rect x="510" y="375" width="66" height="202" rx="33"/><circle cx="352" cy="660" r="31"/></g>
+<g transform="rotate(43 745 725)" fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round"><rect x="699" y="574" width="92" height="174" rx="46"/><rect x="699" y="702" width="92" height="174" rx="46"/></g>
+</svg>

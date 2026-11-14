@@ -229,7 +229,7 @@ AniLink.prototype.searchModal = function () {
           );
           for (const status of this.state.shows.some((x) => x.id === s.id)
             ? []
-            : this.state.settings.searchStatuses || [3])
+            : (this.state.settings.searchStatuses || [3]).filter((status) => [1, 3].includes(status)))
             button(
               actions,
               C.STATUS[status],
@@ -357,7 +357,6 @@ AniLink.prototype.readFeed = async function (url) {
     date: item.querySelector("pubDate")?.textContent || "",
   }));
 };
-const customSubscription = AniLink.prototype.subscriptionModal;
 AniLink.prototype.subscriptionModal = function (s) {
   if (s.demo) {
     new Notice("演练条目不创建真实下载");
@@ -388,7 +387,7 @@ AniLink.prototype.subscriptionModal = function (s) {
           return;
         }
         for (const source of sources)
-          for (const group of source.groups) {
+          for (const group of source.groups.filter((group) => !s.sourceSearch?.group || group.name.includes(s.sourceSearch.group))) {
             const row = output.createDiv("al-result al-group-row");
             row.createEl("strong", { text: group.name });
             button(row, "选择", () =>
@@ -403,6 +402,13 @@ AniLink.prototype.subscriptionModal = function (s) {
                   const versions = body.createDiv("al-version-list");
                   const profiles = new Map();
                   for (const a of articles) {
+                    const search = s.sourceSearch || {};
+                    const parsed = C.releaseTags(a.title);
+                    if (search.quality && !parsed.quality.includes(search.quality)) continue;
+                    if (search.language && parsed.language !== search.language) continue;
+                    if (search.codec && parsed.codec !== search.codec) continue;
+                    if (search.subtitle && parsed.subtitle !== search.subtitle) continue;
+                    if (search.exclude && search.exclude.split("|").some((word) => word.trim() && a.title.includes(word.trim()))) continue;
                     const tags = C.releaseTags(a.title),
                       key = [
                         tags.language,
@@ -450,8 +456,8 @@ AniLink.prototype.subscriptionModal = function (s) {
                     ].sort((a, b) => a - b);
                     info.createEl("p", {
                       text: episodes.length
-                        ? `第 ${episodes.join("、")} 集`
-                        : `${profile.rows.length} 个资源 · 集数待确认`,
+                        ? `${C.episodeRanges(episodes)}集 · RSS 共 ${profile.rows.length} 个资源 · Bangumi 共 ${s.total || "待确认"} 集`
+                        : `RSS 共 ${profile.rows.length} 个资源 · 已识别 0 集 · Bangumi 共 ${s.total || "待确认"} 集`,
                       cls: "al-muted",
                     });
                     button(
@@ -567,10 +573,24 @@ AniLink.prototype.subscriptionModal = function (s) {
         }
       }
     };
-    button(header, "查找", load, "mod-cta");
-    button(header, "自定义 RSS", () => {
-      m.close();
-      customSubscription.call(this, s);
+    button(header, "搜索", load, "mod-cta");
+    button(header, "自定义搜索", () => {
+      new Panel(this, "自定义搜索", (body, modal) => {
+        const name = field(body, "番剧名称或别名", query.value);
+        const group = field(body, "字幕组包含文字", s.sourceSearch?.group || "");
+        const quality = select(body, "分辨率", s.sourceSearch?.quality || "", { "": "不限", "2160": "2160p", "1080": "1080p", "720": "720p" });
+        const language = select(body, "语言", s.sourceSearch?.language || "", { "": "不限", "简中": "简中", "繁中": "繁中", "简繁": "简繁", "多语": "多语" });
+        const codec = select(body, "编码", s.sourceSearch?.codec || "", { "": "不限", HEVC: "HEVC", AVC: "AVC", AV1: "AV1" });
+        const subtitle = select(body, "字幕方式", s.sourceSearch?.subtitle || "", { "": "不限", "内嵌": "内嵌", "内封": "内封", "外挂": "外挂" });
+        const exclude = field(body, "排除关键词（| 分隔）", s.sourceSearch?.exclude || "");
+        button(body, "应用并搜索", () => this.run(async () => {
+          s.sourceSearch = { group: group.value.trim(), quality: quality.value, language: language.value, codec: codec.value, subtitle: subtitle.value, exclude: exclude.value.trim() };
+          query.value = name.value.trim();
+          await this.persist();
+          modal.close();
+          await load();
+        }));
+      }).open();
     });
     load();
   }).open();

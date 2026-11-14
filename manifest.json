@@ -1,9 +1,9 @@
 {
   "id": "anilink",
   "name": "AniLink",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "minAppVersion": "1.15.0",
-  "description": "Manage anime subscriptions, local downloads, playback, and Bangumi progress and reviews.",
+  "description": "整合番剧检索、RSS 下载、本地与远程媒体播放、弹幕及 Bangumi 进度和评价同步。",
   "author": "北漠海",
   "isDesktopOnly": true,
   "authorUrl": "https://github.com/beimohai"
