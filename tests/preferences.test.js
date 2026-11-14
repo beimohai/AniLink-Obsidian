@@ -4,6 +4,14 @@ const C = require("../core");
 const fs = require("node:fs");
 const vm = require("node:vm");
 
+test("Bangumi mirror routes API calls and retains authentication", async () => {
+  let call;
+  const client = new C.Bangumi({ json: async (...args) => { call = args; return { id: 1 }; } }, "fixture-token", "https://api.bangumi.lat");
+  await client.call("/v0/me");
+  assert.equal(call[0], "https://api.bangumi.lat/v0/me");
+  assert.equal(call[3].Authorization, "Bearer fixture-token");
+});
+
 test("AniClip applies timed video cuts only to the verified episode CID", async () => {
   class AniLink {}
   vm.runInNewContext(fs.readFileSync(require.resolve("../src/aniclip.js"), "utf8"), { AniLink, C });

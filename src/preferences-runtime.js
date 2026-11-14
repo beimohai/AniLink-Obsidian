@@ -70,6 +70,9 @@ AniLink.prototype.play = async function (show, episode, file) {
 };
 const settingsUploader = AniLink.prototype.prepareUploaderDanmaku;
 AniLink.prototype.prepareUploaderDanmaku = async function (show, episode, file) {
+  let uploaderResult;
+  try { uploaderResult = await settingsUploader.call(this, show, episode, file); }
+  catch (error) { C.record(this.state, "UP主弹幕获取：" + error.message); }
   if (this.state.settings.biliOfficialFirst !== false) {
     try {
       let url = show.biliOfficialUrl;
@@ -81,7 +84,7 @@ AniLink.prototype.prepareUploaderDanmaku = async function (show, episode, file) 
           try {
             const result = await this.http.json("https://api.bilibili.com/x/web-interface/search/type?search_type=media_bangumi&keyword=" + encodeURIComponent(query), "GET", undefined, { Referer: "https://www.bilibili.com/" });
             const matches = (result.data?.result || []).filter((item) => names.some((name) => [item.title, item.org_title].some((title) => title && normalize(name) === normalize(title))));
-            for (const candidate of matches.sort((a, b) => Number(/[仅僅]限|港澳台/.test(a.title)) - Number(/[仅僅]限|港澳台/.test(b.title)))) {
+            for (const candidate of matches.filter((item) => this.state.settings.biliRegional || !/[仅僅]限|港澳台/.test(item.title)).sort((a, b) => Number(/[仅僅]限|港澳台/.test(a.title)) - Number(/[仅僅]限|港澳台/.test(b.title)))) {
               const candidateUrl = "https://www.bilibili.com/bangumi/play/ss" + candidate.season_id;
               try {
                 if ((await this.biliSource(candidateUrl)).length) { url = candidateUrl; break; }
@@ -100,7 +103,7 @@ AniLink.prototype.prepareUploaderDanmaku = async function (show, episode, file) 
           const document = new DOMParser().parseFromString(response.text, "text/xml");
           if (document.querySelector("parsererror") || document.documentElement.tagName !== "i") throw Error("官方弹幕响应无效");
           this.filterDanmaku(document);
-          const cuts = await this.officialCuts(show, number, match.cid);
+          const cuts = this.state.settings.biliCutAlignment === false ? [] : await this.officialCuts(show, number, match.cid);
           for (const node of document.querySelectorAll("d")) {
             const fields = node.getAttribute("p").split(",");
             const sourceTime = Number(fields[0]);
@@ -110,6 +113,12 @@ AniLink.prototype.prepareUploaderDanmaku = async function (show, episode, file) 
           const target = file.path.replace(/\.[^.]+$/, ".xml");
           try {
             const existing = await fs.readFile(target, "utf8");
+            const previous = new DOMParser().parseFromString(existing, "text/xml");
+            const known = new Set([...document.querySelectorAll("d")].map((node) => node.getAttribute("p") + "|" + node.textContent));
+            for (const node of previous.querySelectorAll("d")) {
+              const key = node.getAttribute("p") + "|" + node.textContent;
+              if (!known.has(key)) { document.documentElement.appendChild(document.importNode(node, true)); known.add(key); }
+            }
             if (existing !== new XMLSerializer().serializeToString(document)) await fs.writeFile(target + ".before-alignment-" + Date.now() + ".bak", existing, { flag: "wx" });
           } catch (error) { if (error.code !== "ENOENT") throw error; }
           await fs.writeFile(target, new XMLSerializer().serializeToString(document), "utf8");
@@ -120,10 +129,10 @@ AniLink.prototype.prepareUploaderDanmaku = async function (show, episode, file) 
       }
     } catch (error) { C.record(this.state, "官方弹幕获取失败：" + error.message); }
   }
-  const result = await settingsUploader.call(this, show, episode, file);
+  episode.danmaku ||= {};
   episode.danmaku.officialCheckedAt = Date.now();
   await this.persist();
-  return result;
+  return uploaderResult;
 };
 AniLink.prototype.applyRssDefaults = async function () {
   const settings = this.state.settings;
@@ -167,11 +176,6 @@ AniLink.prototype.installSubscription = async function (show, sub) {
       }
     }
   }
-  if (!sub.customized && !sub.profile) {
-    sub.quality = this.state.settings.rssDefaultQuality || sub.quality;
-    sub.language = this.state.settings.rssDefaultLanguage || sub.language;
-    sub.exclude = this.state.settings.rssDefaultExclude || sub.exclude;
-  }
   return settingsInstallSubscription.call(this, show, sub);
 };
 const revisionRefresh = AniLink.prototype.refresh;
@@ -205,7 +209,7 @@ const settingsOpenWebsite = AniLink.prototype.openWebsite;
 AniLink.prototype.openWebsite = function (value) {
   const url = new URL(value);
   if (this.state.settings.bgmMirror && ["bgm.tv", "www.bgm.tv"].includes(url.hostname))
-    url.hostname = "bangumi.tv";
+    url.hostname = "bangumi.lat";
   return settingsOpenWebsite.call(this, url.href);
 };
 
@@ -215,7 +219,7 @@ Dashboard.prototype.renderDetail = function (el, show) {
   if (this.p.state.settings.bgmMirror) {
     for (const guest of el.querySelectorAll("webview")) {
       const src = guest.getAttribute("src");
-      if (src?.startsWith("https://bgm.tv/")) guest.setAttribute("src", src.replace("https://bgm.tv/", "https://bangumi.tv/"));
+      if (src?.startsWith("https://bgm.tv/")) guest.setAttribute("src", src.replace("https://bgm.tv/", "https://bangumi.lat/"));
     }
   }
 };
@@ -240,14 +244,14 @@ AniLink.prototype.onload = async function () {
     if (minutes > 0 && Date.now() - this.lastSettingsSync >= Math.max(1, minutes) * 60000)
       this.background("Bangumi 自动同步", synchronize);
   }, 30000));
-  if (this.state.settings.bgmSyncStartup) this.background("Bangumi 启动同步", synchronize);
+  if (this.state.settings.bgmSyncStartup !== false) this.background("Bangumi 启动同步", synchronize);
 };
 
 const settingsUnload = AniLink.prototype.onunload;
 AniLink.prototype.onunload = function () {
   const finish = async () => {
-    if (this.state.settings.bgmSyncExit && this.state.settings.bgmToken) {
-      try { await this.sync(); } catch (error) { C.record(this.state, "退出推送失败：" + error.message); }
+    if (this.state.settings.bgmSyncExit !== false && this.state.settings.bgmToken) {
+      try { await this.pullAccount(); await this.sync(); } catch (error) { C.record(this.state, "退出同步失败：" + error.message); }
     }
     if ((this.state.settings.logRetention || "session") === "session") this.state.events = [];
     await this.saveChain;

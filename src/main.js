@@ -457,7 +457,7 @@ class AniLink extends Plugin {
     this.http = new C.Http(requestUrl);
     this.registerView(VIEW, (leaf) => new Dashboard(leaf, this));
     addIcon("anilink-logo", ANI_ICON_BODY);
-    this.addRibbonIcon("anilink-logo", "打开 AniLink", () => this.open());
+    this.addRibbonIcon("clapperboard", "打开 AniLink", () => this.open());
     this.addCommand({
       id: "open",
       name: "打开追番中心",
@@ -580,7 +580,7 @@ class AniLink extends Plugin {
     return new C.QBittorrent(this.http, this.state.settings);
   }
   bgm() {
-    return new C.Bangumi(this.http, this.state.settings.bgmToken);
+    return new C.Bangumi(this.http, this.state.settings.bgmToken, this.state.settings.bgmMirror ? "https://api.bangumi.lat" : "https://api.bgm.tv");
   }
   confirm(title, text, fn) {
     new Panel(this, title, (el, m) => {

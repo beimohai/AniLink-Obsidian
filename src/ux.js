@@ -643,6 +643,7 @@ AniLink.prototype.configureLoginScheduler = async function (enable) {
   if (enable && !exe) throw Error("请先选择 qBittorrent 程序路径");
   await fs.access(script);
   if (enable) await fs.access(exe);
+  if (enable && (!this.state.settings.downloadMode || this.state.settings.downloadMode === "off")) this.state.settings.downloadMode = "once";
   await this.persist();
   const powerShell = path.join(process.env.SystemRoot || "C:\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
   const args = ["-NoProfile", "-WindowStyle", "Hidden", "-File", script];
@@ -881,7 +882,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
   bar.insertBefore(wrap, opener);
   const pages = {
     trend: { url: `https://netaba.re/subject/${s.id}` },
-    bangumi: { url: `https://bgm.tv/subject/${s.id}` },
+    bangumi: { url: `https://${this.p.state.settings.bgmMirror ? "bangumi.lat" : "bgm.tv"}/subject/${s.id}` },
     fanku: {
       url: s.fankuUrl || null,
     },
@@ -1665,6 +1666,13 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
 AniLink.prototype.play = async function (show, episode, file) {
   if (file.remotePath) await this.cacheRemoteVideo(file);
   let cached = !!episode.danmaku?.biliMatchedAt;
+  const sourceOptions = [this.state.settings.biliOfficialFirst !== false, !!this.state.settings.biliRegional, this.state.settings.biliCutAlignment !== false].join(":");
+  if (cached && episode.danmaku.sourceOptions !== sourceOptions) {
+    const xml = file.path.replace(/\.[^.]+$/, ".xml");
+    try { await fs.rename(xml, xml + ".before-options-" + Date.now() + ".bak"); }
+    catch (error) { if (error.code !== "ENOENT") throw error; }
+    cached = false;
+  }
   if (this.state.settings.biliOfficialFirst !== false && !episode.danmaku?.official && !episode.danmaku?.officialCheckedAt) cached = false;
   if (cached) {
     try {
@@ -1681,6 +1689,7 @@ AniLink.prototype.play = async function (show, episode, file) {
   if (!cached) {
     try {
       await this.prepareUploaderDanmaku(show, episode, file);
+      if (episode.danmaku) episode.danmaku.sourceOptions = sourceOptions;
     } catch (error) {
       C.record(this.state, "UP主弹幕匹配：" + error.message);
     }

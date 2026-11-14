@@ -3137,4 +3137,12 @@
 .al-root .al-web-pending { visibility: visible; }
 .al-root .al-web-loading { pointer-events: none; }
 .al-footer { min-height: 26px; padding-top: 3px; }
+.al-settings-v2 .setting-item-control > select { width: 220px; max-width: 100%; flex: 0 1 220px; }
+.al-settings-v2 .setting-item-description { max-width: none; }
+.al-settings-v2 .al-password-setting .setting-item-control { position: relative; }
+.al-settings-v2 .al-password-setting .setting-item-control > input { padding-right: 36px !important; font-family: Arial, sans-serif !important; letter-spacing: 0 !important; font-size: var(--font-ui-small); }
+.al-settings-v2 .setting-item:has(.checkbox-container) .setting-item-control { flex: 0 0 auto; }
+.al-settings-v2 .al-password-setting .setting-item-control > .clickable-icon { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); }
+.al-settings-v2 .al-settings-dependency .setting-item { flex-wrap: wrap; }
+.al-settings-v2 .al-settings-dependency .setting-item-info { flex-basis: 100%; }
 .al-source-modal, .al-version-modal { width: min(620px, calc(100vw - 24px)); }

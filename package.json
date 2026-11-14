@@ -1,10 +1,10 @@
 {
   "name": "obsidian-anilink",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "private": true,
   "scripts": {
     "build": "node build.js",
-    "test": "node --test tests/*.test.js",
+    "test": "node --test --test-concurrency=1 tests/*.test.js",
     "check": "node scripts/review-audit.cjs",
     "lint": "eslint main.js core.js --max-warnings 0",
     "format": "prettier --write src core.js styles.css tests build.js scripts/*.cjs",

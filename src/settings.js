@@ -24,6 +24,8 @@ Connections.prototype.display = function () {
       control.onChange((value) => p.run(() => save(key, value.trim())));
     });
     if (password)
+      row.settingEl.addClass("al-password-setting");
+    if (password)
       row.addExtraButton((control) => {
         const refresh = () => control.setIcon(input.type === "password" ? "eye-off" : "eye");
         refresh();
@@ -69,10 +71,10 @@ Connections.prototype.display = function () {
   };
 
   heading("通用");
-  choice("日志记录范围", "logScope", { all: "全量操作", errors: "错误信息" }, "all");
-  choice("日志缓存时间", "logRetention", { session: "退出插件后清除", day: "一天", week: "七天", forever: "长期保留" }, "session");
   toggle("默认打开第一个番剧", "openFirstShow", false);
   new Setting(el).setName("运行日志").addButton((b) => b.setButtonText("查看日志").onClick(() => p.logsModal()));
+  choice("日志记录范围", "logScope", { all: "全量操作", errors: "错误信息" }, "all");
+  choice("日志缓存时间", "logRetention", { session: "退出插件后清除", day: "一天", week: "七天", forever: "长期保留" }, "session");
 
   heading("页面设置");
   choice("默认季度", "shelfQuarterDefault", { all: "全部季度", current: "当前季度", last: "上次设置" }, "all");
@@ -81,16 +83,17 @@ Connections.prototype.display = function () {
   toggle("显示标题原文", "showOriginalName", true);
   for (const status of [1, 3])
     new Setting(el).setName("搜索界面按钮展示 · " + C.STATUS[status]).addToggle((control) => control.setValue((s.searchStatuses || [3]).includes(status)).onChange((enabled) => p.run(async () => { const selected = new Set(s.searchStatuses || [3]); if (enabled) selected.add(status); else selected.delete(status); s.searchStatuses = [...selected]; await p.persist(); })));
-  toggle("显示番剧信息面板", "informationPanel", true);
-  choice("默认番剧信息", "informationPage", { none: "不预览", fanku: "番库", bangumi: "Bangumi", trend: "评分趋势" }, "none");
+  toggle("显示番剧信息面板", "informationPanel", true, "", (value) => { information.settingEl.hidden = !value; });
+  const information = choice("默认番剧信息", "informationPage", { none: "不预览", fanku: "番库", bangumi: "Bangumi", trend: "评分趋势" }, "none");
+  information.settingEl.hidden = s.informationPanel === false;
 
   heading("Bangumi");
   const token = text("访问令牌", "bgmToken", "用于同步收藏、进度与评价。", true);
   sideAction(token.row, "获取 Token", () => p.openWebsite("https://next.bgm.tv/demo/access-token"));
-  toggle("使用镜像网页", "bgmMirror", false, "网页与预览使用 bangumi.tv，账号推送与拉取使用官方 API。");
+  toggle("使用镜像网站", "bgmMirror", false, "网页和 API 使用 bangumi.lat 镜像。");
   text("自动同步间隔（分钟）", "bgmSyncMinutes", "0 为关闭定时同步。");
-  toggle("启动时自动同步", "bgmSyncStartup", false);
-  toggle("退出时自动推送", "bgmSyncExit", false, "Obsidian 关闭时会尝试推送，未完成任务会保存在本地。");
+  toggle("启动时自动同步", "bgmSyncStartup", true);
+  toggle("退出时自动同步", "bgmSyncExit", true);
   choice("冲突处理", "bgmConflictPolicy", { ask: "检测差异并询问", remote: "以远端为准", local: "以本地为准" }, "ask");
   new Setting(el).setName("同步操作")
     .addButton((b) => b.setButtonText("推送").onClick(() => p.run(() => p.sync())))
@@ -108,18 +111,13 @@ Connections.prototype.display = function () {
   picker(qbExe.row, qbExe.input, false);
   const root = text("下载目录", "downloadRoot");
   picker(root.row, root.input, true);
-  const profile = text("配置目录（可选）", "qbProfile", "留空使用 qBittorrent 默认配置目录；仅用于登录启动。", false);
-  picker(profile.row, profile.input, true);
   choice("运行方式", "downloadMode", { off: "不自动管理", once: "登录后检查一次，完成后退出", cycle: "循环检查（高级）" }, "off", "只管理 AniLink 启动的本机 qBittorrent；不会关闭原本已手动启动的下载器。");
-  text("空闲后退出（分钟）", "idleMinutes", "登录检查和修改 RSS 后，下载完成且空闲多久才退出。默认 10 分钟。");
+  text("空闲后退出（分钟）", "idleMinutes");
   new Setting(el).setName("Windows 登录自动启动").addToggle((control) => {
     const startup = path.join(process.env.APPDATA || "", "Microsoft", "Windows", "Start Menu", "Programs", "Startup", "AniLink-downloads.lnk");
     control.setValue(require("fs").existsSync(startup));
     control.onChange((enabled) => p.run(() => p.configureLoginScheduler(enabled)));
   });
-  choice("默认 RSS 分辨率", "rssDefaultQuality", { "": "不限", "1080": "1080p", "2160": "2160p", "720": "720p" }, "");
-  choice("默认 RSS 字幕语言", "rssDefaultLanguage", { "": "不限", "简": "简体", "繁": "繁体", "简繁": "简繁" }, "");
-  text("默认 RSS 排除关键词", "rssDefaultExclude", "多个关键词用 | 分隔，自动应用于未自定义的订阅。");
   new Setting(el).setName("检查连接").addButton((b) => b.setButtonText("检查连接").onClick(() => p.run(async () => {
     await p.qb().call("app/version");
     new Notice("qBittorrent 连接正常");
@@ -128,17 +126,17 @@ Connections.prototype.display = function () {
     b.setButtonText("一键配置").onClick(() => p.run(() => p.autoConfigure(false))),
   );
 
-  heading("下载管理");
-  toggle("自动刷新下载与同步", "autoRefresh", true);
-  text("下载状态刷新秒数", "pollSeconds", "最小 30 秒。");
-  text("分集资料更新小时数", "metadataHours", "仅想看和在看的番剧。");
+  toggle("自动刷新下载与同步", "autoRefresh", true, "", (value) => { polling.settingEl.hidden = !value; });
+  const polling = text("下载状态刷新秒数", "pollSeconds", "最小 30 秒。").row;
+  polling.settingEl.hidden = s.autoRefresh === false;
+  text("分集资料更新间隔（小时）", "metadataHours", "重新获取想看、在看番剧的分集标题与播出日期的间隔。");
   toggle("下载完成通知", "downloadNotifications", true);
 
   heading("本地管理");
-  const library = text("番剧库路径", "libraryRoot", "本地扫描与整理默认读取此目录。留空时使用 qBittorrent 下载目录。");
+  const library = text("番剧库路径", "libraryRoot", "留空时默认使用 qBittorrent 下载目录");
   picker(library.row, library.input, true);
-  toggle("删除文件时同步删除种子", "deleteTorrentWithFiles", true);
   choice("自动清理", "cleanupMode", { none: "不清理", current: "清理当前文件", watched: "清理已看文件" }, s.cleanupAfterWatch === false ? "none" : "watched", "点击看到这里按钮后的操作。");
+  toggle("删除文件时同步删除种子", "deleteTorrentWithFiles", true);
 
   heading("远程服务");
   const remoteToggle = new Setting(el).setName("启用远程服务").setDesc("开启后使用远程服务管理媒体库。关闭时采用本地目录。");
@@ -156,7 +154,7 @@ Connections.prototype.display = function () {
     for (const node of nodes) remoteControls.appendChild(node);
   };
   remoteSetting(() => choice("服务类型", "remoteProtocol", { webdav: "WebDAV", sftp: "SFTP", ftp: "FTP", ftps: "FTPS", smb: "SMB" }, "webdav"));
-  remoteSetting(() => text("服务地址", "remoteAddress", "WebDAV 可填写完整 HTTP(S) 地址，其他协议填写主机和端口。"));
+  remoteSetting(() => text("服务地址", "remoteAddress"));
   remoteSetting(() => text("用户名", "remoteUser"));
   let remotePassword;
   remoteSetting(() => { remotePassword = text("密码", "remotePassword", "", true); });
@@ -164,12 +162,11 @@ Connections.prototype.display = function () {
   let remoteDir;
   remoteSetting(() => { remoteDir = text("远程目录", "remoteDirectory"); });
   sideAction(remoteDir.row, "选择路径", () => p.chooseRemoteDirectory(p.state.settings, remoteDir.input()));
-  remoteSetting(() => { const rclone = text("rclone 路径", "rcloneExe", "留空时使用插件 tools 目录中的 rclone.exe。"); picker(rclone.row, rclone.input, false); });
+  remoteSetting(() => new Setting(el).setName("远程组件 rclone").setDesc("用于访问远程媒体库。").addButton((b) => b.setButtonText("安装组件").onClick(() => p.run(() => p.installRclone()))));
   remoteControls.hidden = !(s.remoteEnabled ?? false);
 
   heading("播放器与弹幕");
-  toggle("优先官方番剧弹幕", "biliOfficialFirst", true, "匹配官方正版及港澳台来源，按当前网络可访问的分集获取。");
-  el.createEl("p", { text: "弹弹play可加载同名 XML 弹幕。其他播放器展示弹幕所需的扩展与配置，请参照对应播放器说明。", cls: "setting-item-description" });
+  el.createEl("p", { text: "推荐使用弹弹play；PotPlayer、mpv、VLC等视频播放器，需要安装对应弹幕扩展。", cls: "setting-item-description" });
   const player = text("播放器路径", "playerExe");
   picker(player.row, player.input, false);
   const networkStart = el.children.length;
@@ -180,7 +177,10 @@ Connections.prototype.display = function () {
   text("播放器媒体路径前缀", "networkPlayerRoot", "Kodi 可访问的媒体根目录，Jellyfin / Emby 用于匹配媒体库文件路径。");
   networkControls = [...el.children].slice(networkStart);
   for (const node of networkControls) node.hidden = !s.remoteEnabled;
-  toggle("播放前校准弹幕", "calibrateDanmaku", true, "", (value) => { dependency.hidden = !value; });
+  toggle("播放前校准弹幕", "calibrateDanmaku", true, "", (value) => { dependency.hidden = !value && !s.calibrationStatus; });
+  toggle("启用官方番剧弹幕", "biliOfficialFirst", true);
+  toggle("启用港澳台弹幕", "biliRegional", false);
+  toggle("删减番剧弹幕校准", "biliCutAlignment", true);
   const dependency = el.createDiv("al-settings-dependency");
   const dependencyStatus = new Setting(dependency).setName("依赖状态").setDesc("播放前校准弹幕所需的依赖。");
   const installers = dependency.createDiv("al-actions al-calibration-installers");
@@ -196,13 +196,19 @@ Connections.prototype.display = function () {
   for (const control of Object.values(install)) control.hidden = true;
   const inspect = async () => {
     const ready = await p.calibrationDependencies();
+    s.calibrationStatus = ready;
+    await p.persist();
     dependencyStatus.setDesc(`Python：${ready.python ? "已就绪" : "未找到"}；NumPy：${ready.numpy ? "已就绪" : "未安装"}；FFmpeg：${ready.ffmpeg ? "已就绪" : "未找到"}。`);
     for (const [key, control] of Object.entries(install)) control.hidden = ready[key];
     installers.hidden = Object.values(install).every((control) => control.hidden);
   };
   dependencyStatus.addButton((b) => b.setButtonText("检查依赖").onClick(() => p.run(inspect)));
-  dependency.hidden = !(s.calibrateDanmaku ?? true);
+  dependency.hidden = !(s.calibrateDanmaku ?? true) && !s.calibrationStatus;
   dependencyStatus.setDesc("点击检查依赖以查看状态。");
+  if (s.calibrationStatus) {
+    const ready = s.calibrationStatus;
+    dependencyStatus.setDesc(`Python：${ready.python ? "已就绪" : "未找到"}；NumPy：${ready.numpy ? "已就绪" : "未安装"}；FFmpeg：${ready.ffmpeg ? "已就绪" : "未找到"}。`);
+  }
 
   heading("bilibili");
   p.biliAccountPanel(el);

@@ -1,5 +1,23 @@
 // Remote protocol operations use rclone's backend implementations. Credentials
 // are passed in the child environment and never embedded in command arguments.
+AniLink.prototype.installRclone = async function () {
+  new Notice("正在下载官方 rclone 组件…");
+  const root = path.join(this.app.vault.adapter.getBasePath(), this.manifest.dir, "tools");
+  await fs.mkdir(root, { recursive: true });
+  const archive = path.join(root, "rclone.zip");
+  const response = await requestUrl({ url: "https://downloads.rclone.org/rclone-current-windows-amd64.zip" });
+  await fs.writeFile(archive, Buffer.from(response.arrayBuffer));
+  const quote = (value) => "'" + value.replace(/'/g, "''") + "'";
+  const command = "Expand-Archive -LiteralPath " + quote(archive) + " -DestinationPath " + quote(root) + " -Force";
+  await new Promise((resolve, reject) => execFile("powershell.exe", ["-NoProfile", "-WindowStyle", "Hidden", "-Command", command], { windowsHide: true }, (error) => error ? reject(error) : resolve()));
+  const directory = (await fs.readdir(root)).find((name) => /^rclone-.*windows-amd64$/.test(name));
+  if (!directory) throw Error("rclone 安装包中未找到程序");
+  const executable = path.join(root, "rclone.exe");
+  await fs.copyFile(path.join(root, directory, "rclone.exe"), executable);
+  this.state.settings.rcloneExe = executable;
+  await this.persist();
+  new Notice("rclone 组件已安装");
+};
 AniLink.prototype.remoteCommand = async function (settings, args, input) {
   let executable = settings.rcloneExe;
   if (!executable) {

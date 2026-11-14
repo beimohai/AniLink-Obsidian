@@ -349,12 +349,13 @@ class Http {
   }
 }
 class Bangumi {
-  constructor(http, token) {
+  constructor(http, token, baseUrl = "https://api.bgm.tv") {
     this.http = http;
     this.token = token;
+    this.baseUrl = baseUrl;
   }
   async call(endpoint, method = "GET", body) {
-    return this.http.json("https://api.bgm.tv" + endpoint, method, body, {
+    return this.http.json(this.baseUrl + endpoint, method, body, {
       "User-Agent": "AniLink/0.1.0 (Obsidian desktop integration)",
       ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
     });

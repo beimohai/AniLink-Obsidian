@@ -1,7 +1,7 @@
 param(
  [string]$PluginDataPath,
- [string]$InstallRoot = 'D:\Application\AniLink-services',
- [string]$QbExe = 'D:\Application\qBittorrent\qbittorrent.exe',
+ [string]$InstallRoot = (Join-Path $env:LOCALAPPDATA 'AniLink\services'),
+ [string]$QbExe,
  [string]$QbProfile = '',
  [switch]$Uninstall
 )
@@ -24,7 +24,7 @@ if ($QbProfile -and -not (Test-Path -LiteralPath $QbProfile -PathType Container)
 $shell = New-Object -ComObject WScript.Shell
 $shortcut = $shell.CreateShortcut($startup)
 $shortcut.TargetPath = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-$shortcut.Arguments = "-NoProfile -WindowStyle Hidden -File `"$target`" -Once"
+$shortcut.Arguments = "-NoProfile -WindowStyle Hidden -File `"$target`""
 $shortcut.WorkingDirectory = $InstallRoot
 $shortcut.WindowStyle = 7
 $shortcut.Save()
