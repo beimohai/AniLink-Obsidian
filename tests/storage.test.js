@@ -46,6 +46,8 @@ async function fixture(t, saved, legacy) {
     AniLink,
     Connections: class {},
     fs,
+    os,
+    crypto,
     path,
     C,
     process: { env: { LOCALAPPDATA: root } },

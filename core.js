@@ -1,5 +1,5 @@
 "use strict";
-const path = require("path");
+const path = /** @type {typeof import("node:path")} */ (require("path"));
 const VIDEO = /\.(mkv|mp4|avi|webm|mov|m4v|ts)$/i;
 const STATUS = {
   0: "未收藏（本地）",
@@ -70,7 +70,12 @@ const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // A single directory component valid on Windows, macOS and Linux.
 function folderName(title, id) {
   const original = String(title || "");
-  let name = original.replace(/[<>:"/\\|?*\x00-\x1f\x7f]/g, "_").trim().replace(/[. ]+$/g, "");
+  let name = "";
+  for (const character of original) {
+    const code = character.codePointAt(0);
+    name += code < 32 || code === 127 || '<>:"/\\|?*'.includes(character) ? "_" : character;
+  }
+  name = name.trim().replace(/[. ]+$/g, "");
   if (!name || /^\.+$/.test(name)) name = "番剧";
   if (/^(?:CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])$/i.test(name.split(".")[0].trim())) name = "_" + name;
   // Leave room for the id and filesystem encoding limits.
@@ -189,7 +194,7 @@ function buildRule(show, sub = show.subscription) {
     "全集",
     "\\bbatch\\b",
     "\\bcomplete\\b",
-    "(?<![A-Za-z\\d])\\d{1,3}\\s*[-~～]\\s*\\d{1,3}(?!\\d)",
+    "(?:^|[^A-Za-z\\d])\\d{1,3}\\s*[-~～]\\s*\\d{1,3}(?!\\d)",
   ];
   const profile = sub.profile;
   const required = [];

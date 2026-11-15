@@ -1,6 +1,6 @@
 {
   "name": "obsidian-anilink",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "private": true,
   "scripts": {
     "build": "node build.js",
@@ -11,9 +11,11 @@
     "package": "node scripts/package.cjs"
   },
   "devDependencies": {
+    "@types/node": "^22.20.5",
     "@typescript-eslint/parser": "^8.72.2",
     "eslint": "^9.39.5",
     "eslint-plugin-obsidianmd": "^0.5.1",
+    "obsidian": "^1.14.4",
     "prettier": "^3.9.10"
   },
   "description": "AniLink 动画订阅、播放与 Bangumi 进度整合插件",

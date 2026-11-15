@@ -6,21 +6,20 @@ class MobileAniLink extends Plugin {
     this.state.settings ||= {};
     this.state.shows ||= [];
     this.mobileBaseline = DeviceModel.project(this.state);
-    this.mobileDeviceId = window.localStorage.getItem("anilink-mobile-device") || "mobile-" + Date.now() + "-" + Math.random().toString(36).slice(2);
-    window.localStorage.setItem("anilink-mobile-device", this.mobileDeviceId);
+    const deviceKey = "anilink-mobile-device";
+    /** @type {unknown} */
+    const savedDeviceId = this.app.loadLocalStorage(deviceKey);
+    this.mobileDeviceId = typeof savedDeviceId === "string" ? savedDeviceId : null;
+    if (!this.mobileDeviceId) {
+      // Read the legacy key once so existing field-level edits keep their device identity.
+      this.mobileDeviceId = window.localStorage.getItem(deviceKey) || "mobile-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+      this.app.saveLocalStorage(deviceKey, this.mobileDeviceId);
+    }
     this.http = new C.Http(requestUrl);
     this.registerView(VIEW, (leaf) => new MobileDashboard(leaf, this));
     this.addRibbonIcon("tv", "打开 AniLink", () => this.open());
     this.addCommand({ id: "open", name: "打开", callback: () => this.open() });
-    const plugin = this;
-    this.addSettingTab(new class extends PluginSettingTab {
-      display() {
-        this.containerEl.empty();
-        new Setting(this.containerEl).setName("Bangumi 访问令牌").addText((input) => input.setValue(plugin.state.settings.bgmToken || "").onChange(async (value) => { plugin.state.settings.bgmToken = value.trim(); await plugin.persistMobile(); }));
-        new Setting(this.containerEl).setName("使用镜像网站").addToggle((input) => input.setValue(!!plugin.state.settings.bgmMirror).onChange(async (value) => { plugin.state.settings.bgmMirror = value; await plugin.persistMobile(); }));
-        new Setting(this.containerEl).setName("同步收藏与进度").addButton((control) => control.setButtonText("同步").onClick(() => plugin.syncMobile()));
-      }
-    }(this.app, this));
+    this.addSettingTab(new MobileConnections(this.app, this));
   }
   bgm() { return new C.Bangumi(this.http, this.state.settings.bgmToken, this.state.settings.bgmMirror ? "https://api.bangumi.lat" : "https://api.bgm.tv"); }
   async persistMobile() {
@@ -125,5 +124,18 @@ class MobileDashboard extends ItemView {
         }));
       }
     } catch (error) { list.createEl("p", { text: error.message }); }
+  }
+}
+
+class MobileConnections extends PluginSettingTab {
+  constructor(app, plugin) {
+    super(app, plugin);
+    this.p = plugin;
+  }
+  display() {
+    this.containerEl.empty();
+    new Setting(this.containerEl).setName("Bangumi 访问令牌").addText((input) => input.setValue(this.p.state.settings.bgmToken || "").onChange(async (value) => { this.p.state.settings.bgmToken = value.trim(); await this.p.persistMobile(); }));
+    new Setting(this.containerEl).setName("使用镜像网站").addToggle((input) => input.setValue(!!this.p.state.settings.bgmMirror).onChange(async (value) => { this.p.state.settings.bgmMirror = value; await this.p.persistMobile(); }));
+    new Setting(this.containerEl).setName("同步收藏与进度").addButton((control) => control.setButtonText("同步").onClick(() => this.p.syncMobile()));
   }
 }

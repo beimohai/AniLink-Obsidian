@@ -137,6 +137,7 @@ function plugin(http) {
     require: (id) =>
       id === "obsidian"
         ? {
+            Platform: { isDesktop: true, isMobile: false },
             Plugin: class {
               register() {}
             },

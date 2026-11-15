@@ -18,7 +18,7 @@ AniLink.prototype.onload = async function () {
       this.state.settings.downloadRoot,
     )
   )
-    this.state.settings.downloadRoot = path.join(require("os").homedir(), "Videos", "Anime");
+    this.state.settings.downloadRoot = path.join(os.homedir(), "Videos", "Anime");
   this.app.workspace.onLayoutReady(() =>
     this.run(async () => {
       if (this.state.settings.bgmToken)
@@ -187,7 +187,7 @@ AniLink.prototype.downloadRelease = async function (s, article) {
   const bytes = Buffer.from(torrent.arrayBuffer);
   if (!bytes.length || bytes[0] !== 100) throw Error("种子文件响应无效");
   const folder = await this.showFolder(s,
-    this.state.settings.downloadRoot || path.join(require("os").homedir(), "Videos", "Anime"),
+    this.state.settings.downloadRoot || path.join(os.homedir(), "Videos", "Anime"),
   );
   await fs.mkdir(folder, { recursive: true });
   const cats = await qb.call("torrents/categories");

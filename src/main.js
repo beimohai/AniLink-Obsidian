@@ -9,12 +9,18 @@ const {
   PluginSettingTab,
   Platform,
   addIcon,
-} = require("obsidian");
-const { shell } = Platform?.isMobile ? {} : require("electron");
-const fs = Platform?.isMobile ? null : require("fs/promises");
-const path = Platform?.isMobile ? null : require("path");
-const { execFile } = Platform?.isMobile ? {} : require("child_process");
-const C = require("./core");
+} = /** @type {typeof import("obsidian")} */ (require("obsidian"));
+let shell, fs, path, execFile, fsSync, os, crypto;
+if (Platform.isDesktop) {
+  ({ shell } = require("electron"));
+  fs = /** @type {typeof import("node:fs/promises")} */ (require("fs/promises"));
+  path = /** @type {typeof import("node:path")} */ (require("path"));
+  ({ execFile } = /** @type {typeof import("node:child_process")} */ (require("child_process")));
+  fsSync = /** @type {typeof import("node:fs")} */ (require("fs"));
+  os = /** @type {typeof import("node:os")} */ (require("os"));
+  crypto = /** @type {typeof import("node:crypto")} */ (require("crypto"));
+}
+const C = /** @type {typeof import("./core")} */ (require("./core"));
 const VIEW = "anilink-dashboard";
 let fieldCounter = 0;
 function isConnectionFailure(message) {
@@ -75,6 +81,7 @@ function allFiles(show) {
   ];
 }
 class Panel extends Modal {
+  /** @param {AniLink} p */
   constructor(p, title, render) {
     super(p.app);
     this.p = p;
@@ -94,6 +101,7 @@ class Panel extends Modal {
   }
 }
 class Dashboard extends ItemView {
+  /** @param {import("obsidian").WorkspaceLeaf} leaf @param {AniLink} p */
   constructor(leaf, p) {
     super(leaf);
     this.p = p;
@@ -1099,6 +1107,7 @@ class AniLink extends Plugin {
   }
 }
 class Connections extends PluginSettingTab {
+  /** @param {import("obsidian").App} app @param {AniLink} p */
   constructor(app, p) {
     super(app, p);
     this.p = p;

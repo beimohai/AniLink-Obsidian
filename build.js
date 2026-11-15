@@ -42,7 +42,7 @@ fs.writeFileSync(
   "main.js",
   source.replace(/\r\n?/g, "\n").replace(
     /require\((['"])\.\/core\1\)/,
-    () => `(()=>{const module={exports:{}};${core.replace(/^"use strict";/, "").replace('const path = require("path");', 'const path = Platform?.isMobile ? null : require("path");')}\nreturn module.exports;})()`,
+    () => `(()=>{const module={exports:{}};${core.replace(/^"use strict";/, "").replace('const path = /** @type {typeof import("node:path")} */ (require("path"));', '')}\nreturn module.exports;})()`,
   ),
 );
 console.log("Built main.js (no external runtime dependencies)");

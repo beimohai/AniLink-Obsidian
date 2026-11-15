@@ -510,7 +510,7 @@ AniLink.prototype.subscriptionModal = function (s) {
                             numbering,
                             enabled: enabled.value === "1",
                             savePath:
-                              await this.showFolder(s, this.state.settings.downloadRoot || path.join(require("os").homedir(), "Videos", "Anime")),
+                              await this.showFolder(s, this.state.settings.downloadRoot || path.join(os.homedir(), "Videos", "Anime")),
                             rssUpdatedAt: latest || 0,
                             profile: profile.tags,
                             sourceGroup: group.name,
@@ -607,7 +607,7 @@ AniLink.prototype.autoConfigure = async function (useSystemProxy = false) {
   await this.ensureDownloader({ allowStart: true });
   const preferences = await this.qb().call("app/preferences");
   if (!settings.downloadRoot)
-    settings.downloadRoot = preferences.save_path || path.join(require("os").homedir(), "Videos", "Anime");
+    settings.downloadRoot = preferences.save_path || path.join(os.homedir(), "Videos", "Anime");
   if (path.isAbsolute(settings.downloadRoot)) await fs.mkdir(settings.downloadRoot, { recursive: true });
   await this.qb().call("app/setPreferences", {
     json: JSON.stringify({

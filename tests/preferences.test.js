@@ -201,3 +201,22 @@ test("RSS auto configuration uses configured downloader and keeps its existing d
   assert.deepEqual(calls, ["app/preferences", "app/setPreferences"]);
   assert.equal(p.state.settings.playerExe, undefined);
 });
+
+
+test("iOS-compatible batch exclusion preserves season and alphanumeric boundaries", () => {
+  const rule = C.buildRule({ id: 1, episodes: [] }, { feed: "https://example.test/rss", keyword: "Show", start: 1, end: 12 });
+  const excluded = new RegExp(rule.mustNotContain, "i");
+  for (const title of ["1-12", "[01-12]", "Show 1 ~ 12", "Show 01～12"]) assert.ok(excluded.test(title), title);
+  for (const title of ["Show S2 - 06", "Show S12-13", "x01-02", "2026-11", "Show - 01v2"]) assert.equal(excluded.test(title), false, title);
+  assert.doesNotMatch(rule.mustNotContain, /\(\?<[/=!?]/);
+});
+
+test("portable folder sanitation preserves the former C0 and DEL control range exactly", () => {
+  for (let code = 0; code < 160; code++) {
+    const character = String.fromCharCode(code);
+    const title = "x" + character + "y";
+    const forbidden = code < 32 || code === 127 || '<>:"/\\|?*'.includes(character);
+    assert.equal(C.folderName(title), forbidden ? "x_y" : title);
+  }
+  assert.equal(C.folderName("x😀y"), "x😀y");
+});

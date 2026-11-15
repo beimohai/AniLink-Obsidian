@@ -630,7 +630,7 @@ AniLink.prototype.runScheduler = async function (args = []) {
   await this.prepareSchedulerScripts(root);
   await fs.access(exe);
   await fs.writeFile(config, JSON.stringify({ dataFile: this.deviceFile, exe, profile: this.state.settings.qbProfile || "" }), "utf8");
-  const powerShell = path.join(process.env.SystemRoot || "C:\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+  const powerShell = path.join(process.env.SystemRoot || "C:/Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
   await new Promise((resolve, reject) => {
     const child = execFile(powerShell, ["-NoProfile", "-WindowStyle", "Hidden", "-File", script, ...args], { windowsHide: true }, () => {});
     child.once("error", reject);
@@ -646,7 +646,7 @@ AniLink.prototype.configureLoginScheduler = async function (enable) {
   if (enable) await fs.access(exe);
   if (enable) this.state.settings.downloadMode = "once";
   await this.persist();
-  const powerShell = path.join(process.env.SystemRoot || "C:\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+  const powerShell = path.join(process.env.SystemRoot || "C:/Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
   const args = ["-NoProfile", "-WindowStyle", "Hidden", "-File", script];
   if (enable) {
     args.push("-PluginDataPath", this.deviceFile, "-QbExe", exe);
@@ -1753,7 +1753,7 @@ AniLink.prototype.cleanupShow = async function (show) {
   const qb = this.qb();
   await qb.removeSubscription(show);
   const root = path.resolve(
-    this.state.settings.downloadRoot || path.join(require("os").homedir(), "Videos", "Anime"),
+    this.state.settings.downloadRoot || path.join(os.homedir(), "Videos", "Anime"),
   );
   const configured = show.subscription.savePath;
   const folder = path.resolve(

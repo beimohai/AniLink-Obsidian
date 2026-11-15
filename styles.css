@@ -1,5 +1,5 @@
 .al-root {
-  padding: 24px !important;
+
   overflow: auto;
   background: var(--background-primary);
 }
@@ -2706,7 +2706,7 @@
 .al-plugin-settings .setting-item-info,
 .al-plugin-settings .setting-item-control { align-self: center; }
 .al-plugin-settings .setting-item-control { align-items: center; }
-.al-plugin-settings .setting-item:not(:has(.setting-item-description)) .setting-item-name {
+.al-plugin-settings .setting-item.al-setting-no-description .setting-item-name {
   display: flex;
   align-items: center;
   min-height: 30px;
@@ -2730,11 +2730,11 @@
 .al-sync-modal.modal { width: 440px; max-width: min(92vw, 440px); }
 .al-sync-modal .modal-content { overflow-wrap: anywhere; }
 .al-sync-modal .al-sync-toolbar {
-  display: grid !important;
+
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch; gap: 8px; margin: 10px 0;
 }
-.al-sync-modal .al-sync-toolbar button { width: 100% !important; min-width: 0; white-space: normal; }
+.al-sync-modal .al-sync-toolbar button {  min-width: 0; white-space: normal; }
 .al-sync-modal :is(.al-sync-status, .al-muted, p) { overflow-wrap: anywhere; }
 
 .al-connections-flat.modal { width: 650px; max-width: 92vw; }
@@ -2786,7 +2786,7 @@
 .al-root .al-card > div > progress { margin-top: auto; }
 .al-sync-modal.modal { width: 350px; }
 .al-sync-modal .al-sync-toolbar { grid-template-columns: minmax(0, 1fr); justify-items: center; }
-.al-sync-modal .al-sync-toolbar button { width: auto !important; min-width: 180px; }
+.al-sync-modal .al-sync-toolbar button {  min-width: 180px; }
 .al-sync-modal .modal-content > .al-muted { white-space: pre-line; line-height: 1.8; }
 .al-sync-modal .modal-title,
 .al-refined-connections .modal-title:empty { display: none; }
@@ -2986,7 +2986,7 @@
 .al-sync-status { margin: 0 0 12px; }
 .al-sync-status p { margin: 0; line-height: 1.65; }
 .al-sync-modal .al-sync-toolbar { display: flex !important; flex-direction: column; align-items: center; gap: 8px; margin: 0; }
-.al-sync-modal .al-sync-toolbar button { width: 180px !important; min-width: 0; margin: 0; }
+.al-sync-modal .al-sync-toolbar button {  min-width: 0; margin: 0; }
 .al-refined-connections .modal-content { padding-top: 0; }
 .al-refined-connections .modal-title { display: none; }
 .al-refined-connections .modal-content > h2 { margin: 0 0 8px; }
@@ -3016,7 +3016,7 @@
 .al-sync-modal .al-sync-status { margin: 0 0 14px; }
 .al-sync-modal .al-sync-status p { display: block; margin: 0; }
 .al-sync-modal .al-sync-toolbar { flex-direction: column !important; align-items: stretch; }
-.al-sync-modal .al-sync-toolbar button { width: 100% !important; }
+.al-sync-modal .al-sync-toolbar button {  }
 .al-refined-connections .modal-content > h2 { margin-top: 0; }
 .al-refined-connections .al-token-row, .al-refined-connections .al-path-picker { display: flex; align-items: end; gap: 10px; width: 100%; }
 .al-refined-connections .al-token-row > .al-token-input, .al-refined-connections .al-path-picker > .al-field { flex: 1 1 auto; min-width: 0; }
@@ -3105,7 +3105,7 @@
 .al-search-chips { display: flex; gap: 8px; flex-wrap: wrap; }
 .al-search-chips > button { border-radius: 999px; }
 .al-search-chips > button.al-active { background: var(--interactive-accent); color: var(--text-on-accent); }
-.al-root .al-cards:has(> .al-empty) { display: grid; place-items: center; }
+.al-root .al-cards.al-cards-empty { display: grid; place-items: center; }
 .al-root .al-cards > .al-empty { grid-column: 1 / -1; align-self: center; text-align: center; margin: 0; }
 .al-root .al-information-empty[hidden] { display: none !important; }
 .al-root .al-information-empty, .al-root .al-web-loading { font-size: var(--font-ui-small); }
@@ -3122,7 +3122,7 @@
 .al-settings-v2 .setting-item-control > input:is([type="text"],[type="password"]) { box-sizing: border-box; width: 224px; min-width: 0; max-width: 100%; flex: 0 1 224px; margin: 0; padding-inline: 8px; }
 .al-settings-v2 .al-uploader-setting .setting-item-control > input { width: 100%; flex-basis: 100%; }
 .al-settings-v2 .setting-item-control > select { width: 112px; min-width: 0; max-width: 100%; flex: 0 1 112px; }
-.al-settings-v2 .setting-item:has(option[value="obsidian"]) select { width: 190px; flex-basis: 190px; }
+.al-settings-v2 .setting-item.al-browser-setting select { width: 190px; flex-basis: 190px; }
 .al-settings-v2 .al-cleanup-setting select { width: 160px; flex-basis: 160px; }
 .al-settings-v2 .setting-item-control > button:not(.clickable-icon) { width: auto; min-width: 0; flex: 0 0 auto; margin: 0; padding: var(--size-4-1) var(--size-4-3); white-space: nowrap; }
 .al-settings-v2 .al-sync-actions .setting-item-control { width: 112px; justify-self: end; }
@@ -3145,7 +3145,7 @@
 @container al-settings (max-width: 560px) {
   .al-settings-v2 .setting-item { grid-template-columns: minmax(0, 1fr); padding: 12px 4px; gap: 8px; }
   .al-settings-v2 .setting-item-control { justify-self: end; max-width: 100%; }
-  .al-settings-v2 .setting-item:has(.checkbox-container), .al-settings-v2 .al-settings-dependency .setting-item { grid-template-columns: minmax(0, 1fr) auto; }
+  .al-settings-v2 .setting-item.al-toggle-setting, .al-settings-v2 .al-settings-dependency .setting-item { grid-template-columns: minmax(0, 1fr) auto; }
   .al-settings-v2 .al-settings-dependency .setting-item-description { min-height: 3lh; }
   .al-settings-v2 .al-calibration-installers { margin-inline: 4px; }
   .al-settings-v2 .al-plugin-footer { gap: 12px; padding-inline: 0; }

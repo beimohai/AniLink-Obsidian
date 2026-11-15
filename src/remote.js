@@ -59,7 +59,7 @@ AniLink.prototype.remoteCommand = async function (settings, args, input) {
     env[prefix + "HOST"] = url.hostname;
     if (url.port) env[prefix + "PORT"] = url.port;
     if (protocol === "ftps") env[prefix + "EXPLICIT_TLS"] = "true";
-    if (protocol === "sftp") env[prefix + "KNOWN_HOSTS_FILE"] = path.join(require("os").homedir(), ".ssh", "known_hosts");
+    if (protocol === "sftp") env[prefix + "KNOWN_HOSTS_FILE"] = path.join(os.homedir(), ".ssh", "known_hosts");
   }
   if (settings.remotePassword) {
     env[prefix + "PASS"] = (await execute(["obscure", "-"], env, settings.remotePassword)).trim();

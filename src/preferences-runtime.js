@@ -336,6 +336,14 @@ AniLink.prototype.onunload = function () {
   settingsUnload.call(this);
 };
 
+
+const auditRenderCards = Dashboard.prototype.renderCards;
+Dashboard.prototype.renderCards = function (cards) {
+  const result = auditRenderCards.call(this, cards);
+  cards.classList.toggle("al-cards-empty", !!cards.querySelector(":scope > .al-empty"));
+  return result;
+};
+
 // Retain existing library folders without renaming or moving user files.
 AniLink.prototype.showFolder = async function (show, root) {
   if (show.subscription.savePath) return show.subscription.savePath;

@@ -11,13 +11,19 @@ const {
   PluginSettingTab,
   Platform,
   addIcon,
-} = require("obsidian");
-const { shell } = Platform?.isMobile ? {} : require("electron");
-const fs = Platform?.isMobile ? null : require("fs/promises");
-const path = Platform?.isMobile ? null : require("path");
-const { execFile } = Platform?.isMobile ? {} : require("child_process");
-const C = (()=>{const module={exports:{}};
-const path = Platform?.isMobile ? null : require("path");
+} = /** @type {typeof import("obsidian")} */ (require("obsidian"));
+let shell, fs, path, execFile, fsSync, os, crypto;
+if (Platform.isDesktop) {
+  ({ shell } = require("electron"));
+  fs = /** @type {typeof import("node:fs/promises")} */ (require("fs/promises"));
+  path = /** @type {typeof import("node:path")} */ (require("path"));
+  ({ execFile } = /** @type {typeof import("node:child_process")} */ (require("child_process")));
+  fsSync = /** @type {typeof import("node:fs")} */ (require("fs"));
+  os = /** @type {typeof import("node:os")} */ (require("os"));
+  crypto = /** @type {typeof import("node:crypto")} */ (require("crypto"));
+}
+const C = /** @type {typeof import("./core")} */ ((()=>{const module={exports:{}};
+
 const VIDEO = /\.(mkv|mp4|avi|webm|mov|m4v|ts)$/i;
 const STATUS = {
   0: "未收藏（本地）",
@@ -88,7 +94,12 @@ const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // A single directory component valid on Windows, macOS and Linux.
 function folderName(title, id) {
   const original = String(title || "");
-  let name = original.replace(/[<>:"/\\|?*\x00-\x1f\x7f]/g, "_").trim().replace(/[. ]+$/g, "");
+  let name = "";
+  for (const character of original) {
+    const code = character.codePointAt(0);
+    name += code < 32 || code === 127 || '<>:"/\\|?*'.includes(character) ? "_" : character;
+  }
+  name = name.trim().replace(/[. ]+$/g, "");
   if (!name || /^\.+$/.test(name)) name = "番剧";
   if (/^(?:CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])$/i.test(name.split(".")[0].trim())) name = "_" + name;
   // Leave room for the id and filesystem encoding limits.
@@ -207,7 +218,7 @@ function buildRule(show, sub = show.subscription) {
     "全集",
     "\\bbatch\\b",
     "\\bcomplete\\b",
-    "(?<![A-Za-z\\d])\\d{1,3}\\s*[-~～]\\s*\\d{1,3}(?!\\d)",
+    "(?:^|[^A-Za-z\\d])\\d{1,3}\\s*[-~～]\\s*\\d{1,3}(?!\\d)",
   ];
   const profile = sub.profile;
   const required = [];
@@ -817,7 +828,7 @@ module.exports = {
   mergeFiles,
 };
 
-return module.exports;})();
+return module.exports;})());
 const VIEW = "anilink-dashboard";
 let fieldCounter = 0;
 function isConnectionFailure(message) {
@@ -878,6 +889,7 @@ function allFiles(show) {
   ];
 }
 class Panel extends Modal {
+  /** @param {AniLink} p */
   constructor(p, title, render) {
     super(p.app);
     this.p = p;
@@ -897,6 +909,7 @@ class Panel extends Modal {
   }
 }
 class Dashboard extends ItemView {
+  /** @param {import("obsidian").WorkspaceLeaf} leaf @param {AniLink} p */
   constructor(leaf, p) {
     super(leaf);
     this.p = p;
@@ -1902,6 +1915,7 @@ class AniLink extends Plugin {
   }
 }
 class Connections extends PluginSettingTab {
+  /** @param {import("obsidian").App} app @param {AniLink} p */
   constructor(app, p) {
     super(app, p);
     this.p = p;
@@ -2435,7 +2449,7 @@ AniLink.prototype.subscriptionModal = function (s) {
                             numbering,
                             enabled: enabled.value === "1",
                             savePath:
-                              await this.showFolder(s, this.state.settings.downloadRoot || path.join(require("os").homedir(), "Videos", "Anime")),
+                              await this.showFolder(s, this.state.settings.downloadRoot || path.join(os.homedir(), "Videos", "Anime")),
                             rssUpdatedAt: latest || 0,
                             profile: profile.tags,
                             sourceGroup: group.name,
@@ -2532,7 +2546,7 @@ AniLink.prototype.autoConfigure = async function (useSystemProxy = false) {
   await this.ensureDownloader({ allowStart: true });
   const preferences = await this.qb().call("app/preferences");
   if (!settings.downloadRoot)
-    settings.downloadRoot = preferences.save_path || path.join(require("os").homedir(), "Videos", "Anime");
+    settings.downloadRoot = preferences.save_path || path.join(os.homedir(), "Videos", "Anime");
   if (path.isAbsolute(settings.downloadRoot)) await fs.mkdir(settings.downloadRoot, { recursive: true });
   await this.qb().call("app/setPreferences", {
     json: JSON.stringify({
@@ -2684,7 +2698,7 @@ AniLink.prototype.onload = async function () {
       this.state.settings.downloadRoot,
     )
   )
-    this.state.settings.downloadRoot = path.join(require("os").homedir(), "Videos", "Anime");
+    this.state.settings.downloadRoot = path.join(os.homedir(), "Videos", "Anime");
   this.app.workspace.onLayoutReady(() =>
     this.run(async () => {
       if (this.state.settings.bgmToken)
@@ -2853,7 +2867,7 @@ AniLink.prototype.downloadRelease = async function (s, article) {
   const bytes = Buffer.from(torrent.arrayBuffer);
   if (!bytes.length || bytes[0] !== 100) throw Error("种子文件响应无效");
   const folder = await this.showFolder(s,
-    this.state.settings.downloadRoot || path.join(require("os").homedir(), "Videos", "Anime"),
+    this.state.settings.downloadRoot || path.join(os.homedir(), "Videos", "Anime"),
   );
   await fs.mkdir(folder, { recursive: true });
   const cats = await qb.call("torrents/categories");
@@ -4566,7 +4580,7 @@ AniLink.prototype.remoteCommand = async function (settings, args, input) {
     env[prefix + "HOST"] = url.hostname;
     if (url.port) env[prefix + "PORT"] = url.port;
     if (protocol === "ftps") env[prefix + "EXPLICIT_TLS"] = "true";
-    if (protocol === "sftp") env[prefix + "KNOWN_HOSTS_FILE"] = path.join(require("os").homedir(), ".ssh", "known_hosts");
+    if (protocol === "sftp") env[prefix + "KNOWN_HOSTS_FILE"] = path.join(os.homedir(), ".ssh", "known_hosts");
   }
   if (settings.remotePassword) {
     env[prefix + "PASS"] = (await execute(["obscure", "-"], env, settings.remotePassword)).trim();
@@ -5274,7 +5288,7 @@ AniLink.prototype.runScheduler = async function (args = []) {
   await this.prepareSchedulerScripts(root);
   await fs.access(exe);
   await fs.writeFile(config, JSON.stringify({ dataFile: this.deviceFile, exe, profile: this.state.settings.qbProfile || "" }), "utf8");
-  const powerShell = path.join(process.env.SystemRoot || "C:\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+  const powerShell = path.join(process.env.SystemRoot || "C:/Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
   await new Promise((resolve, reject) => {
     const child = execFile(powerShell, ["-NoProfile", "-WindowStyle", "Hidden", "-File", script, ...args], { windowsHide: true }, () => {});
     child.once("error", reject);
@@ -5290,7 +5304,7 @@ AniLink.prototype.configureLoginScheduler = async function (enable) {
   if (enable) await fs.access(exe);
   if (enable) this.state.settings.downloadMode = "once";
   await this.persist();
-  const powerShell = path.join(process.env.SystemRoot || "C:\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+  const powerShell = path.join(process.env.SystemRoot || "C:/Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
   const args = ["-NoProfile", "-WindowStyle", "Hidden", "-File", script];
   if (enable) {
     args.push("-PluginDataPath", this.deviceFile, "-QbExe", exe);
@@ -6397,7 +6411,7 @@ AniLink.prototype.cleanupShow = async function (show) {
   const qb = this.qb();
   await qb.removeSubscription(show);
   const root = path.resolve(
-    this.state.settings.downloadRoot || path.join(require("os").homedir(), "Videos", "Anime"),
+    this.state.settings.downloadRoot || path.join(os.homedir(), "Videos", "Anime"),
   );
   const configured = show.subscription.savePath;
   const folder = path.resolve(
@@ -7254,7 +7268,7 @@ Connections.prototype.display = function () {
   text("空闲后退出（分钟）", "idleMinutes");
   const startupSetting = new Setting(el).setName("开机自动启动").addToggle((control) => {
     const startup = path.join(process.env.APPDATA || "", "Microsoft", "Windows", "Start Menu", "Programs", "Startup", "AniLink-downloads.lnk");
-    control.setValue(require("fs").existsSync(startup));
+    control.setValue(fsSync.existsSync(startup));
     control.setDisabled(process.platform !== "win32");
     control.onChange((enabled) => p.run(() => p.configureLoginScheduler(enabled)));
   });
@@ -7411,6 +7425,11 @@ Connections.prototype.display = function () {
   for (const control of el.querySelectorAll(".al-setting-has-side-action .setting-item-control")) {
     const action = control.querySelector("button");
     if (action) control.prepend(action);
+  }
+  for (const row of el.querySelectorAll(".setting-item")) {
+    row.classList.toggle("al-setting-no-description", !row.querySelector(".setting-item-description"));
+    row.classList.toggle("al-toggle-setting", !!row.querySelector(".checkbox-container"));
+    row.classList.toggle("al-browser-setting", !!row.querySelector('option[value="obsidian"]'));
   }
   const footer = el.createDiv("al-plugin-footer");
   const logo = new DOMParser().parseFromString(ANI_ICON, "image/svg+xml").documentElement;
@@ -7579,10 +7598,9 @@ module.exports = { project, merge, capture, apply };
 return module.exports;})();
 const deviceOnload = AniLink.prototype.onload;
 AniLink.prototype.onload = async function () {
-  const crypto = require("crypto");
   const base = this.app.vault.adapter.getBasePath();
   const id = crypto.createHash("sha256").update(base).digest("hex").slice(0, 24);
-  const localFolder = path.join(process.env.LOCALAPPDATA || require("os").homedir(), "AniLink");
+  const localFolder = path.join(process.env.LOCALAPPDATA || os.homedir(), "AniLink");
   this.legacyDeviceFile = path.join(localFolder, id + ".json");
   this.deviceIdentityFile = path.join(localFolder, id + ".device.json");
   this.deviceFile = path.join(base, this.manifest.dir, "data.json");
@@ -7983,6 +8001,14 @@ AniLink.prototype.onunload = function () {
   settingsUnload.call(this);
 };
 
+
+const auditRenderCards = Dashboard.prototype.renderCards;
+Dashboard.prototype.renderCards = function (cards) {
+  const result = auditRenderCards.call(this, cards);
+  cards.classList.toggle("al-cards-empty", !!cards.querySelector(":scope > .al-empty"));
+  return result;
+};
+
 // Retain existing library folders without renaming or moving user files.
 AniLink.prototype.showFolder = async function (show, root) {
   if (show.subscription.savePath) return show.subscription.savePath;
@@ -8035,21 +8061,20 @@ class MobileAniLink extends Plugin {
     this.state.settings ||= {};
     this.state.shows ||= [];
     this.mobileBaseline = DeviceModel.project(this.state);
-    this.mobileDeviceId = window.localStorage.getItem("anilink-mobile-device") || "mobile-" + Date.now() + "-" + Math.random().toString(36).slice(2);
-    window.localStorage.setItem("anilink-mobile-device", this.mobileDeviceId);
+    const deviceKey = "anilink-mobile-device";
+    /** @type {unknown} */
+    const savedDeviceId = this.app.loadLocalStorage(deviceKey);
+    this.mobileDeviceId = typeof savedDeviceId === "string" ? savedDeviceId : null;
+    if (!this.mobileDeviceId) {
+      // Read the legacy key once so existing field-level edits keep their device identity.
+      this.mobileDeviceId = window.localStorage.getItem(deviceKey) || "mobile-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+      this.app.saveLocalStorage(deviceKey, this.mobileDeviceId);
+    }
     this.http = new C.Http(requestUrl);
     this.registerView(VIEW, (leaf) => new MobileDashboard(leaf, this));
     this.addRibbonIcon("tv", "打开 AniLink", () => this.open());
     this.addCommand({ id: "open", name: "打开", callback: () => this.open() });
-    const plugin = this;
-    this.addSettingTab(new class extends PluginSettingTab {
-      display() {
-        this.containerEl.empty();
-        new Setting(this.containerEl).setName("Bangumi 访问令牌").addText((input) => input.setValue(plugin.state.settings.bgmToken || "").onChange(async (value) => { plugin.state.settings.bgmToken = value.trim(); await plugin.persistMobile(); }));
-        new Setting(this.containerEl).setName("使用镜像网站").addToggle((input) => input.setValue(!!plugin.state.settings.bgmMirror).onChange(async (value) => { plugin.state.settings.bgmMirror = value; await plugin.persistMobile(); }));
-        new Setting(this.containerEl).setName("同步收藏与进度").addButton((control) => control.setButtonText("同步").onClick(() => plugin.syncMobile()));
-      }
-    }(this.app, this));
+    this.addSettingTab(new MobileConnections(this.app, this));
   }
   bgm() { return new C.Bangumi(this.http, this.state.settings.bgmToken, this.state.settings.bgmMirror ? "https://api.bangumi.lat" : "https://api.bgm.tv"); }
   async persistMobile() {
@@ -8154,6 +8179,19 @@ class MobileDashboard extends ItemView {
         }));
       }
     } catch (error) { list.createEl("p", { text: error.message }); }
+  }
+}
+
+class MobileConnections extends PluginSettingTab {
+  constructor(app, plugin) {
+    super(app, plugin);
+    this.p = plugin;
+  }
+  display() {
+    this.containerEl.empty();
+    new Setting(this.containerEl).setName("Bangumi 访问令牌").addText((input) => input.setValue(this.p.state.settings.bgmToken || "").onChange(async (value) => { this.p.state.settings.bgmToken = value.trim(); await this.p.persistMobile(); }));
+    new Setting(this.containerEl).setName("使用镜像网站").addToggle((input) => input.setValue(!!this.p.state.settings.bgmMirror).onChange(async (value) => { this.p.state.settings.bgmMirror = value; await this.p.persistMobile(); }));
+    new Setting(this.containerEl).setName("同步收藏与进度").addButton((control) => control.setButtonText("同步").onClick(() => this.p.syncMobile()));
   }
 }
 

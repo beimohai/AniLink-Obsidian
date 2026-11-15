@@ -115,7 +115,7 @@ Connections.prototype.display = function () {
   text("空闲后退出（分钟）", "idleMinutes");
   const startupSetting = new Setting(el).setName("开机自动启动").addToggle((control) => {
     const startup = path.join(process.env.APPDATA || "", "Microsoft", "Windows", "Start Menu", "Programs", "Startup", "AniLink-downloads.lnk");
-    control.setValue(require("fs").existsSync(startup));
+    control.setValue(fsSync.existsSync(startup));
     control.setDisabled(process.platform !== "win32");
     control.onChange((enabled) => p.run(() => p.configureLoginScheduler(enabled)));
   });
@@ -272,6 +272,11 @@ Connections.prototype.display = function () {
   for (const control of el.querySelectorAll(".al-setting-has-side-action .setting-item-control")) {
     const action = control.querySelector("button");
     if (action) control.prepend(action);
+  }
+  for (const row of el.querySelectorAll(".setting-item")) {
+    row.classList.toggle("al-setting-no-description", !row.querySelector(".setting-item-description"));
+    row.classList.toggle("al-toggle-setting", !!row.querySelector(".checkbox-container"));
+    row.classList.toggle("al-browser-setting", !!row.querySelector('option[value="obsidian"]'));
   }
   const footer = el.createDiv("al-plugin-footer");
   const logo = new DOMParser().parseFromString(ANI_ICON, "image/svg+xml").documentElement;

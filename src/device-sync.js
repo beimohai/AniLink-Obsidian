@@ -1,10 +1,9 @@
 const DeviceModel = require("./sync-model");
 const deviceOnload = AniLink.prototype.onload;
 AniLink.prototype.onload = async function () {
-  const crypto = require("crypto");
   const base = this.app.vault.adapter.getBasePath();
   const id = crypto.createHash("sha256").update(base).digest("hex").slice(0, 24);
-  const localFolder = path.join(process.env.LOCALAPPDATA || require("os").homedir(), "AniLink");
+  const localFolder = path.join(process.env.LOCALAPPDATA || os.homedir(), "AniLink");
   this.legacyDeviceFile = path.join(localFolder, id + ".json");
   this.deviceIdentityFile = path.join(localFolder, id + ".device.json");
   this.deviceFile = path.join(base, this.manifest.dir, "data.json");
