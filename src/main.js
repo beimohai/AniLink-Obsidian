@@ -10,10 +10,10 @@ const {
   Platform,
   addIcon,
 } = require("obsidian");
-const { shell } = require("electron");
-const fs = require("fs/promises");
-const path = require("path");
-const { execFile } = require("child_process");
+const { shell } = Platform?.isMobile ? {} : require("electron");
+const fs = Platform?.isMobile ? null : require("fs/promises");
+const path = Platform?.isMobile ? null : require("path");
+const { execFile } = Platform?.isMobile ? {} : require("child_process");
 const C = require("./core");
 const VIEW = "anilink-dashboard";
 let fieldCounter = 0;
@@ -100,7 +100,8 @@ class Dashboard extends ItemView {
     this.filter = "watch";
     this.query = "";
     this.tab = "episodes";
-    this.selected = p.state.settings.openFirstShow ? p.state.shows[0]?.id || null : null;
+    this.selected = null;
+    this.selectFirstShow = !!p.state.settings.openFirstShow;
   }
   getViewType() {
     return VIEW;
@@ -109,7 +110,7 @@ class Dashboard extends ItemView {
     return "AniLink";
   }
   getIcon() {
-    return "anilink-logo";
+    return "tv";
   }
   async onOpen() {
     this.render();
@@ -176,6 +177,11 @@ class Dashboard extends ItemView {
     };
     const cards = shelf.createDiv("al-cards");
     this.renderCards(cards);
+    if (this.selectFirstShow) {
+      this.selectFirstShow = false;
+      this.selected = Number(cards.querySelector("[data-show-id]")?.dataset.showId) || null;
+      this.renderCards(cards);
+    }
     const detail =
       layout.querySelector(":scope > .al-detail") ||
       layout.createDiv("al-detail");
@@ -217,7 +223,7 @@ class Dashboard extends ItemView {
     });
     if (!list.length)
       cards.createEl("p", {
-        text: "这里还没有番剧。可切换分类，或添加想看的新番。",
+        text: "这里还没有番剧。",
         cls: "al-empty",
       });
     for (const s of list) {
@@ -449,7 +455,7 @@ class AniLink extends Plugin {
     this.state = {
       ...C.defaults(),
       ...saved,
-      settings: { ...C.defaults().settings, ...saved?.settings },
+      settings: { ...C.defaults().settings, ...saved?.settings, rssRefreshMinutes: saved?.settings?.rssRefreshMinutes ?? Math.max(1, (Number(saved?.settings?.pollSeconds) || 60) / 60) },
     };
     this.health = {};
     this.busy = false;
@@ -457,7 +463,7 @@ class AniLink extends Plugin {
     this.http = new C.Http(requestUrl);
     this.registerView(VIEW, (leaf) => new Dashboard(leaf, this));
     addIcon("anilink-logo", ANI_ICON_BODY);
-    this.addRibbonIcon("clapperboard", "打开 AniLink", () => this.open());
+    this.addRibbonIcon("tv", "打开 AniLink", () => this.open());
     this.addCommand({
       id: "open",
       name: "打开追番中心",
@@ -510,9 +516,9 @@ class AniLink extends Plugin {
         if (
           this.state.settings.autoRefresh !== false &&
           Date.now() - (this.lastPoll || 0) >=
-            Math.max(30, Number(this.state.settings.pollSeconds) || 60) * 1000
+            Math.max(1, Number(this.state.settings.rssRefreshMinutes) || 1) * 60000
         )
-          this.run(() => this.refresh(false), true);
+          this.run(async () => { await this.refreshRssSubscriptions(); await this.refresh(false); }, true);
       }, 10000),
     );
   }
@@ -716,15 +722,14 @@ class AniLink extends Plugin {
       enabled.value = sub.enabled ? "1" : "0";
       const paused = select(form, "添加下载任务后", sub.addPaused ? "1" : "0", { 0: "立即开始", 1: "暂停等待手动开始" });
       const ignoreDays = field(form, "同集重复下载间隔（天）", sub.ignoreDays || 0, "number");
-      const revisions = select(form, "资源更新策略", sub.revisionPolicy || "standard", { standard: "按当前订阅规则", latest: "仅下载当前最新版本", upgrade: "未看集自动更新，已看集保留" });
-      form.createEl("p", { text: "最新版本按标题中的 v2、v3 等修订号识别。自动更新只处理未看的同一集。", cls: "setting-item-description" });
+      const revisions = select(form, "资源更新策略", sub.revisionPolicy || "default", { default: "跟随全局设置", standard: "按当前订阅规则", latest: "仅下载当前最新版本", upgrade: "未看集自动更新，已看集保留" });
       const result = form.createDiv("al-results");
       const read = () => ({
         customized: true,
         profile: sub.profile,
         addPaused: paused.value === "1",
         ignoreDays: Math.max(0, Number(ignoreDays.value) || 0),
-        revisionPolicy: revisions.value,
+        revisionPolicy: revisions.value === "default" ? undefined : revisions.value,
         feed: feed.value.trim(),
         keyword: keyword.value.trim(),
         group: group.value.trim(),
@@ -797,7 +802,8 @@ class AniLink extends Plugin {
       throw Error("请先在连接设置中填写弹弹play可执行文件的绝对路径");
     await fs.access(exe);
     await new Promise((resolve, reject) => {
-      const child = execFile(exe, [f.path], { windowsHide: true }, (err) => {
+      const macApplication = process.platform === "darwin" && exe.endsWith(".app");
+      const child = execFile(macApplication ? "open" : exe, macApplication ? ["-a", exe, f.path] : [f.path], { windowsHide: true }, (err) => {
         if (err) C.record(this.state, "播放器已退出");
       });
       child.once("error", reject);

@@ -1,6 +1,6 @@
 "use strict";
-const ANI_ICON = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1024\" height=\"1024\" viewBox=\"0 0 1024 1024\">\n<defs><mask id=\"clear\"><rect width=\"1024\" height=\"1024\" fill=\"white\"/><g transform=\"rotate(43 745 725)\" fill=\"none\" stroke=\"black\" stroke-width=\"68\"><rect x=\"699\" y=\"574\" width=\"92\" height=\"174\" rx=\"46\"/><rect x=\"699\" y=\"702\" width=\"92\" height=\"174\" rx=\"46\"/></g></mask></defs>\n<g fill=\"none\" stroke=\"currentColor\" stroke-width=\"30\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n<g mask=\"url(#clear)\"><rect x=\"176\" y=\"192\" width=\"638\" height=\"568\" rx=\"82\"/><path d=\"M176 310H814\"/></g>\n<path d=\"M250 660H590\"/>\n</g>\n<g fill=\"currentColor\"><circle cx=\"257\" cy=\"252\" r=\"21\"/><circle cx=\"325\" cy=\"252\" r=\"21\"/><rect x=\"398\" y=\"375\" width=\"66\" height=\"202\" rx=\"33\"/><rect x=\"510\" y=\"375\" width=\"66\" height=\"202\" rx=\"33\"/><circle cx=\"352\" cy=\"660\" r=\"31\"/></g>\n<g transform=\"rotate(43 745 725)\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"30\" stroke-linecap=\"round\"><rect x=\"699\" y=\"574\" width=\"92\" height=\"174\" rx=\"46\"/><rect x=\"699\" y=\"702\" width=\"92\" height=\"174\" rx=\"46\"/></g>\n</svg>\r\n";
-const ANI_ICON_BODY = "<g transform=\"scale(0.09765625)\">\n<defs><mask id=\"clear\"><rect width=\"1024\" height=\"1024\" fill=\"white\"/><g transform=\"rotate(43 745 725)\" fill=\"none\" stroke=\"black\" stroke-width=\"68\"><rect x=\"699\" y=\"574\" width=\"92\" height=\"174\" rx=\"46\"/><rect x=\"699\" y=\"702\" width=\"92\" height=\"174\" rx=\"46\"/></g></mask></defs>\n<g fill=\"none\" stroke=\"currentColor\" stroke-width=\"30\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n<g mask=\"url(#clear)\"><rect x=\"176\" y=\"192\" width=\"638\" height=\"568\" rx=\"82\"/><path d=\"M176 310H814\"/></g>\n<path d=\"M250 660H590\"/>\n</g>\n<g fill=\"currentColor\"><circle cx=\"257\" cy=\"252\" r=\"21\"/><circle cx=\"325\" cy=\"252\" r=\"21\"/><rect x=\"398\" y=\"375\" width=\"66\" height=\"202\" rx=\"33\"/><rect x=\"510\" y=\"375\" width=\"66\" height=\"202\" rx=\"33\"/><circle cx=\"352\" cy=\"660\" r=\"31\"/></g>\n<g transform=\"rotate(43 745 725)\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"30\" stroke-linecap=\"round\"><rect x=\"699\" y=\"574\" width=\"92\" height=\"174\" rx=\"46\"/><rect x=\"699\" y=\"702\" width=\"92\" height=\"174\" rx=\"46\"/></g>\n</g>";
+const ANI_ICON = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1024\" height=\"1024\" viewBox=\"60 10 660 610\"><path fill=\"currentColor\" fill-rule=\"evenodd\" d=\"M566,445L565,445L559,440L555,438L553,438L550,436L547,436L546,435L535,435L534,436L532,436L526,442L524,446L524,449L523,450L523,457L529,457L530,458L542,458L543,459L545,459L547,460L555,468L557,472L557,474L558,475L558,487L557,488L556,493L554,495L552,499L499,552L495,554L493,554L490,556L486,556L485,557L479,557L478,556L473,556L463,551L454,542L454,541L451,537L451,535L450,534L450,531L449,530L449,518L450,517L450,514L452,510L454,508L454,507L468,493L468,492L470,490L471,490L479,482L479,481L481,480L487,474L487,469L486,468L486,465L485,464L485,456L484,455L484,450L480,452L478,452L474,455L473,455L471,457L470,457L470,458L468,459L459,468L459,469L457,470L454,473L454,474L436,492L436,493L432,498L429,504L429,506L428,507L428,510L427,511L427,514L426,515L426,533L427,534L427,539L428,540L429,545L432,551L434,553L435,556L438,559L438,560L446,568L447,568L450,571L462,577L464,577L465,578L468,578L469,579L473,579L474,580L489,580L490,579L494,579L495,578L498,578L499,577L501,577L513,571L516,568L517,568L550,535L550,534L552,533L552,532L554,531L554,530L558,526L559,526L560,524L561,524L561,523L571,513L571,512L575,507L575,505L577,503L577,501L579,498L579,496L580,495L580,491L581,490L581,472L580,471L580,467L579,466L579,464L575,456L570,450L570,449Z M181,440L183,447L188,450L265,450L267,452L269,456L272,459L273,459L277,462L279,462L280,463L283,463L284,464L289,464L290,463L293,463L294,462L296,462L298,461L305,455L305,454L308,450L444,450L448,448L451,444L451,439L450,438L450,436L449,434L443,431L307,431L305,429L305,428L300,423L297,422L295,420L292,420L291,419L282,419L281,420L279,420L273,423L266,431L190,431L189,432L186,432L182,436L182,439Z M630,369L629,369L624,365L621,364L619,362L617,362L609,358L605,358L604,357L600,357L599,356L585,356L584,357L579,357L578,358L575,358L574,359L569,360L563,363L561,365L560,365L558,367L554,369L503,420L503,421L500,424L499,427L497,429L495,433L495,435L493,439L493,442L492,443L492,448L491,449L491,457L492,458L492,463L493,464L494,471L496,474L496,476L498,478L500,483L503,486L503,487L512,496L513,496L516,499L526,504L529,504L530,505L534,505L541,499L541,498L547,492L549,488L549,485L543,485L542,484L539,484L538,483L536,483L530,480L528,478L527,478L521,472L515,460L515,447L516,446L516,444L519,438L535,422L535,421L537,420L545,412L545,411L548,408L549,408L551,406L551,405L569,387L570,387L573,384L576,383L578,381L580,381L584,379L599,379L600,380L605,381L611,384L619,391L619,392L622,395L626,403L626,407L627,408L627,418L626,419L625,426L623,430L621,432L621,433L614,440L614,441L589,466L589,472L590,473L590,487L589,488L589,493L588,494L588,497L592,494L595,493L598,490L599,490L616,473L616,472L618,470L619,470L626,463L627,461L628,461L628,460L638,450L638,449L641,446L647,434L647,432L648,431L648,428L649,427L649,423L650,422L650,405L649,404L649,399L648,398L647,393L642,383L637,377L637,376L636,376L635,374Z M418,215L417,216L414,216L413,217L411,217L407,220L406,220L399,227L397,231L397,234L396,235L396,237L395,238L395,364L396,365L397,372L399,376L405,382L406,382L408,384L412,386L415,386L416,387L421,387L422,388L424,388L425,387L431,387L432,386L434,386L438,384L440,382L441,382L446,377L446,376L448,374L450,370L450,366L451,365L451,238L450,237L450,234L449,233L449,231L448,229L446,227L446,226L440,220L439,220L435,217L433,217L429,215Z M324,215L323,216L320,216L314,219L312,221L311,221L306,226L303,232L303,234L302,235L302,240L301,241L301,363L302,364L302,368L304,371L304,373L307,377L307,378L310,381L311,381L316,385L318,385L321,387L327,387L328,388L331,388L332,387L337,387L338,386L340,386L344,384L346,382L347,382L353,376L355,372L356,367L357,366L357,236L356,235L355,230L353,228L353,227L345,219L339,216L336,216L335,215Z M124,118L124,120L123,121L123,123L121,127L121,131L120,132L120,137L119,138L119,447L120,448L120,453L121,454L121,458L122,459L122,462L124,465L124,467L126,470L126,472L129,478L131,480L132,483L135,486L135,487L138,490L138,491L150,503L151,503L154,506L155,506L160,510L168,514L170,514L176,517L179,517L183,519L188,519L189,520L418,520L418,512L419,511L419,509L420,508L420,505L422,502L423,497L194,497L193,496L188,496L187,495L185,495L184,494L179,493L171,489L164,483L163,483L156,476L156,475L150,468L147,462L147,460L145,457L145,455L143,451L143,447L142,446L142,417L141,416L141,414L142,413L142,397L141,396L141,388L142,387L142,384L141,383L142,382L141,380L141,373L142,372L141,371L141,341L142,340L142,335L141,334L142,333L142,304L141,303L141,275L142,274L141,273L141,228L142,227L142,222L141,221L141,198L142,197L141,196L141,191L143,189L613,189L615,191L615,354L617,354L627,359L636,367L638,368L638,141L637,140L637,134L636,133L636,129L635,128L635,125L634,124L633,119L628,109L626,107L625,104L622,101L622,100L617,95L617,94L607,85L606,85L601,81L589,75L587,75L586,74L584,74L580,72L576,72L575,71L570,71L569,70L188,70L187,71L181,71L180,72L173,73L170,75L168,75L165,77L163,77L159,80L157,80L155,82L151,84L148,87L147,87L135,99L135,100L129,108Z M141,147L142,146L142,139L143,138L143,135L144,134L145,129L150,119L152,117L154,113L168,101L178,96L180,96L184,94L190,94L191,93L316,93L317,92L327,92L328,93L357,93L358,92L363,92L364,93L567,93L568,94L572,94L576,96L579,96L583,99L585,99L587,101L590,102L593,105L594,105L603,114L603,115L609,123L609,125L612,130L612,133L614,137L614,145L615,146L615,165L614,166L143,166L141,164Z M251,110L250,111L245,112L239,117L239,118L237,120L235,124L235,127L234,128L234,133L235,134L235,137L237,141L242,147L243,147L247,150L250,150L251,151L259,151L260,150L263,150L265,149L272,143L274,139L274,137L275,136L275,126L274,125L274,122L273,120L269,115L268,115L266,113L262,111L259,111L258,110Z M192,110L191,111L186,112L184,114L183,114L177,122L177,124L176,125L176,136L177,137L177,139L178,141L181,144L181,145L186,149L188,149L192,151L200,151L201,150L204,150L208,147L209,147L215,140L215,138L216,137L216,134L217,133L217,128L216,127L216,124L214,120L209,114L208,114L206,112L204,112L200,110Z\"/></svg>\r\n";
+const ANI_ICON_BODY = "<g transform=\"scale(0.09765625)\"><path fill=\"currentColor\" fill-rule=\"evenodd\" d=\"M566,445L565,445L559,440L555,438L553,438L550,436L547,436L546,435L535,435L534,436L532,436L526,442L524,446L524,449L523,450L523,457L529,457L530,458L542,458L543,459L545,459L547,460L555,468L557,472L557,474L558,475L558,487L557,488L556,493L554,495L552,499L499,552L495,554L493,554L490,556L486,556L485,557L479,557L478,556L473,556L463,551L454,542L454,541L451,537L451,535L450,534L450,531L449,530L449,518L450,517L450,514L452,510L454,508L454,507L468,493L468,492L470,490L471,490L479,482L479,481L481,480L487,474L487,469L486,468L486,465L485,464L485,456L484,455L484,450L480,452L478,452L474,455L473,455L471,457L470,457L470,458L468,459L459,468L459,469L457,470L454,473L454,474L436,492L436,493L432,498L429,504L429,506L428,507L428,510L427,511L427,514L426,515L426,533L427,534L427,539L428,540L429,545L432,551L434,553L435,556L438,559L438,560L446,568L447,568L450,571L462,577L464,577L465,578L468,578L469,579L473,579L474,580L489,580L490,579L494,579L495,578L498,578L499,577L501,577L513,571L516,568L517,568L550,535L550,534L552,533L552,532L554,531L554,530L558,526L559,526L560,524L561,524L561,523L571,513L571,512L575,507L575,505L577,503L577,501L579,498L579,496L580,495L580,491L581,490L581,472L580,471L580,467L579,466L579,464L575,456L570,450L570,449Z M181,440L183,447L188,450L265,450L267,452L269,456L272,459L273,459L277,462L279,462L280,463L283,463L284,464L289,464L290,463L293,463L294,462L296,462L298,461L305,455L305,454L308,450L444,450L448,448L451,444L451,439L450,438L450,436L449,434L443,431L307,431L305,429L305,428L300,423L297,422L295,420L292,420L291,419L282,419L281,420L279,420L273,423L266,431L190,431L189,432L186,432L182,436L182,439Z M630,369L629,369L624,365L621,364L619,362L617,362L609,358L605,358L604,357L600,357L599,356L585,356L584,357L579,357L578,358L575,358L574,359L569,360L563,363L561,365L560,365L558,367L554,369L503,420L503,421L500,424L499,427L497,429L495,433L495,435L493,439L493,442L492,443L492,448L491,449L491,457L492,458L492,463L493,464L494,471L496,474L496,476L498,478L500,483L503,486L503,487L512,496L513,496L516,499L526,504L529,504L530,505L534,505L541,499L541,498L547,492L549,488L549,485L543,485L542,484L539,484L538,483L536,483L530,480L528,478L527,478L521,472L515,460L515,447L516,446L516,444L519,438L535,422L535,421L537,420L545,412L545,411L548,408L549,408L551,406L551,405L569,387L570,387L573,384L576,383L578,381L580,381L584,379L599,379L600,380L605,381L611,384L619,391L619,392L622,395L626,403L626,407L627,408L627,418L626,419L625,426L623,430L621,432L621,433L614,440L614,441L589,466L589,472L590,473L590,487L589,488L589,493L588,494L588,497L592,494L595,493L598,490L599,490L616,473L616,472L618,470L619,470L626,463L627,461L628,461L628,460L638,450L638,449L641,446L647,434L647,432L648,431L648,428L649,427L649,423L650,422L650,405L649,404L649,399L648,398L647,393L642,383L637,377L637,376L636,376L635,374Z M418,215L417,216L414,216L413,217L411,217L407,220L406,220L399,227L397,231L397,234L396,235L396,237L395,238L395,364L396,365L397,372L399,376L405,382L406,382L408,384L412,386L415,386L416,387L421,387L422,388L424,388L425,387L431,387L432,386L434,386L438,384L440,382L441,382L446,377L446,376L448,374L450,370L450,366L451,365L451,238L450,237L450,234L449,233L449,231L448,229L446,227L446,226L440,220L439,220L435,217L433,217L429,215Z M324,215L323,216L320,216L314,219L312,221L311,221L306,226L303,232L303,234L302,235L302,240L301,241L301,363L302,364L302,368L304,371L304,373L307,377L307,378L310,381L311,381L316,385L318,385L321,387L327,387L328,388L331,388L332,387L337,387L338,386L340,386L344,384L346,382L347,382L353,376L355,372L356,367L357,366L357,236L356,235L355,230L353,228L353,227L345,219L339,216L336,216L335,215Z M124,118L124,120L123,121L123,123L121,127L121,131L120,132L120,137L119,138L119,447L120,448L120,453L121,454L121,458L122,459L122,462L124,465L124,467L126,470L126,472L129,478L131,480L132,483L135,486L135,487L138,490L138,491L150,503L151,503L154,506L155,506L160,510L168,514L170,514L176,517L179,517L183,519L188,519L189,520L418,520L418,512L419,511L419,509L420,508L420,505L422,502L423,497L194,497L193,496L188,496L187,495L185,495L184,494L179,493L171,489L164,483L163,483L156,476L156,475L150,468L147,462L147,460L145,457L145,455L143,451L143,447L142,446L142,417L141,416L141,414L142,413L142,397L141,396L141,388L142,387L142,384L141,383L142,382L141,380L141,373L142,372L141,371L141,341L142,340L142,335L141,334L142,333L142,304L141,303L141,275L142,274L141,273L141,228L142,227L142,222L141,221L141,198L142,197L141,196L141,191L143,189L613,189L615,191L615,354L617,354L627,359L636,367L638,368L638,141L637,140L637,134L636,133L636,129L635,128L635,125L634,124L633,119L628,109L626,107L625,104L622,101L622,100L617,95L617,94L607,85L606,85L601,81L589,75L587,75L586,74L584,74L580,72L576,72L575,71L570,71L569,70L188,70L187,71L181,71L180,72L173,73L170,75L168,75L165,77L163,77L159,80L157,80L155,82L151,84L148,87L147,87L135,99L135,100L129,108Z M141,147L142,146L142,139L143,138L143,135L144,134L145,129L150,119L152,117L154,113L168,101L178,96L180,96L184,94L190,94L191,93L316,93L317,92L327,92L328,93L357,93L358,92L363,92L364,93L567,93L568,94L572,94L576,96L579,96L583,99L585,99L587,101L590,102L593,105L594,105L603,114L603,115L609,123L609,125L612,130L612,133L614,137L614,145L615,146L615,165L614,166L143,166L141,164Z M251,110L250,111L245,112L239,117L239,118L237,120L235,124L235,127L234,128L234,133L235,134L235,137L237,141L242,147L243,147L247,150L250,150L251,151L259,151L260,150L263,150L265,149L272,143L274,139L274,137L275,136L275,126L274,125L274,122L273,120L269,115L268,115L266,113L262,111L259,111L258,110Z M192,110L191,111L186,112L184,114L183,114L177,122L177,124L176,125L176,136L177,137L177,139L178,141L181,144L181,145L186,149L188,149L192,151L200,151L201,150L204,150L208,147L209,147L215,140L215,138L216,137L216,134L217,133L217,128L216,127L216,124L214,120L209,114L208,114L206,112L204,112L200,110Z\"/></g>";
 const {
   Plugin,
   ItemView,
@@ -12,12 +12,12 @@ const {
   Platform,
   addIcon,
 } = require("obsidian");
-const { shell } = require("electron");
-const fs = require("fs/promises");
-const path = require("path");
-const { execFile } = require("child_process");
+const { shell } = Platform?.isMobile ? {} : require("electron");
+const fs = Platform?.isMobile ? null : require("fs/promises");
+const path = Platform?.isMobile ? null : require("path");
+const { execFile } = Platform?.isMobile ? {} : require("child_process");
 const C = (()=>{const module={exports:{}};
-const path = require("path");
+const path = Platform?.isMobile ? null : require("path");
 const VIDEO = /\.(mkv|mp4|avi|webm|mov|m4v|ts)$/i;
 const STATUS = {
   0: "未收藏（本地）",
@@ -41,18 +41,76 @@ const defaults = () => ({
     libraryRoot: "",
     cleanupMode: "watched",
     downloadMode: "off",
-    idleMinutes: 10,
+    idleMinutes: 5,
     remoteRoot: "",
     localRoot: "",
     storageMode: "local",
     storageLabel: "",
     pollSeconds: 60,
+    rssRefreshMinutes: 1,
+    browserMode: "obsidian",
+    openFirstShow: true,
+    logScope: "all",
+    logRetention: "session",
+    shelfQuarterDefault: "all",
+    shelfSort: "ready",
+    shelfColumns: "auto",
+    cardDensity: "comfortable",
+    searchStatuses: [3],
+    showOriginalName: true,
+    informationPanel: true,
+    informationPage: "fanku",
+    bgmMirror: false,
+    bgmSyncMinutes: 0,
+    bgmSyncStartup: true,
+    bgmSyncExit: true,
+    bgmConflictPolicy: "ask",
+    qbExe: "",
+    autoRefresh: false,
+    downloadNotifications: false,
+    rssUpgradeUnwatched: true,
+    deleteTorrentWithFiles: true,
+    remoteEnabled: false,
+    remoteProtocol: "webdav",
+    networkPlayer: "local",
+    calibrateDanmaku: true,
+    biliOfficialFirst: true,
+    biliRegional: true,
+    biliCutAlignment: true,
+    biliFilterRules: [],
+    biliUploaders: "4262884,5306996,690151424,154244413,442715778,3546957240862932",
   },
   shows: [],
   queue: [],
   events: [],
 });
 const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+// A single directory component valid on Windows, macOS and Linux.
+function folderName(title, id) {
+  const original = String(title || "");
+  let name = original.replace(/[<>:"/\\|?*\x00-\x1f\x7f]/g, "_").trim().replace(/[. ]+$/g, "");
+  if (!name || /^\.+$/.test(name)) name = "番剧";
+  if (/^(?:CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])$/i.test(name.split(".")[0].trim())) name = "_" + name;
+  // Leave room for the id and filesystem encoding limits.
+  if (utf8Length(name) > 180) {
+    let short = "";
+    for (const char of name) { if (utf8Length(short + char) > 180) break; short += char; }
+    name = short.replace(/[. ]+$/g, "");
+  }
+  // Stable ids prevent collisions when punctuation is removed or a name is truncated.
+  return name !== original && /^\d+$/.test(String(id)) ? `${name} [${id}]` : name;
+}
+function utf8Length(value) { return Array.from(value).reduce((n, char) => n + (char.codePointAt(0) > 65535 ? 4 : char.charCodeAt(0) > 2047 ? 3 : char.charCodeAt(0) > 127 ? 2 : 1), 0); }
+function qbConnectionMessage(error) {
+  const detail = String(error?.message || error || "");
+  return /(?:connection[_ ]refused|econnrefused|err_connection_refused)/i.test(detail)
+    ? "qBittorrent 未启动，请启动后重试。"
+    : "qBittorrent 连接失败：" + detail;
+}
+function revisionPolicy(settings, subscription = {}) {
+  if (subscription.customized && subscription.revisionPolicy) return subscription.revisionPolicy;
+  return settings.rssUpgradeUnwatched ? "upgrade" : "standard";
+}
 function feedUrl(value) {
   const u = new URL(value);
   if (
@@ -129,7 +187,17 @@ function buildRule(show, sub = show.subscription) {
     end > 999
   )
     throw Error("集数范围应为 1–999 的整数，结束集不能小于起始集");
-  const words = [sub.keyword, sub.group, sub.quality, sub.language]
+  const languages = {
+    简繁: "(?:[简簡]繁|CHS[ _&+/-]*CHT|CHT[ _&+/-]*CHS)",
+    简中: "(?:[简簡]|CHS)", 繁中: "(?:繁|CHT)",
+    简日: "(?:[简簡]日|CHS[ _&+/-]*J(?:PN|AP)?)",
+    繁日: "(?:繁日|CHT[ _&+/-]*J(?:PN|AP)?)",
+    双语: "(?:[双雙]语|[多][国國语語]|dual[ -]?(?:sub|audio))",
+    多语: "(?:[双雙]语|[多][国國语語]|dual[ -]?(?:sub|audio))",
+    生肉: "(?:生肉|\\bRAW\\b)",
+  };
+  const legacyTitles = sub.profile?.legacyTitles || [];
+  const words = [sub.keyword, sub.group, sub.quality, legacyTitles.length || languages[sub.profile?.language] ? "" : sub.language]
     .filter((x) => x?.trim())
     .map((x) => x.trim());
   if (!words.length)
@@ -144,15 +212,11 @@ function buildRule(show, sub = show.subscription) {
   const profile = sub.profile;
   const required = [];
   if (profile) {
-    const langs = {
-      简繁: "[简簡]繁",
-      简中: "[简簡]",
-      繁中: "繁",
-      多语: "多[国國]",
-    };
-    if (langs[profile.language]) required.push(langs[profile.language]);
-    if (["简中", "繁中"].includes(profile.language)) excludes.push("[简簡]繁");
-    if (profile.codec) required.push(esc(profile.codec));
+    if (languages[profile.language]) required.push(languages[profile.language]);
+    if (["简中", "繁中"].includes(profile.language)) {
+      excludes.push(languages.简繁);
+    }
+    if (profile.codec) required.push(/^(HEVC|H[. ]?265|X265)$/i.test(profile.codec) ? "(?:HEVC|H[. ]?265|X265)" : /^(AVC|H[. ]?264|X264)$/i.test(profile.codec) ? "(?:AVC|H[. ]?264|X264)" : esc(profile.codec));
     const subtitles = { 内封: "[内內]封", 内嵌: "[内內]嵌", 外挂: "外[挂掛]" };
     if (subtitles[profile.subtitle]) required.push(subtitles[profile.subtitle]);
   }
@@ -186,8 +250,12 @@ function buildRule(show, sub = show.subscription) {
     useRegex: true,
     mustContain:
       "^" +
-      words.map((w) => `(?=.*${esc(w)})`).join("") +
-      required.map((w) => `(?=.*${w})`).join("") +
+      words.map((w) => {
+        const quality = w === sub.quality && w.match(/^(480|720|1080|2160)[pi]?$/i);
+        const pattern = quality ? quality[1] === "2160" ? "(?:2160[pi]?|4K)" : quality[1] + "[pi]?" : esc(w);
+        return `(?=.*${pattern})`;
+      }).join("") +
+      (legacyTitles.length ? `(?:${required.map((w) => `(?=.*${w})`).join("")}|(?=^(?:${legacyTitles.map(esc).join("|")})$))` : required.map((w) => `(?=.*${w})`).join("")) +
       `(?=.*${episode}).*`,
     mustNotContain: excludes.join("|"),
     episodeFilter: "",
@@ -239,18 +307,19 @@ function biliNames(show) {
     ? ["魔法的姐妹露露和莉莉 第二季"]
     : [];
   const official = show.title === "异世界舅舅" ? ["奇幻世界舅舅"] : [];
+  if (Number(show.id) === 513878) official.push("赛博朋克 边缘行者 第二季");
   return [...new Set([show.title, show.name, ...(show.biliAliases || []), ...verified, ...official].filter(Boolean))];
 }
 function biliTitleMatches(show, title) {
   const seasonPattern = /第\s*([0-9一二三四五六七八九十]+)\s*(?:部分|クール|季|期)|(?:season|part)\s*(\d+)/i;
   const season = (text) => {
     const match = String(text || "").match(seasonPattern);
-    if (!match) return null;
+    if (!match) return Number(String(text || "").match(/\s+(\d{1,2})$/)?.[1]) || null;
     const value = match[1] || match[2];
     return /^\d+$/.test(value) ? Number(value) : "一二三四五六七八九十".indexOf(value) + 1 || null;
   };
   const normalize = (text) => String(text).normalize("NFKC")
-    .replace(seasonPattern, "").replace(/[\s\p{P}\p{S}]/gu, "").toLowerCase();
+    .replace(seasonPattern, "").replace(/\s+\d{1,2}$/, "").replace(/[\s\p{P}\p{S}]/gu, "").toLowerCase();
   if (/解说|預告|预告|混剪|盘点|速看|reaction|AMV|MAD/i.test(title)) return false;
   const expected = season(show.title) || season(show.name) || 1;
   const actual = season(title) || 1;
@@ -259,6 +328,13 @@ function biliTitleMatches(show, title) {
     const base = normalize(name);
     return base.length >= 3 && normalize(title).includes(base);
   });
+}
+function biliPageEpisode(page, title) {
+  const explicit = parseEpisode(page.part);
+  if (explicit !== null) return explicit;
+  const leading = Number(String(page.part || "").match(/^\s*(\d{1,3})(?=\s|$|[.、_])/)?.[1]);
+  if (leading > 0 && leading === Number(page.page)) return leading;
+  return parseEpisode(title);
 }
 function queueJob(state, job) {
   const found = state.queue.find((x) => x.key === job.key);
@@ -605,21 +681,20 @@ function sourceQueries(show, query) {
 }
 function releaseTags(title) {
   return {
-    language: /简繁|簡繁/.test(title)
+    language: /简繁|簡繁|CH[ST][ _&+/-]*CH[ST]/i.test(title)
       ? "简繁"
-      : /简|簡/.test(title)
-        ? "简中"
-        : /繁/.test(title)
-          ? "繁中"
-          : /多国|多國/.test(title)
-            ? "多语"
-            : "未标注",
-    quality: (
+      : /简日|簡日|CHS[ _&+/-]*J(?:PN|AP)?/i.test(title) ? "简日"
+        : /繁日|CHT[ _&+/-]*J(?:PN|AP)?/i.test(title) ? "繁日"
+          : /简|簡|\bCHS\b/i.test(title) ? "简中"
+            : /繁|\bCHT\b/i.test(title) ? "繁中"
+              : /双语|雙語|多国|多國|多语|多語|dual[ -]?(?:sub|audio)/i.test(title) ? "双语"
+                : /生肉|\bRAW\b/i.test(title) ? "生肉" : "未标注",
+    quality: /\b4k\b/i.test(title) ? "2160p" : (
       (title.match(/(?:2160|1080|720|480)[pi]?/i) || [])[0] || "未标注"
     ).toLowerCase(),
     codec: (
-      (title.match(/HEVC|AVC|H[. ]?26[45]|AV1/i) || [])[0] || ""
-    ).toUpperCase(),
+      (title.match(/HEVC|AVC|[HX][. ]?26[45]|AV1/i) || [])[0] || ""
+    ).toUpperCase().replace(/^[HX][. ]?265$/, "HEVC").replace(/^[HX][. ]?264$/, "AVC"),
     subtitle: /内封|內封/.test(title)
       ? "内封"
       : /内嵌|內嵌/.test(title)
@@ -628,6 +703,36 @@ function releaseTags(title) {
           ? "外挂"
           : "未标注",
   };
+}
+function releaseProfiles(articles) {
+  const fields = ["language", "quality", "codec", "subtitle"];
+  const known = (value) => value && value !== "未标注";
+  const groups = new Map();
+  for (const row of articles) {
+    const tags = releaseTags(row.title);
+    const key = fields.map((field) => tags[field]).join(" · ");
+    if (!groups.has(key)) groups.set(key, { tags, rows: [] });
+    groups.get(key).rows.push(row);
+  }
+  const profiles = [...groups.values()];
+  const count = (profile) => fields.filter((field) => known(profile.tags[field])).length;
+  const merged = new Set();
+  for (const profile of profiles) {
+    const candidates = profiles.filter((candidate) => count(candidate) > count(profile) && fields.every((field) => !known(profile.tags[field]) || profile.tags[field] === candidate.tags[field]));
+    const maximal = candidates.filter((candidate) => !candidates.some((other) => count(other) > count(candidate) && fields.every((field) => !known(candidate.tags[field]) || candidate.tags[field] === other.tags[field])));
+    if (maximal.length !== 1) continue;
+    const target = maximal[0];
+    target.rows.push(...profile.rows);
+    target.tags.legacyTitles = [...new Set([...(target.tags.legacyTitles || []), ...profile.rows.map((row) => row.title)])];
+    merged.add(profile);
+  }
+  return profiles.filter((profile) => !merged.has(profile));
+}
+function matchesSourceSearch(tags, search) {
+  return ["language", "quality", "codec", "subtitle"].every((field) => {
+    const selected = Array.isArray(search[field]) ? search[field] : [search[field]].filter(Boolean);
+    return !selected.length || selected.some((value) => field === "quality" ? tags[field].includes(value) : tags[field] === (value === "多语" ? "双语" : value));
+  });
 }
 function mergeFiles(show, torrents, fileLists, settings) {
   const old = new Map(
@@ -683,13 +788,19 @@ module.exports = {
   STATUS,
   VIDEO,
   defaults,
+  folderName,
+  qbConnectionMessage,
+  revisionPolicy,
   esc,
   baseUrl,
   parseEpisode,
   biliNames,
   biliTitleMatches,
+  biliPageEpisode,
   resolveEpisode,
   releaseTags,
+  releaseProfiles,
+  matchesSourceSearch,
   sourceQueries,
   feedPath,
   episodeRanges,
@@ -792,7 +903,8 @@ class Dashboard extends ItemView {
     this.filter = "watch";
     this.query = "";
     this.tab = "episodes";
-    this.selected = p.state.settings.openFirstShow ? p.state.shows[0]?.id || null : null;
+    this.selected = null;
+    this.selectFirstShow = !!p.state.settings.openFirstShow;
   }
   getViewType() {
     return VIEW;
@@ -801,7 +913,7 @@ class Dashboard extends ItemView {
     return "AniLink";
   }
   getIcon() {
-    return "anilink-logo";
+    return "tv";
   }
   async onOpen() {
     this.render();
@@ -868,6 +980,11 @@ class Dashboard extends ItemView {
     };
     const cards = shelf.createDiv("al-cards");
     this.renderCards(cards);
+    if (this.selectFirstShow) {
+      this.selectFirstShow = false;
+      this.selected = Number(cards.querySelector("[data-show-id]")?.dataset.showId) || null;
+      this.renderCards(cards);
+    }
     const detail =
       layout.querySelector(":scope > .al-detail") ||
       layout.createDiv("al-detail");
@@ -909,7 +1026,7 @@ class Dashboard extends ItemView {
     });
     if (!list.length)
       cards.createEl("p", {
-        text: "这里还没有番剧。可切换分类，或添加想看的新番。",
+        text: "这里还没有番剧。",
         cls: "al-empty",
       });
     for (const s of list) {
@@ -1141,7 +1258,7 @@ class AniLink extends Plugin {
     this.state = {
       ...C.defaults(),
       ...saved,
-      settings: { ...C.defaults().settings, ...saved?.settings },
+      settings: { ...C.defaults().settings, ...saved?.settings, rssRefreshMinutes: saved?.settings?.rssRefreshMinutes ?? Math.max(1, (Number(saved?.settings?.pollSeconds) || 60) / 60) },
     };
     this.health = {};
     this.busy = false;
@@ -1149,7 +1266,7 @@ class AniLink extends Plugin {
     this.http = new C.Http(requestUrl);
     this.registerView(VIEW, (leaf) => new Dashboard(leaf, this));
     addIcon("anilink-logo", ANI_ICON_BODY);
-    this.addRibbonIcon("clapperboard", "打开 AniLink", () => this.open());
+    this.addRibbonIcon("tv", "打开 AniLink", () => this.open());
     this.addCommand({
       id: "open",
       name: "打开追番中心",
@@ -1202,9 +1319,9 @@ class AniLink extends Plugin {
         if (
           this.state.settings.autoRefresh !== false &&
           Date.now() - (this.lastPoll || 0) >=
-            Math.max(30, Number(this.state.settings.pollSeconds) || 60) * 1000
+            Math.max(1, Number(this.state.settings.rssRefreshMinutes) || 1) * 60000
         )
-          this.run(() => this.refresh(false), true);
+          this.run(async () => { await this.refreshRssSubscriptions(); await this.refresh(false); }, true);
       }, 10000),
     );
   }
@@ -1408,15 +1525,14 @@ class AniLink extends Plugin {
       enabled.value = sub.enabled ? "1" : "0";
       const paused = select(form, "添加下载任务后", sub.addPaused ? "1" : "0", { 0: "立即开始", 1: "暂停等待手动开始" });
       const ignoreDays = field(form, "同集重复下载间隔（天）", sub.ignoreDays || 0, "number");
-      const revisions = select(form, "资源更新策略", sub.revisionPolicy || "standard", { standard: "按当前订阅规则", latest: "仅下载当前最新版本", upgrade: "未看集自动更新，已看集保留" });
-      form.createEl("p", { text: "最新版本按标题中的 v2、v3 等修订号识别。自动更新只处理未看的同一集。", cls: "setting-item-description" });
+      const revisions = select(form, "资源更新策略", sub.revisionPolicy || "default", { default: "跟随全局设置", standard: "按当前订阅规则", latest: "仅下载当前最新版本", upgrade: "未看集自动更新，已看集保留" });
       const result = form.createDiv("al-results");
       const read = () => ({
         customized: true,
         profile: sub.profile,
         addPaused: paused.value === "1",
         ignoreDays: Math.max(0, Number(ignoreDays.value) || 0),
-        revisionPolicy: revisions.value,
+        revisionPolicy: revisions.value === "default" ? undefined : revisions.value,
         feed: feed.value.trim(),
         keyword: keyword.value.trim(),
         group: group.value.trim(),
@@ -1489,7 +1605,8 @@ class AniLink extends Plugin {
       throw Error("请先在连接设置中填写弹弹play可执行文件的绝对路径");
     await fs.access(exe);
     await new Promise((resolve, reject) => {
-      const child = execFile(exe, [f.path], { windowsHide: true }, (err) => {
+      const macApplication = process.platform === "darwin" && exe.endsWith(".app");
+      const child = execFile(macApplication ? "open" : exe, macApplication ? ["-a", exe, f.path] : [f.path], { windowsHide: true }, (err) => {
         if (err) C.record(this.state, "播放器已退出");
       });
       child.once("error", reject);
@@ -1887,7 +2004,7 @@ AniLink.prototype.refresh = async function (manual) {
       !s.demo &&
       (s.status === 1 || s.status === 3 || s.subscription.enabled) &&
       Date.now() - (s.metadataAttempt || s.metadataAt || 0) >
-        Math.max(1, Number(this.state.settings.metadataHours) || 6) * 3600000,
+        6 * 3600000,
   )) {
     s.metadataAttempt = Date.now();
     try {
@@ -2071,7 +2188,7 @@ AniLink.prototype.searchModal = function () {
             });
         }
         if (!results.children.length)
-          results.createEl("p", { text: "没有找到动画条目，可试用日文名。" });
+          results.createEl("p", { text: "这里还没有番剧。", cls: "al-search-empty" });
         label.setText(
           `第 ${Math.floor(offset / 20) + 1} 页 · 共 ${data.total || 0} 条`,
         );
@@ -2208,31 +2325,16 @@ AniLink.prototype.subscriptionModal = function (s) {
                     1: "自动下载",
                   });
                   const versions = body.createDiv("al-version-list");
-                  const profiles = new Map();
-                  for (const a of articles) {
+                  const filtered = articles.filter((a) => {
                     const search = s.sourceSearch || {};
-                    const parsed = C.releaseTags(a.title);
-                    if (search.quality && !parsed.quality.includes(search.quality)) continue;
-                    if (search.language && parsed.language !== search.language) continue;
-                    if (search.codec && parsed.codec !== search.codec) continue;
-                    if (search.subtitle && parsed.subtitle !== search.subtitle) continue;
-                    if (search.exclude && search.exclude.split("|").some((word) => word.trim() && a.title.includes(word.trim()))) continue;
-                    const tags = C.releaseTags(a.title),
-                      key = [
-                        tags.language,
-                        tags.quality,
-                        tags.codec,
-                        tags.subtitle,
-                      ].join(" · ");
-                    if (!profiles.has(key))
-                      profiles.set(key, { tags, rows: [] });
-                    profiles.get(key).rows.push(a);
-                  }
-                  if (!profiles.size)
+                    return !(search.exclude && search.exclude.split(/[\s|]+/).some((word) => word.trim() && a.title.includes(word.trim())));
+                  });
+                  const profiles = C.releaseProfiles(filtered).filter((profile) => C.matchesSourceSearch(profile.tags, s.sourceSearch || {}));
+                  if (!profiles.length)
                     body.createEl("p", {
                       text: "该字幕组暂无资源，稍后重试。",
                     });
-                  for (const [key, profile] of profiles) {
+                  for (const profile of profiles) {
                     const box = versions.createDiv("al-version-card");
                     const info = box.createDiv("al-version-info");
                     const latest = profile.rows
@@ -2245,8 +2347,7 @@ AniLink.prototype.subscriptionModal = function (s) {
                         cls: "al-muted",
                       });
                     const tags = info.createDiv("al-version-tags");
-                    for (const value of key
-                      .split(" · ")
+                    for (const value of [profile.tags.language, profile.tags.quality, profile.tags.codec, profile.tags.subtitle]
                       .filter((v) => v && v !== "未标注"))
                       tags.createSpan({ text: value });
                     const episodes = [
@@ -2334,12 +2435,8 @@ AniLink.prototype.subscriptionModal = function (s) {
                             numbering,
                             enabled: enabled.value === "1",
                             savePath:
-                              s.subscription.savePath ||
-                              path.join(
-                                this.state.settings.downloadRoot ||
-                                  "D:\\Application\\qBittorrent\\downloads",
-                                s.title.replace(/[<>:"/\\|?*]/g, "_"),
-                              ),
+                              await this.showFolder(s, this.state.settings.downloadRoot || path.join(require("os").homedir(), "Videos", "Anime")),
+                            rssUpdatedAt: latest || 0,
                             profile: profile.tags,
                             sourceGroup: group.name,
                           };
@@ -2384,15 +2481,31 @@ AniLink.prototype.subscriptionModal = function (s) {
     button(header, "搜索", load, "mod-cta");
     button(header, "自定义搜索", () => {
       new Panel(this, "自定义搜索", (body, modal) => {
-        const name = field(body, "番剧名称或别名", query.value);
-        const group = field(body, "字幕组包含文字", s.sourceSearch?.group || "");
-        const quality = select(body, "分辨率", s.sourceSearch?.quality || "", { "": "不限", "2160": "2160p", "1080": "1080p", "720": "720p" });
-        const language = select(body, "语言", s.sourceSearch?.language || "", { "": "不限", "简中": "简中", "繁中": "繁中", "简繁": "简繁", "多语": "多语" });
-        const codec = select(body, "编码", s.sourceSearch?.codec || "", { "": "不限", HEVC: "HEVC", AVC: "AVC", AV1: "AV1" });
-        const subtitle = select(body, "字幕方式", s.sourceSearch?.subtitle || "", { "": "不限", "内嵌": "内嵌", "内封": "内封", "外挂": "外挂" });
-        const exclude = field(body, "排除关键词（| 分隔）", s.sourceSearch?.exclude || "");
+        modal.modalEl.addClass("al-custom-search-modal");
+        const name = field(body, "番剧名称", query.value);
+        const group = field(body, "字幕组名称", s.sourceSearch?.group || "");
+        const exclude = field(body, "排除关键词（空格分隔）", (s.sourceSearch?.exclude || "").replace(/\|/g, " "));
+        const chips = (label, key, options) => {
+          const selected = new Set(Array.isArray(s.sourceSearch?.[key]) ? s.sourceSearch[key] : [s.sourceSearch?.[key]].filter(Boolean));
+          const row = body.createDiv("al-search-facet");
+          row.createEl("strong", { text: label });
+          const choices = row.createDiv("al-search-chips");
+          for (const [value, text] of Object.entries(options)) {
+            const control = button(choices, text, () => {
+              if (selected.has(value)) selected.delete(value); else selected.add(value);
+              control.classList.toggle("al-active", selected.has(value));
+              control.setAttribute("aria-pressed", String(selected.has(value)));
+            }, selected.has(value) ? "al-active" : "");
+            control.setAttribute("aria-pressed", String(selected.has(value)));
+          }
+          return selected;
+        };
+        const language = chips("语言", "language", { 简中: "简体", 繁中: "繁体", 简繁: "简繁", 简日: "简日", 繁日: "繁日", 双语: "双语", 生肉: "生肉" });
+        const quality = chips("分辨率", "quality", { "720": "720p", "1080": "1080p", "2160": "2160p/4K" });
+        const codec = chips("编码", "codec", { HEVC: "HEVC / H.265", AVC: "AVC / H.264", AV1: "AV1" });
+        const subtitle = chips("封装", "subtitle", { 内嵌: "内嵌", 内封: "内封", 外挂: "外挂" });
         button(body, "应用并搜索", () => this.run(async () => {
-          s.sourceSearch = { group: group.value.trim(), quality: quality.value, language: language.value, codec: codec.value, subtitle: subtitle.value, exclude: exclude.value.trim() };
+          s.sourceSearch = { group: group.value.trim(), quality: [...quality], language: [...language], codec: [...codec], subtitle: [...subtitle], exclude: exclude.value.trim() };
           query.value = name.value.trim();
           await this.persist();
           modal.close();
@@ -2415,46 +2528,19 @@ AniLink.prototype.checkConnections = async function () {
 };
 AniLink.prototype.autoConfigure = async function (useSystemProxy = false) {
   const settings = this.state.settings;
-  const exe = "D:\\Application\\qBittorrent\\qbittorrent.exe";
-  await fs.access(exe);
+  // Respect the configured executable and the downloader's existing profile.
+  await this.ensureDownloader({ allowStart: true });
+  const preferences = await this.qb().call("app/preferences");
   if (!settings.downloadRoot)
-    settings.downloadRoot = "D:\\Application\\qBittorrent\\downloads";
-  await fs.mkdir(settings.downloadRoot, { recursive: true });
-  if (!settings.playerExe)
-    settings.playerExe = "D:\\Application\\DanDanPlay\\dandanplay.exe";
-  try {
-    await this.qb().call("app/version");
-  } catch (e) {
-    // Never reset credentials or modify another application's profile.
-    if (/HTTP|登录/.test(e.message))
-      throw Error(
-        "服务已响应但认证失败，请在高级设置填写现有 Web UI 用户名和密码",
-      );
-    execFile(
-      exe,
-      ["--profile=D:\\Application\\qBittorrent\\profile"],
-      { windowsHide: true },
-      () => {},
-    );
-    let ready = false;
-    for (let i = 0; i < 8; i++) {
-      await new Promise((r) => window.setTimeout(r, 500));
-      try {
-        await this.qb().call("app/version");
-        ready = true;
-        break;
-      } catch  { /* Best-effort optional operation; retain the existing state on failure. */ }
-    }
-    if (!ready)
-      throw Error("已启动下载器，请检查 Web UI 是否启用及现有账号密码");
-  }
+    settings.downloadRoot = preferences.save_path || path.join(require("os").homedir(), "Videos", "Anime");
+  if (path.isAbsolute(settings.downloadRoot)) await fs.mkdir(settings.downloadRoot, { recursive: true });
   await this.qb().call("app/setPreferences", {
     json: JSON.stringify({
       rss_processing_enabled: true,
       rss_auto_downloading_enabled: true,
     }),
   });
-  if (useSystemProxy) {
+  if (useSystemProxy && process.platform === "win32") {
     const registry = await new Promise((resolve, reject) =>
       execFile(
         "reg.exe",
@@ -2513,7 +2599,7 @@ AniLink.prototype.settingsModal = function () {
       text: "必需：Bangumi（搜索与收藏）、qBittorrent（后台 RSS 下载）、弹弹play（播放）。蜜柑作为内置来源，无需安装。",
     });
     el.createEl("p", {
-      text: "一键配置会检查 D:\\Application 的现有安装、启动本机下载器、开启 RSS，并检查播放器。不会覆盖已有 Web UI 密码。",
+      text: "一键配置会连接已配置的下载器并开启 RSS，不会覆盖已有 WebUI 密码。",
     });
     const proxy = select(el, "RSS 网络", "1", {
       1: "沿用 Windows 已启用的本机 HTTP 代理（下载连接保持直连）",
@@ -2766,9 +2852,8 @@ AniLink.prototype.downloadRelease = async function (s, article) {
   const torrent = await this.http.request(url.href);
   const bytes = Buffer.from(torrent.arrayBuffer);
   if (!bytes.length || bytes[0] !== 100) throw Error("种子文件响应无效");
-  const folder = path.join(
+  const folder = await this.showFolder(s,
     this.state.settings.downloadRoot || path.join(require("os").homedir(), "Videos", "Anime"),
-    s.title.replace(/[<>:"/\\|?*]/g, "_"),
   );
   await fs.mkdir(folder, { recursive: true });
   const cats = await qb.call("torrents/categories");
@@ -3204,10 +3289,10 @@ AniLink.prototype.background = function (key, fn) {
     })
     .finally(() => {
       this.backgroundTasks.delete(key);
-      if (!this.disposed) this.redraw();
+      if (!this.disposed) this.redraw(true);
     });
   this.backgroundTasks.set(key, task);
-  this.redraw();
+  this.redraw(true);
   return task;
 };
 const oldRun = AniLink.prototype.run;
@@ -4427,15 +4512,23 @@ AniLink.prototype.installRclone = async function () {
   const root = path.join(this.app.vault.adapter.getBasePath(), this.manifest.dir, "tools");
   await fs.mkdir(root, { recursive: true });
   const archive = path.join(root, "rclone.zip");
-  const response = await requestUrl({ url: "https://downloads.rclone.org/rclone-current-windows-amd64.zip" });
+  const system = { win32: "windows", darwin: "osx", linux: "linux" }[process.platform];
+  const architecture = { x64: "amd64", arm64: "arm64" }[process.arch];
+  if (!system || !architecture) throw Error("当前系统架构需要手动安装 rclone");
+  const suffix = system + "-" + architecture;
+  const response = await requestUrl({ url: "https://downloads.rclone.org/rclone-current-" + suffix + ".zip" });
   await fs.writeFile(archive, Buffer.from(response.arrayBuffer));
   const quote = (value) => "'" + value.replace(/'/g, "''") + "'";
   const command = "Expand-Archive -LiteralPath " + quote(archive) + " -DestinationPath " + quote(root) + " -Force";
-  await new Promise((resolve, reject) => execFile("powershell.exe", ["-NoProfile", "-WindowStyle", "Hidden", "-Command", command], { windowsHide: true }, (error) => error ? reject(error) : resolve()));
-  const directory = (await fs.readdir(root)).find((name) => /^rclone-.*windows-amd64$/.test(name));
+  const program = process.platform === "win32" ? "powershell.exe" : "unzip";
+  const args = process.platform === "win32" ? ["-NoProfile", "-WindowStyle", "Hidden", "-Command", command] : ["-o", archive, "-d", root];
+  await new Promise((resolve, reject) => execFile(program, args, { windowsHide: true }, (error) => error ? reject(error) : resolve()));
+  const directory = (await fs.readdir(root)).find((name) => name.startsWith("rclone-") && name.endsWith(suffix));
   if (!directory) throw Error("rclone 安装包中未找到程序");
-  const executable = path.join(root, "rclone.exe");
-  await fs.copyFile(path.join(root, directory, "rclone.exe"), executable);
+  const binary = process.platform === "win32" ? "rclone.exe" : "rclone";
+  const executable = path.join(root, binary);
+  await fs.copyFile(path.join(root, directory, binary), executable);
+  if (process.platform !== "win32") await fs.chmod(executable, 0o755);
   this.state.settings.rcloneExe = executable;
   await this.persist();
   new Notice("rclone 组件已安装");
@@ -4443,7 +4536,7 @@ AniLink.prototype.installRclone = async function () {
 AniLink.prototype.remoteCommand = async function (settings, args, input) {
   let executable = settings.rcloneExe;
   if (!executable) {
-    const bundled = path.join(this.app.vault.adapter.getBasePath(), this.manifest.dir, "tools", "rclone.exe");
+    const bundled = path.join(this.app.vault.adapter.getBasePath(), this.manifest.dir, "tools", process.platform === "win32" ? "rclone.exe" : "rclone");
     try { await fs.access(bundled); executable = bundled; }
     catch { executable = "rclone"; }
   }
@@ -4822,16 +4915,17 @@ AniLink.prototype.subscriptionsManager = function () {
       const row = list.createDiv("al-group-row"),
         info = row.createDiv();
       info.createEl("strong", { text: s.title });
-      info.createEl("p", {
-        text: [
-          s.subscription.sourceGroup || s.subscription.group,
-          [s.subscription.profile?.quality || s.subscription.quality, s.subscription.profile?.language, s.subscription.profile?.codec, s.subscription.profile?.subtitle].filter((v) => v && v !== "未标注").join(" · "),
-          s.subscription.enabled ? "自动下载" : "已暂停",
-        ]
-          .filter(Boolean)
-          .join(" · "),
-        cls: "al-muted",
-      });
+      row.addClass("al-rss-manager-row");
+      info.createEl("p", { text: s.subscription.sourceGroup || s.subscription.group || "未指定字幕组" });
+      const tags = info.createDiv("al-version-tags");
+      for (const tag of [s.subscription.profile?.quality || s.subscription.quality, s.subscription.profile?.language || s.subscription.language, s.subscription.profile?.codec, s.subscription.profile?.subtitle].filter((value) => value && value !== "未标注")) tags.createSpan({ text: tag });
+      const status = info.createEl("p", { cls: "al-muted" });
+      const showUpdate = () => status.setText((s.subscription.enabled ? "自动下载" : "已暂停") + " · 最近更新 " + (s.subscription.rssUpdatedAt ? new Date(s.subscription.rssUpdatedAt).toLocaleDateString("zh-CN") : "暂无记录"));
+      showUpdate();
+      this.readFeed(s.subscription.feed).then((rows) => {
+        s.subscription.rssUpdatedAt = Math.max(0, ...rows.map((item) => Date.parse(item.date)).filter(Number.isFinite));
+        if (status.isConnected) showUpdate();
+      }).catch((error) => C.record(this.state, `${s.title} · RSS 更新日期读取失败：${error.message}`));
       const actions = row.createDiv("al-actions");
       button(actions, "更换", () => {
         m.close();
@@ -5058,12 +5152,7 @@ AniLink.prototype.scanLocalVideos = async function () {
   for (const s of this.state.shows) {
     for (const e of s.episodes)
       e.files = (e.files || []).filter((f) => f.localExists !== false);
-    const root =
-      s.subscription.savePath ||
-      path.join(
-        this.state.settings.libraryRoot || this.state.settings.downloadRoot || "",
-        s.title.replace(/[<>:"/\\|?*]/g, "_"),
-      );
+    const root = await this.showFolder(s, this.state.settings.libraryRoot || this.state.settings.downloadRoot || "");
     if (!path.isAbsolute(root)) continue;
     const walk = async (dir, depth) => {
       let entries;
@@ -5166,10 +5255,15 @@ AniLink.prototype.openDownloader = async function () {
   await fs.access(exe);
   const args = this.state.settings.qbProfile ? ["--profile="+this.state.settings.qbProfile,"--no-splash"] : ["--no-splash"];
   await new Promise((resolve, reject) => {
-    const child = execFile(exe, args, { windowsHide: true }, () => {});
+    const macApplication = process.platform === "darwin" && exe.endsWith(".app");
+    const child = execFile(macApplication ? "open" : exe, macApplication ? ["-a", exe, "--args", ...args] : args, { windowsHide: true }, () => {});
     child.once("error", reject);
     child.once("spawn", resolve);
   });
+};
+AniLink.prototype.prepareSchedulerScripts = async function (root) {
+  for (const [name, content] of Object.entries(this.bundledSchedulerScripts))
+    await fs.writeFile(path.join(root, name), content, "utf8");
 };
 AniLink.prototype.runScheduler = async function (args = []) {
   const root = path.join(this.app.vault.adapter.getBasePath(), this.manifest.dir);
@@ -5177,7 +5271,7 @@ AniLink.prototype.runScheduler = async function (args = []) {
   const config = path.join(root, "scheduler.json");
   const exe = this.state.settings.qbExe;
   if (!exe) throw Error("请先选择 qBittorrent 程序路径");
-  await fs.access(script);
+  await this.prepareSchedulerScripts(root);
   await fs.access(exe);
   await fs.writeFile(config, JSON.stringify({ dataFile: this.deviceFile, exe, profile: this.state.settings.qbProfile || "" }), "utf8");
   const powerShell = path.join(process.env.SystemRoot || "C:\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
@@ -5192,9 +5286,9 @@ AniLink.prototype.configureLoginScheduler = async function (enable) {
   const script = path.join(root, "install-scheduler.ps1");
   const exe = this.state.settings.qbExe;
   if (enable && !exe) throw Error("请先选择 qBittorrent 程序路径");
-  await fs.access(script);
+  await this.prepareSchedulerScripts(root);
   if (enable) await fs.access(exe);
-  if (enable && (!this.state.settings.downloadMode || this.state.settings.downloadMode === "off")) this.state.settings.downloadMode = "once";
+  if (enable) this.state.settings.downloadMode = "once";
   await this.persist();
   const powerShell = path.join(process.env.SystemRoot || "C:\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
   const args = ["-NoProfile", "-WindowStyle", "Hidden", "-File", script];
@@ -5206,7 +5300,8 @@ AniLink.prototype.configureLoginScheduler = async function (enable) {
   new Notice(enable ? "已启用 AniLink 登录检查" : "已停用 AniLink 登录检查");
 };
 AniLink.prototype.armIdleShutdown = async function () {
-  if (this.state.settings.downloadMode !== "once" || !this.downloaderStartedByAniLink) return;
+  if (typeof process !== "undefined" && process.platform !== "win32") return;
+  if (!this.downloaderStartedByAniLink || Number(this.state.settings.idleMinutes || 10) <= 0) return;
   await this.runScheduler(["-Once", "-ManageRunning"]);
 };
 const tidyRender = Dashboard.prototype.render;
@@ -5543,7 +5638,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
   bar.insertBefore(opener, wrap);
   opener.addClass("al-link");
   const empty = panel.createEl("p", {
-    text: "未加载预览。选择上方网站后才会开始加载。",
+    text: "未加载预览。",
     cls: "al-muted al-information-empty",
   });
   const activateInformation = activate;
@@ -6061,7 +6156,7 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
   const uploaders = new Set(
     String(
       this.state.settings.biliUploaders ||
-        "690151424,4262884,5306996,442715778,3546957240862932",
+        "4262884,5306996,690151424,154244413,442715778,3546957240862932",
     )
       .split(/[\s,，]+/)
       .filter(Boolean)
@@ -6086,7 +6181,7 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
           { Referer: "https://www.bilibili.com/" },
         );
         if (response.code !== 0) {
-          C.record(this.state, "B站来源搜索失败 " + response.code);
+          C.record(this.state, `${show.title} 第${number}集 · 搜索词 ${name} · 第${page}页 · UP ${[...uploaders].join(",")}：B站搜索失败 ${response.code} ${response.message || ""}`);
           break;
         }
         for (const candidate of response.data?.result || [])
@@ -6095,7 +6190,7 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
         if (page >= Number(response.data?.numPages || 1)) break;
       }
     } catch (error) {
-      C.record(this.state, "B站来源检索：" + error.message);
+      C.record(this.state, `${show.title} 第${number}集 · 搜索词 ${name} · UP ${[...uploaders].join(",")}：B站检索失败 ${error.message}`);
     }
   }
   const sources = [],
@@ -6107,17 +6202,23 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
         candidate.title,
         "text/html",
       ).body.textContent;
-      if (!C.biliTitleMatches(show, title)) continue;
+      if (!C.biliTitleMatches(show, title)) {
+        C.record(this.state, `${show.title} 第${number}集 · UP ${candidate.mid} · ${candidate.bvid}：番名或季数核验失败，视频标题 ${title}`);
+        continue;
+      }
       const detail = await this.http.json(
         "https://api.bilibili.com/x/web-interface/view?bvid=" +
           encodeURIComponent(candidate.bvid),
       );
-      if (detail.code !== 0) continue;
+      if (detail.code !== 0) {
+        C.record(this.state, `${show.title} 第${number}集 · UP ${candidate.mid} · ${candidate.bvid}：视频详情读取失败 ${detail.code} ${detail.message || ""}`);
+        continue;
+      }
       if (!uploaders.has(Number(detail.data?.owner?.mid))) continue;
       if (!C.biliTitleMatches(show, detail.data?.title || "")) continue;
       for (const page of detail.data?.pages || []) {
         try {
-          const ep = C.parseEpisode(page.part) ?? C.parseEpisode(title);
+          const ep = C.biliPageEpisode(page, title);
           if (ep !== number || page.duration < 600) continue;
           let calibration = { offsetSeconds: 0, disabled: true };
           if (this.state.settings.calibrateDanmaku !== false) {
@@ -6165,16 +6266,17 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
         } catch (error) {
           C.record(
             this.state,
-            "弹幕来源 " + candidate.bvid + "：" + error.message,
+            `${show.title} 第${number}集 · UP ${candidate.mid} · ${candidate.bvid}：${error.message}`,
           );
         }
       }
     } catch (error) {
-      C.record(this.state, "弹幕来源 " + candidate.bvid + "：" + error.message);
+      C.record(this.state, `${show.title} 第${number}集 · UP ${candidate.mid} · ${candidate.bvid}：${error.message}`);
     }
   }
+  for (const uid of uploaders) if (!sources.some((source) => Number(source.mid) === uid)) C.record(this.state, `${show.title} 第${number}集 · ${this.biliUploaderCache?.get(String(uid))?.name || "UP"}（UID ${uid}）弹幕获取失败：未通过番名、季数、集数及时长核验，候选视频 ${[...candidates.values()].filter((item) => Number(item.mid) === uid).map((item) => item.bvid).join("、") || "无"}`);
   if (!sources.length || !comments.size)
-    throw Error("指定UP主暂无可核对的同集弹幕");
+    throw Error(`${show.title} 第${number}集 · UP ${[...uploaders].join(",")}：没有可用弹幕`);
   const target = file.path.replace(/\.[^.]+$/, ".xml");
   let existing = "";
   try {
@@ -6212,7 +6314,8 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
 AniLink.prototype.play = async function (show, episode, file) {
   if (file.remotePath) await this.cacheRemoteVideo(file);
   let cached = !!episode.danmaku?.biliMatchedAt;
-  const sourceOptions = [this.state.settings.biliOfficialFirst !== false, !!this.state.settings.biliRegional, this.state.settings.biliCutAlignment !== false].join(":");
+  const uploaderIds = String(this.state.settings.biliUploaders || "").split(/[\s,，]+/).filter(Boolean).sort().join(",");
+  const sourceOptions = [this.state.settings.biliOfficialFirst !== false, !!this.state.settings.biliRegional, this.state.settings.biliCutAlignment !== false, uploaderIds, this.state.settings.biliFilterRevision || 0].join(":");
   if (cached && episode.danmaku.sourceOptions !== sourceOptions) {
     const xml = file.path.replace(/\.[^.]+$/, ".xml");
     this.danmakuResetPaths ||= new Set();
@@ -6237,7 +6340,7 @@ AniLink.prototype.play = async function (show, episode, file) {
       await this.prepareUploaderDanmaku(show, episode, file);
       if (episode.danmaku) episode.danmaku.sourceOptions = sourceOptions;
     } catch (error) {
-      C.record(this.state, "UP主弹幕匹配：" + error.message);
+      C.record(this.state, `${show.title} 第${episode.sort}集 · UP ${this.state.settings.biliUploaders || C.defaults().settings.biliUploaders}：弹幕匹配失败 ${error.message}`);
     } finally {
       this.danmakuResetPaths?.delete(file.path.replace(/\.[^.]+$/, ".xml"));
     }
@@ -6298,7 +6401,7 @@ AniLink.prototype.cleanupShow = async function (show) {
   );
   const configured = show.subscription.savePath;
   const folder = path.resolve(
-    configured || path.join(root, show.title.replace(/[<>:"/\\|?*]/g, "_")),
+    configured || await this.showFolder(show, root),
   );
   const relative = path.relative(root, folder);
   if (!relative || relative.startsWith("..") || path.isAbsolute(relative))
@@ -6439,7 +6542,7 @@ AniLink.prototype.settingsModal = function () {
     const uploaders = add(bili, "biliUploaders", "弹幕抓取来源（UP 主 UID）");
     uploaders.placeholder = "多个 UID 用逗号或换行分隔";
     if (!uploaders.value)
-      uploaders.value = "690151424,4262884,5306996,442715778,3546957240862932";
+      uploaders.value = "4262884,5306996,690151424,154244413,442715778,3546957240862932";
     this.biliAccountPanel(bili);
     const save = async () => {
       const values = Object.fromEntries(
@@ -6670,6 +6773,7 @@ AniLink.prototype.biliAccountPanel = function (el) {
           attr: { src: user.face, referrerpolicy: "no-referrer" },
         });
       profile.createSpan({ text: user.uname + " · UID " + user.mid });
+      button(profile, "打开主页", () => this.openWebsite("https://space.bilibili.com/" + user.mid));
     } catch (error) {
       profile.setText("登录状态检查失败");
       C.record(this.state, error.message);
@@ -6694,6 +6798,7 @@ AniLink.prototype.biliAccountPanel = function (el) {
     }),
   );
   refresh().catch((error) => profile.setText("登录状态读取失败：" + error.message));
+  [...actions.children].find((control) => control.textContent === "退出登录")?.addClass("mod-warning");
 };
 const detectPlayerOnload = AniLink.prototype.onload;
 AniLink.prototype.onload = async function () {
@@ -7091,7 +7196,7 @@ Connections.prototype.display = function () {
       p.run(async () => {
         const result = await require("electron").remote.dialog.showOpenDialog({
           properties: [directory ? "openDirectory" : "openFile"],
-          filters: directory ? undefined : [{ name: "程序", extensions: ["exe"] }],
+          filters: directory || process.platform !== "win32" ? undefined : [{ name: "程序", extensions: ["exe"] }],
         });
         if (!result.canceled && result.filePaths[0]) {
           getInput().value = result.filePaths[0];
@@ -7105,10 +7210,11 @@ Connections.prototype.display = function () {
   };
 
   heading("通用");
+  choice("网页打开方式", "browserMode", { external: "默认浏览器", obsidian: "Obsidian Web viewer" }, "external");
   toggle("默认打开第一个番剧", "openFirstShow", false);
-  new Setting(el).setName("运行日志").addButton((b) => b.setButtonText("查看日志").onClick(() => p.logsModal()));
+  new Setting(el).setName("运行日志").setClass("al-log-setting").addButton((b) => b.setButtonText("查看日志").onClick(() => p.logsModal()));
   choice("日志记录范围", "logScope", { all: "全量操作", errors: "错误信息" }, "all");
-  choice("日志缓存时间", "logRetention", { session: "退出插件后清除", day: "一天", week: "七天", forever: "长期保留" }, "session");
+  choice("日志缓存时间", "logRetention", { session: "退出后清除", day: "一天", week: "七天", forever: "长期保留" }, "session");
 
   heading("页面设置");
   choice("默认季度", "shelfQuarterDefault", { all: "全部季度", current: "当前季度", last: "上次设置" }, "all");
@@ -7128,8 +7234,8 @@ Connections.prototype.display = function () {
   text("自动同步间隔（分钟）", "bgmSyncMinutes", "0 为关闭定时同步。");
   toggle("启动时自动同步", "bgmSyncStartup", true);
   toggle("退出时自动同步", "bgmSyncExit", true);
-  choice("冲突处理", "bgmConflictPolicy", { ask: "检测差异并询问", remote: "以远端为准", local: "以本地为准" }, "ask");
-  new Setting(el).setName("同步操作")
+  choice("冲突处理", "bgmConflictPolicy", { ask: "询问", remote: "以远端为准", local: "以本地为准" }, "ask");
+  new Setting(el).setName("同步操作").setClass("al-sync-actions")
     .addButton((b) => b.setButtonText("推送").onClick(() => p.run(() => p.sync())))
     .addButton((b) => b.setButtonText("拉取").onClick(() => p.run(() => p.pullAccount())));
   for (const show of p.state.shows.filter((show) => show.remoteConflict))
@@ -7145,31 +7251,36 @@ Connections.prototype.display = function () {
   picker(qbExe.row, qbExe.input, false);
   const root = text("下载目录", "downloadRoot");
   picker(root.row, root.input, true);
-  choice("运行方式", "downloadMode", { off: "不自动管理", once: "登录后检查一次，完成后退出", cycle: "循环检查（高级）" }, "off", "只管理 AniLink 启动的本机 qBittorrent；不会关闭原本已手动启动的下载器。");
   text("空闲后退出（分钟）", "idleMinutes");
-  new Setting(el).setName("Windows 登录自动启动").addToggle((control) => {
+  const startupSetting = new Setting(el).setName("开机自动启动").addToggle((control) => {
     const startup = path.join(process.env.APPDATA || "", "Microsoft", "Windows", "Start Menu", "Programs", "Startup", "AniLink-downloads.lnk");
     control.setValue(require("fs").existsSync(startup));
+    control.setDisabled(process.platform !== "win32");
     control.onChange((enabled) => p.run(() => p.configureLoginScheduler(enabled)));
   });
-  new Setting(el).setName("检查连接").addButton((b) => b.setButtonText("检查连接").onClick(() => p.run(async () => {
-    await p.qb().call("app/version");
-    new Notice("qBittorrent 连接正常");
+  const connectionSetting = new Setting(el).setName("检查连接").addButton((b) => b.setButtonText("检查连接").onClick(() => p.run(async () => {
+    b.setButtonText("检查中…").setDisabled(true);
+    connectionSetting.setDesc("正在检查连接…");
+    new Notice("正在检查 qBittorrent 连接…");
+    try { await p.qb().call("app/version"); connectionSetting.setDesc("qBittorrent 连接正常"); new Notice("qBittorrent 连接正常"); }
+    catch (error) { const message = C.qbConnectionMessage(error); connectionSetting.setDesc(message); new Notice(message, 8000); C.record(p.state, "qBittorrent 连接检查失败：" + error.message); await p.persist(); }
+    finally { b.setButtonText("检查连接").setDisabled(false); }
   })));
   new Setting(el).setName("RSS 自动配置").setDesc("检查本机下载器并写入 AniLink 的 RSS 规则。").addButton((b) =>
     b.setButtonText("一键配置").onClick(() => p.run(() => p.autoConfigure(false))),
   );
 
-  toggle("自动刷新下载与同步", "autoRefresh", true, "", (value) => { polling.settingEl.hidden = !value; });
-  const polling = text("下载状态刷新秒数", "pollSeconds", "最小 30 秒。").row;
-  polling.settingEl.hidden = s.autoRefresh === false;
-  text("分集资料更新间隔（小时）", "metadataHours", "重新获取想看、在看番剧的分集标题与播出日期的间隔。");
+  el.appendChild(startupSetting.settingEl);
   toggle("下载完成通知", "downloadNotifications", true);
+  toggle("自动刷新 RSS 订阅", "autoRefresh", true, "", (value) => { polling.settingEl.hidden = !value; });
+  const polling = text("自动刷新 RSS 订阅（分钟）", "rssRefreshMinutes").row;
+  polling.settingEl.hidden = s.autoRefresh === false;
+  toggle("有 v2 版本自动替换未看视频", "rssUpgradeUnwatched", false);
 
   heading("本地管理");
-  const library = text("番剧库路径", "libraryRoot", "留空时默认使用 qBittorrent 下载目录");
+  const library = text("番剧库路径", "libraryRoot", "留空时默认使用 qBittorrent 下载目录。");
   picker(library.row, library.input, true);
-  choice("自动清理", "cleanupMode", { none: "不清理", current: "清理当前文件", watched: "清理已看文件" }, s.cleanupAfterWatch === false ? "none" : "watched", "点击看到这里按钮后的操作。");
+  choice("自动清理", "cleanupMode", { none: "不清理", current: "清理当前文件", watched: "清理已看文件" }, s.cleanupAfterWatch === false ? "none" : "watched").settingEl.addClass("al-cleanup-setting");
   toggle("删除文件时同步删除种子", "deleteTorrentWithFiles", true);
 
   heading("远程服务");
@@ -7213,7 +7324,7 @@ Connections.prototype.display = function () {
   for (const node of networkControls) node.hidden = !s.remoteEnabled;
   toggle("播放前校准弹幕", "calibrateDanmaku", true, "", (value) => { dependency.hidden = !value && !s.calibrationStatus; });
   toggle("启用官方番剧弹幕", "biliOfficialFirst", true);
-  toggle("启用港澳台弹幕", "biliRegional", false);
+  toggle("启用港澳台弹幕（需要对应网络环境）", "biliRegional", false);
   toggle("删减番剧弹幕校准", "biliCutAlignment", true);
   const dependency = el.createDiv("al-settings-dependency");
   const dependencyStatus = new Setting(dependency).setName("依赖状态").setDesc("播放前校准弹幕所需的依赖。");
@@ -7227,27 +7338,30 @@ Connections.prototype.display = function () {
     })),
     ffmpeg: button(installers, "安装 FFmpeg", () => p.openWebsite("https://ffmpeg.org/download.html")),
   };
-  for (const control of Object.values(install)) control.hidden = true;
+  const showDependencies = (ready) => {
+    dependencyStatus.setDesc(ready
+      ? `Python：${ready.python ? "已就绪" : "未找到"}；NumPy：${ready.numpy ? "已就绪" : "未安装"}；FFmpeg：${ready.ffmpeg ? "已就绪" : "未找到"}。`
+      : "点击检查依赖以查看状态。");
+    for (const [key, control] of Object.entries(install)) {
+      control.classList.toggle("al-dependency-unneeded", !ready || !!ready[key]);
+      control.disabled = !ready || ready[key];
+    }
+  };
   const inspect = async () => {
     const ready = await p.calibrationDependencies();
     s.calibrationStatus = ready;
     await p.persist();
-    dependencyStatus.setDesc(`Python：${ready.python ? "已就绪" : "未找到"}；NumPy：${ready.numpy ? "已就绪" : "未安装"}；FFmpeg：${ready.ffmpeg ? "已就绪" : "未找到"}。`);
-    for (const [key, control] of Object.entries(install)) control.hidden = ready[key];
-    installers.hidden = Object.values(install).every((control) => control.hidden);
+    showDependencies(ready);
   };
   dependencyStatus.addButton((b) => b.setButtonText("检查依赖").onClick(() => p.run(inspect)));
   dependency.hidden = !(s.calibrateDanmaku ?? true) && !s.calibrationStatus;
-  dependencyStatus.setDesc("点击检查依赖以查看状态。");
-  if (s.calibrationStatus) {
-    const ready = s.calibrationStatus;
-    dependencyStatus.setDesc(`Python：${ready.python ? "已就绪" : "未找到"}；NumPy：${ready.numpy ? "已就绪" : "未安装"}；FFmpeg：${ready.ffmpeg ? "已就绪" : "未找到"}。`);
-  }
+  showDependencies(s.calibrationStatus);
 
   heading("bilibili");
   p.biliAccountPanel(el);
-  new Setting(el).setName("屏蔽词库").addButton((b) => b.setButtonText("同步屏蔽词库").onClick(() => p.run(() => p.syncBiliFilters())));
+  new Setting(el).setName("弹幕屏蔽").addButton((b) => b.setButtonText("同步").onClick(() => p.run(() => p.syncBiliFilters()))).addButton((b) => b.setButtonText("屏蔽词库").onClick(() => p.filterRulesModal()));
   const uploaders = text("弹幕来源 UP 主 UID", "biliUploaders", "多个 UID 用英文逗号分隔。");
+  uploaders.row.settingEl.addClass("al-uploader-setting");
   const uploaderProfiles = el.createDiv("al-bili-uploaders");
   let uploaderGeneration = 0;
   const renderUploaders = async () => {
@@ -7270,6 +7384,7 @@ Connections.prototype.display = function () {
         profile.empty();
         if (user.face) profile.createEl("img", { attr: { src: user.face, referrerpolicy: "no-referrer", alt: user.name } });
         profile.createSpan({ text: user.name + " · UID " + uid });
+        button(profile, "打开主页", () => p.openWebsite("https://space.bilibili.com/" + uid));
       } catch (error) {
         if (generation === uploaderGeneration) profile.setText("UID " + uid + " · " + error.message);
       }
@@ -7299,9 +7414,9 @@ Connections.prototype.display = function () {
   }
   const footer = el.createDiv("al-plugin-footer");
   const logo = new DOMParser().parseFromString(ANI_ICON, "image/svg+xml").documentElement;
-  footer.createDiv("al-plugin-footer-logo").appendChild(document.importNode(logo, true));
+  footer.createEl("a", { cls: "al-plugin-footer-logo", attr: { href: "https://github.com/beimohai/AniLink-Obsidian", target: "_blank" } }).appendChild(document.importNode(logo, true));
   const details = footer.createDiv("al-plugin-footer-details");
-  for (const label of ["AniLink", "作者：北漠海", "版本号：" + p.manifest.version, "更新日期：2026-11-15"]) details.createDiv({ text: label });
+  for (const [label, url] of [["AniLink", "https://github.com/beimohai/AniLink-Obsidian"], ["作者：北漠海", "https://space.bilibili.com/1065768987"], ["版本号：" + p.manifest.version, "https://github.com/beimohai/AniLink-Obsidian/releases"], ["更新日期：2026-11-15", "https://github.com/beimohai/AniLink-Obsidian/releases"]]) details.createEl("a", { text: label, attr: { href: url, target: "_blank" } });
   footer.createDiv({ text: "本项目基于 MIT License 开源", cls: "al-plugin-footer-license" });
   const authorLinks = el.createDiv("al-author-links");
   for (const [name, label, icon, url] of [
@@ -7532,8 +7647,15 @@ AniLink.prototype.onExternalSettingsChange = async function () {
 
 // Settings behaviours are installed after the existing feature adapters.
 const settingsRedraw = AniLink.prototype.redraw;
-AniLink.prototype.redraw = function () {
+AniLink.prototype.redraw = function (background = false) {
   if (this.app.setting?.containerEl?.isShown()) return;
+  if (background || (this.backgroundTasks?.size && !this.busy)) {
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW)) {
+      const cards = leaf.view.contentEl?.querySelector(".al-cards");
+      if (cards) leaf.view.renderCards(cards);
+    }
+    return;
+  }
   return settingsRedraw.call(this);
 };
 AniLink.prototype.syncModal = function () {
@@ -7543,20 +7665,77 @@ AniLink.prototype.syncModal = function () {
 AniLink.prototype.syncBiliFilters = async function () {
   const response = await this.http.json("https://api.bilibili.com/x/dm/filter/user", "GET", undefined, { Referer: "https://www.bilibili.com/" });
   if (response.code !== 0 || !Array.isArray(response.data?.rule)) throw Error("屏蔽词同步失败，请确认 B站登录有效");
-  this.state.settings.biliFilterRules = response.data.rule.filter((rule) => rule.type === 0 || rule.type === 1);
+  this.state.settings.biliFilterRules = response.data.rule.filter((rule) => [0, 1, 2].includes(rule.type));
+  this.state.settings.biliFilterRevision = (this.state.settings.biliFilterRevision || 0) + 1;
   await this.persist();
   new Notice("已同步 " + this.state.settings.biliFilterRules.length + " 条屏蔽规则");
 };
 AniLink.prototype.filterDanmaku = function (document) {
   for (const node of document.querySelectorAll("d")) {
     const blocked = (this.state.settings.biliFilterRules || []).some((rule) => {
+      if (rule.enabled === false) return false;
       if (rule.type === 0) return node.textContent.includes(rule.filter);
+      if (rule.type === 2) return node.getAttribute("p")?.split(",")[6] === rule.filter;
       try { return new RegExp(rule.filter, "i").test(node.textContent); } catch { return false; }
     });
     if (blocked) node.remove();
   }
 };
+AniLink.prototype.filterRulesModal = function () {
+  new Panel(this, "弹幕屏蔽词库", (el) => {
+    const rules = this.state.settings.biliFilterRules ||= [];
+    const persistRules = async () => {
+      this.state.settings.biliFilterRevision = (this.state.settings.biliFilterRevision || 0) + 1;
+      await this.persist();
+    };
+    let editedRule;
+    const list = el.createDiv();
+    const render = () => {
+      list.empty();
+      for (const control of tabs.children) control.classList.toggle("mod-cta", control.textContent === ["关键词", "正则表达式", "屏蔽用户"][Number(kind.value)]);
+      for (const rule of rules.filter((item) => item.type === Number(kind.value))) {
+        const row = new Setting(list).setName(rule.filter);
+        row.addToggle((control) => control.setValue(rule.enabled !== false).onChange((value) => this.run(async () => { rule.enabled = value; await persistRules(); })));
+        row.addButton((control) => control.setButtonText("编辑").onClick(() => {
+          editedRule = rule;
+          kind.value = String(rule.type);
+          value.value = rule.filter;
+          value.scrollIntoView({ block: "nearest" });
+          value.focus();
+        }));
+        row.addButton((control) => control.setButtonText("删除").onClick(() => this.run(async () => { rules.splice(rules.indexOf(rule), 1); await persistRules(); render(); })));
+      }
+    };
+    const kind = { value: "0" };
+    const tabs = el.createDiv("al-actions al-filter-tabs");
+    for (const [type, label] of [["0", "关键词"], ["1", "正则表达式"], ["2", "屏蔽用户"]]) {
+      button(tabs, label, () => { kind.value = type; editedRule = null; value.value = ""; value.placeholder = type === "2" ? "输入用户哈希" : type === "1" ? "输入正则表达式" : "输入关键词"; render(); });
+    }
+    const value = field(el, "屏蔽内容", "");
+    button(el, "保存规则", () => this.run(async () => {
+      const filter = value.value.trim();
+      if (!filter) throw Error("请输入屏蔽内容");
+      if (kind.value === "1") { try { new RegExp(filter); } catch { throw Error("正则表达式无效"); } }
+      if (editedRule && rules.includes(editedRule)) Object.assign(editedRule, { type: Number(kind.value), filter });
+      else rules.push({ type: Number(kind.value), filter, enabled: true });
+      editedRule = null;
+      await persistRules(); value.value = ""; render();
+    }));
+    render();
+    el.appendChild(list);
+  }).open();
+};
 const settingsPlay = AniLink.prototype.play;
+AniLink.prototype.refreshRssSubscriptions = async function () {
+  for (const show of this.state.shows.filter((item) => item.subscription?.enabled && item.subscription.feed)) {
+    try {
+      await this.qb().call("rss/refreshItem", { itemPath: C.feedPath(show) });
+      if (this.installSubscription && (show.subscription.appliedRevisionPolicy !== C.revisionPolicy(this.state.settings, show.subscription)))
+        await this.installSubscription(show, show.subscription);
+    }
+    catch (error) { C.record(this.state, `${show.title} · RSS 刷新失败：${error.message}`); }
+  }
+};
 AniLink.prototype.focusLocalPlayer = async function () {
   if (process.platform !== "win32") return;
   const script = path.join(this.app.vault.adapter.getBasePath(), this.manifest.dir, "focus-player.ps1");
@@ -7604,7 +7783,7 @@ const settingsUploader = AniLink.prototype.prepareUploaderDanmaku;
 AniLink.prototype.prepareUploaderDanmaku = async function (show, episode, file) {
   let uploaderResult;
   try { uploaderResult = await settingsUploader.call(this, show, episode, file); }
-  catch (error) { C.record(this.state, "UP主弹幕获取：" + error.message); }
+  catch (error) { C.record(this.state, `${show.title} 第${episode.sort}集 · UP ${this.state.settings.biliUploaders || C.defaults().settings.biliUploaders} · 弹幕获取失败：${error.message}`); }
   if (this.state.settings.biliOfficialFirst !== false) {
     try {
       let url = show.biliOfficialUrl;
@@ -7659,7 +7838,7 @@ AniLink.prototype.prepareUploaderDanmaku = async function (show, episode, file) 
           return;
         }
       }
-    } catch (error) { C.record(this.state, "官方弹幕获取失败：" + error.message); }
+    } catch (error) { C.record(this.state, `${show.title} 第${episode.sort}集 · 官方弹幕获取失败：${error.message}`); }
   }
   episode.danmaku ||= {};
   episode.danmaku.officialCheckedAt = Date.now();
@@ -7683,7 +7862,9 @@ AniLink.prototype.applyRssDefaults = async function () {
 
 const settingsInstallSubscription = AniLink.prototype.installSubscription;
 AniLink.prototype.installSubscription = async function (show, sub) {
-  if (["latest", "upgrade"].includes(sub.revisionPolicy)) {
+  const policy = C.revisionPolicy(this.state.settings, sub);
+  if (policy === "standard") { sub.supersededTitles = []; for (const episode of show.episodes) delete episode.pendingRevision; }
+  if (sub.enabled && ["latest", "upgrade"].includes(policy)) {
     const rows = await this.readFeed(sub.feed);
     const latest = new Map();
     for (const row of rows.filter((row) => C.previewMatch(row.title, { ...sub, supersededTitles: [] }))) {
@@ -7698,7 +7879,7 @@ AniLink.prototype.installSubscription = async function (show, sub) {
       const best = episode && latest.get(episode.id);
       return best && Number(row.title.match(/\d+v(\d+)/i)?.[1] || 1) < best.revision;
     }).map((row) => row.title);
-    if (sub.revisionPolicy === "upgrade") {
+    if (policy === "upgrade") {
       for (const [episodeId, best] of latest) {
         const episode = show.episodes.find((episode) => episode.id === episodeId);
         for (const hash of new Set((episode.files || []).filter((file) => file.hash && Number((file.taskTitle || file.name).match(/\d+v(\d+)/i)?.[1] || 1) < best.revision).map((file) => file.hash))) {
@@ -7708,13 +7889,15 @@ AniLink.prototype.installSubscription = async function (show, sub) {
       }
     }
   }
-  return settingsInstallSubscription.call(this, show, sub);
+  const result = await settingsInstallSubscription.call(this, show, sub);
+  sub.appliedRevisionPolicy = policy;
+  return result;
 };
 const revisionRefresh = AniLink.prototype.refresh;
 AniLink.prototype.refresh = async function (manual) {
   const result = await revisionRefresh.call(this, manual);
   for (const show of this.state.shows) {
-    for (const episode of show.episodes.filter((episode) => !episode.watched && episode.pendingRevision)) {
+    for (const episode of show.episodes.filter((episode) => C.revisionPolicy(this.state.settings, show.subscription) === "upgrade" && !episode.watched && episode.pendingRevision)) {
       const pending = episode.pendingRevision;
       if (!(episode.files || []).some((file) => file.progress === 1 && file.hash !== pending.hash && file.taskTitle === pending.title)) continue;
       if (show.episodes.some((other) => other.id !== episode.id && other.files?.some((file) => file.hash === pending.hash))) continue;
@@ -7726,7 +7909,7 @@ AniLink.prototype.refresh = async function (manual) {
   }
   if (Date.now() - (this.lastRevisionCheck || 0) < 600000) return result;
   this.lastRevisionCheck = Date.now();
-  for (const show of this.state.shows.filter((show) => show.subscription.enabled && ["latest", "upgrade"].includes(show.subscription.revisionPolicy))) {
+  for (const show of this.state.shows.filter((show) => show.subscription.enabled && (["latest", "upgrade"].includes(C.revisionPolicy(this.state.settings, show.subscription)) || show.subscription.appliedRevisionPolicy !== C.revisionPolicy(this.state.settings, show.subscription)))) {
     try {
       await this.qb().call("app/version");
       await this.installSubscription(show, show.subscription);
@@ -7759,6 +7942,12 @@ Dashboard.prototype.renderDetail = function (el, show) {
 const settingsOnload = AniLink.prototype.onload;
 AniLink.prototype.onload = async function () {
   await settingsOnload.call(this);
+  this.background("启动分集资料", async () => {
+    for (const show of this.state.shows.filter((item) => item.status === 1 || item.status === 3)) {
+      try { await this.updateEpisodes(show); }
+      catch (error) { C.record(this.state, `${show.title} · 启动分集资料更新失败：${error.message}`); }
+    }
+  });
   const synchronize = async () => {
     if (this.settingsSyncRunning || !this.state.settings.bgmToken) return;
     this.settingsSyncRunning = true;
@@ -7794,6 +7983,19 @@ AniLink.prototype.onunload = function () {
   settingsUnload.call(this);
 };
 
+// Retain existing library folders without renaming or moving user files.
+AniLink.prototype.showFolder = async function (show, root) {
+  if (show.subscription.savePath) return show.subscription.savePath;
+  const target = path.join(root, C.folderName(show.title, show.id));
+  const oldName = show.title.replace(/[<>:"/\\|?*]/g, "_");
+  const legacy = path.resolve(root, oldName);
+  const relative = path.relative(path.resolve(root), legacy);
+  if (relative && !relative.startsWith("..") && !path.isAbsolute(relative)) {
+    try { if ((await fs.stat(legacy)).isDirectory()) return legacy; } catch { /* Create a portable folder for new downloads. */ }
+  }
+  return target;
+};
+
 // AniClip data remains remote and carries CC BY-NC-SA 4.0 attribution.
 AniLink.prototype.officialCuts = async function (show, episode, sourceCid) {
   if (!show.date) return [];
@@ -7825,8 +8027,140 @@ AniLink.prototype.officialCuts = async function (show, episode, sourceCid) {
   }
 };
 
-module.exports=AniLink;
+// Mobile uses Obsidian storage and Bangumi without loading desktop services.
+class MobileAniLink extends Plugin {
+  async onload() {
+    this.document = await this.loadData();
+    this.state = this.document?.state || this.document || C.defaults();
+    this.state.settings ||= {};
+    this.state.shows ||= [];
+    this.mobileBaseline = DeviceModel.project(this.state);
+    this.mobileDeviceId = window.localStorage.getItem("anilink-mobile-device") || "mobile-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+    window.localStorage.setItem("anilink-mobile-device", this.mobileDeviceId);
+    this.http = new C.Http(requestUrl);
+    this.registerView(VIEW, (leaf) => new MobileDashboard(leaf, this));
+    this.addRibbonIcon("tv", "打开 AniLink", () => this.open());
+    this.addCommand({ id: "open", name: "打开", callback: () => this.open() });
+    const plugin = this;
+    this.addSettingTab(new class extends PluginSettingTab {
+      display() {
+        this.containerEl.empty();
+        new Setting(this.containerEl).setName("Bangumi 访问令牌").addText((input) => input.setValue(plugin.state.settings.bgmToken || "").onChange(async (value) => { plugin.state.settings.bgmToken = value.trim(); await plugin.persistMobile(); }));
+        new Setting(this.containerEl).setName("使用镜像网站").addToggle((input) => input.setValue(!!plugin.state.settings.bgmMirror).onChange(async (value) => { plugin.state.settings.bgmMirror = value; await plugin.persistMobile(); }));
+        new Setting(this.containerEl).setName("同步收藏与进度").addButton((control) => control.setButtonText("同步").onClick(() => plugin.syncMobile()));
+      }
+    }(this.app, this));
+  }
+  bgm() { return new C.Bangumi(this.http, this.state.settings.bgmToken, this.state.settings.bgmMirror ? "https://api.bangumi.lat" : "https://api.bgm.tv"); }
+  async persistMobile() {
+    if (this.document?.storage === "vault") {
+      this.document.state = this.state;
+      this.document.records = DeviceModel.capture(this.document.records || {}, this.mobileBaseline, DeviceModel.project(this.state), this.mobileDeviceId);
+      this.mobileBaseline = DeviceModel.project(this.state);
+      await this.saveData(this.document);
+    } else await this.saveData(this.state);
+  }
+  async open() {
+    const leaf = this.app.workspace.getLeavesOfType(VIEW)[0] || this.app.workspace.getLeaf("tab");
+    await leaf.setViewState({ type: VIEW, active: true });
+    await this.app.workspace.revealLeaf(leaf);
+  }
+  async syncMobile() {
+    try {
+      const bgm = this.bgm();
+      const me = await bgm.call("/v0/me");
+      const rows = await bgm.pages(`/v0/users/${encodeURIComponent(me.username)}/collections?subject_type=2`);
+      for (const row of rows) {
+        let show = this.state.shows.find((item) => item.id === row.subject_id);
+        if (!show) { show = C.newShow(row.subject); this.state.shows.push(show); }
+        Object.assign(show, { status: row.type, rate: row.rate || 0, comment: row.comment || "", private: !!row.private });
+      }
+      await this.persistMobile();
+      for (const leaf of this.app.workspace.getLeavesOfType(VIEW)) await leaf.view.render();
+      new Notice("收藏已同步");
+    } catch (error) { new Notice(error.message); }
+  }
+}
+class MobileDashboard extends ItemView {
+  constructor(leaf, plugin) { super(leaf); this.p = plugin; }
+  getViewType() { return VIEW; }
+  getDisplayText() { return "AniLink"; }
+  getIcon() { return "tv"; }
+  async onOpen() { await this.render(); }
+  async render() {
+    const el = this.contentEl;
+    el.empty();
+    el.addClass("al-mobile-dashboard");
+    const top = el.createDiv("al-actions");
+    button(top, "同步", () => this.p.syncMobile());
+    const query = field(el, "搜索番剧", "");
+    const results = el.createDiv();
+    button(el, "搜索", async () => {
+      try {
+        const response = await this.p.bgm().search(query.value.trim());
+        results.empty();
+        for (const subject of response.data || []) {
+          new Setting(results).setName(subject.name_cn || subject.name).addButton((control) => control.setButtonText("加入想看").onClick(async () => {
+            try {
+              await this.p.bgm().call(`/v0/users/-/collections/${subject.id}`, "POST", { type: 1 });
+              let show = this.p.state.shows.find((item) => item.id === subject.id);
+              if (!show) { show = C.newShow(subject); this.p.state.shows.push(show); }
+              show.status = 1;
+              await this.p.persistMobile();
+              await this.render();
+            } catch (error) { new Notice(error.message); }
+          }));
+        }
+      } catch (error) { new Notice(error.message); }
+    });
+    for (const show of this.p.state.shows) {
+      const row = el.createDiv("al-mobile-show");
+      const open = button(row, show.title, () => this.show(show));
+      open.addClass("al-mobile-show-title");
+      row.createSpan({ text: C.STATUS[show.status] || "未收藏" });
+    }
+  }
+  async show(show) {
+    const el = this.contentEl;
+    el.empty();
+    button(el, "返回书架", () => this.render());
+    el.createEl("h2", { text: show.title });
+    const status = select(el, "收藏状态", String(show.status), C.STATUS);
+    const rate = select(el, "评分", String(show.rate || 0), Object.fromEntries(Array.from({ length: 11 }, (_, index) => [index, index ? index + "分" : "未评分"])));
+    const comment = field(el, "短评", show.comment, "textarea");
+    button(el, "保存评价", async () => {
+      try {
+        const payload = { type: Number(status.value), rate: Number(rate.value), comment: comment.value, private: !!show.private };
+        await this.p.bgm().call(`/v0/users/-/collections/${show.id}`, "POST", payload);
+        Object.assign(show, { status: payload.type, rate: payload.rate, comment: payload.comment });
+        await this.p.persistMobile();
+        new Notice("评价已同步");
+      } catch (error) { new Notice(error.message); }
+    });
+    const list = el.createDiv("al-mobile-episodes");
+    try {
+      const episodes = await this.p.bgm().pages(`/v0/users/-/collections/${show.id}/episodes`);
+      for (const entry of episodes) {
+        const episode = entry.episode;
+        if (episode.type !== 0) continue;
+        const row = new Setting(list).setName(`第${episode.sort}集 ${episode.name_cn || episode.name || ""}`);
+        row.addToggle((toggle) => toggle.setValue(entry.type === 2).onChange(async (watched) => {
+          try {
+            await this.p.bgm().call(`/v0/users/-/collections/-/episodes/${episode.id}`, "PUT", { type: watched ? 2 : 0 });
+            const local = show.episodes?.find((item) => item.id === episode.id);
+            if (local) local.watched = watched;
+            await this.p.persistMobile();
+          } catch (error) { toggle.setValue(!watched); new Notice(error.message); }
+        }));
+      }
+    } catch (error) { list.createEl("p", { text: error.message }); }
+  }
+}
+
+module.exports=Platform?.isMobile ? MobileAniLink : AniLink;
 
 AniLink.prototype.bundledAudioScript = "\"\"\"Estimate target_time = source_time + offset from matching audio windows.\"\"\"\nimport argparse, json, subprocess, time\nfrom pathlib import Path\nimport numpy as np\n\n\ndef audio(filename, ffmpeg):\n    result = subprocess.run([ffmpeg, '-v', 'error', *(['-headers', 'Referer: https://www.bilibili.com/\\r\\n', '-user_agent', 'Mozilla/5.0'] if filename.startswith('https://') else []), '-i', filename, '-vn', '-ac', '1', '-ar', '2000', '-f', 'f32le', '-'], capture_output=True, check=True)\n    return np.frombuffer(result.stdout, dtype='<f4').astype(np.float64)\n\n\ndef align(source, target, rate=2000):\n    window = 8 * rate\n    if min(len(source), len(target)) < 3 * window:\n        raise ValueError('Need at least 24 seconds of matching audio')\n    matches = []\n    for fraction in [0.2, 0.5, 0.8]:\n        start = int((len(source)-window)*fraction)\n        sample = source[start:start+window].copy()\n        sample -= sample.mean()\n        energy = np.dot(sample, sample)\n        if energy < 1e-8:\n            continue\n        size = 1 << (len(target)+window-1).bit_length()\n        correlation = np.fft.irfft(np.fft.rfft(target, size)*np.fft.rfft(sample[::-1], size), size)[window-1:len(target)]\n        cumulative = np.concatenate(([0.0], np.cumsum(target*target)))\n        target_energy = cumulative[window:] - cumulative[:-window]\n        score = correlation / np.sqrt(np.maximum(target_energy*energy, 1e-20))\n        best = int(np.argmax(score))\n        matches.append({'source':start/rate, 'target':best/rate, 'offset':(best-start)/rate, 'score':float(score[best])})\n    if len(matches) < 3 or min(m['score'] for m in matches) < 0.55:\n        raise ValueError('Audio match confidence too low')\n    offsets = [m['offset'] for m in matches]\n    if max(offsets)-min(offsets) > 0.15:\n        raise ValueError('Edits or drift detected; a single offset is unsafe: '+json.dumps(matches))\n    return {'offsetSeconds':float(np.median(offsets)), 'anchors':matches}\n\n\ndef align_spectral(source, target, rate=2000):\n    def fingerprint(signal):\n        frames=np.lib.stride_tricks.sliding_window_view(signal,256)[::40]\n        spectrum=np.abs(np.fft.rfft(frames*np.hanning(256),axis=1))**2\n        bands=np.stack([np.log1p(spectrum[:,lo:hi].mean(axis=1)*1000) for lo,hi in [(2,5),(5,9),(9,15),(15,24),(24,38),(38,58),(58,85),(85,125)]],axis=1)\n        return (bands-bands.mean(axis=0))/np.maximum(bands.std(axis=0),.001)\n    a,b=fingerprint(source),fingerprint(target);window=400;matches=[]\n    for fraction in [.2,.5,.8]:\n        start=int((min(len(a),len(b))-window)*fraction);sample=a[start:start+window];sample=sample-sample.mean(axis=0)\n        size=1<<(len(b)+window-1).bit_length()\n        corr=np.fft.irfft(np.fft.rfft(b,size,axis=0)*np.fft.rfft(sample[::-1],size,axis=0),size,axis=0)[window-1:len(b)].sum(axis=1)\n        cumulative=np.concatenate(([0],np.cumsum((b*b).sum(axis=1))))\n        score=corr/np.sqrt(np.maximum((cumulative[window:]-cumulative[:-window])*(sample*sample).sum(),1e-20))\n        best=int(score.argmax());matches.append({'source':start*.02,'target':best*.02,'offset':round((best-start)*.02,3),'score':float(score[best])})\n    if min(m['score'] for m in matches)<.4 or sorted(m['score'] for m in matches)[1]<.6:raise ValueError('Spectral confidence too low '+json.dumps(matches))\n    offsets=[m['offset'] for m in matches]\n    if max(offsets)-min(offsets)>.15:raise ValueError('Edits or drift '+json.dumps(matches))\n    return {'offsetSeconds':float(np.median(offsets)),'anchors':matches}\n\n\nif __name__ == '__main__':\n    parser=argparse.ArgumentParser()\n    parser.add_argument('source');parser.add_argument('target')\n    parser.add_argument('--ffmpeg',default='ffmpeg')\n    parser.add_argument('--xml');parser.add_argument('--output')\n    args=parser.parse_args();started=time.perf_counter()\n    result=align_spectral(audio(args.source,args.ffmpeg),audio(args.target,args.ffmpeg))\n    if args.xml:\n        import xml.etree.ElementTree as ET\n        if not args.output or Path(args.xml).resolve()==Path(args.output).resolve():\n            raise ValueError('Provide a separate output XML path')\n        tree=ET.parse(args.xml)\n        for node in list(tree.getroot()):\n            if node.tag!='d':continue\n            fields=node.attrib['p'].split(',');stamp=float(fields[0])+result['offsetSeconds']\n            if stamp<0:tree.getroot().remove(node)\n            else:fields[0]=str(round(stamp,3));node.set('p',','.join(fields))\n        with open(args.output,'xb') as handle:tree.write(handle,encoding='utf-8',xml_declaration=True)\n    result['elapsedSeconds']=time.perf_counter()-started\n    print(json.dumps(result))\n\n\n\n\n";
 
 AniLink.prototype.bundledFocusScript = "param([string]$Executable)\n$ErrorActionPreference = 'Stop'\nAdd-Type -AssemblyName System.Windows.Forms\nAdd-Type @'\nusing System;\nusing System.Runtime.InteropServices;\npublic static class AniLinkPlayerWindow {\n  [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr window, int command);\n  [DllImport(\"user32.dll\")] public static extern bool SetForegroundWindow(IntPtr window);\n  [DllImport(\"user32.dll\")] public static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int width, int height, uint flags);\n}\n'@\nfor ($attempt = 0; $attempt -lt 30; $attempt++) {\n  $player = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $Executable -and $_.MainWindowHandle -ne 0 } | Select-Object -First 1\n  if ($player) {\n    $area = [Windows.Forms.Screen]::PrimaryScreen.WorkingArea\n    [AniLinkPlayerWindow]::ShowWindow($player.MainWindowHandle, 9) | Out-Null\n    [AniLinkPlayerWindow]::SetWindowPos($player.MainWindowHandle, [IntPtr]::Zero, $area.X, $area.Y, $area.Width, $area.Height, 0x0040) | Out-Null\n    [AniLinkPlayerWindow]::SetForegroundWindow($player.MainWindowHandle) | Out-Null\n    break\n  }\n  Start-Sleep -Milliseconds 250\n}\n";
+
+AniLink.prototype.bundledSchedulerScripts = {"download-scheduler.ps1":"param([switch]$InspectOnly, [switch]$Once, [switch]$ManageRunning, [string]$ConfigPath = (Join-Path $PSScriptRoot 'scheduler.json'))\n$ErrorActionPreference = 'Stop'\n$taskRoot = Split-Path -Parent ([IO.Path]::GetFullPath($ConfigPath))\n$taskMutex = [Threading.Mutex]::new($false, 'Local\\AniLinkDownloadScheduler')\nif (-not $InspectOnly -and -not $taskMutex.WaitOne(0)) { exit }\n$owned = $false\n$idleSince = $null\n$nextStart = [datetime]::MinValue\n$startedAt = [datetime]::MinValue\n$refreshed = $false\ntry {\n do {\n  try {\n   $config = Get-Content -LiteralPath $ConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json\n   $document = Get-Content -LiteralPath $config.dataFile -Raw -Encoding UTF8 | ConvertFrom-Json\n   $settings = if ($document.state) { $document.state.settings } else { $document.settings }\n   if (-not $settings) { throw 'AniLink settings document is missing.' }\n   $mode = if ($Once) { 'once' } else { $settings.downloadMode }\n   if ($mode -eq 'off' -or -not $mode) { break }\n   $wake = [Math]::Max(5, [int]$settings.wakeMinutes)\n   $idle = [Math]::Min(120, [Math]::Max(1, [int]$settings.idleMinutes))\n   $running = @(Get-CimInstance Win32_Process -Filter \"Name='qbittorrent.exe'\" | Where-Object { $_.ExecutablePath -eq $config.exe })\n   if ($InspectOnly) {\n    @{ mode=$mode; running=($running.Count -gt 0); wakeMinutes=$wake; idleMinutes=$idle; startup=(Test-Path -LiteralPath \"$env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\AniLink-downloads.lnk\") } | ConvertTo-Json -Compress\n    break\n   }\n    if ($ManageRunning -and $running.Count -and -not $owned) { $owned = $true; $startedAt = Get-Date; $idleSince = $null }\n    if (-not $running.Count -and (Get-Date) -ge $nextStart) {\n    $args = @('--no-splash', '--minimized')\n    if ($config.profile) { $args = @(\"--profile=$($config.profile)\") + $args }\n    Start-Process -FilePath $config.exe -ArgumentList $args -WindowStyle Hidden\n    $owned = $true; $startedAt = Get-Date; $idleSince = $null\n   }\n   if ($owned) {\n    $root = $settings.qbUrl.TrimEnd('/')\n    $uri = [uri]$root\n    if ($uri.Host -notin @('127.0.0.1', 'localhost', '::1')) { throw 'Local scheduler requires loopback qBittorrent.' }\n    Invoke-WebRequest -Uri \"$root/api/v2/auth/login\" -Method Post -Body @{username=$settings.qbUser; password=$settings.qbPassword} -SessionVariable qbSession -UseBasicParsing | Out-Null\n     if (-not $refreshed) {\n      $feeds = @(Invoke-RestMethod -Uri \"$root/api/v2/rss/items\" -WebSession $qbSession)\n      foreach ($feed in $feeds.PSObject.Properties) { if ($feed.Name -like 'AniLink*') { Invoke-WebRequest -Uri \"$root/api/v2/rss/refreshItem\" -Method Post -Body @{itemPath=$feed.Name} -WebSession $qbSession -UseBasicParsing | Out-Null } }\n      $refreshed = $true\n     }\n    $tasks = @(Invoke-RestMethod -Uri \"$root/api/v2/torrents/info\" -WebSession $qbSession)\n     $other = @($tasks | Where-Object { $_.category -notlike 'AniLink*' -and ($_.progress -lt 1 -or $_.state -match 'checking|moving|allocating|error|missing') })\n    $pending = @($tasks | Where-Object { $_.progress -lt 1 -or $_.state -match 'checking|moving|allocating|error|missing' })\n    if ($other.Count -or $pending.Count) { $idleSince = $null }\n    elseif (-not $idleSince) { $idleSince = Get-Date }\n    if (($mode -eq 'once' -or $mode -eq 'cycle') -and $idleSince -and ((Get-Date)-$idleSince).TotalMinutes -ge $idle -and ((Get-Date)-$startedAt).TotalMinutes -ge $idle) {\n     Invoke-WebRequest -Uri \"$root/api/v2/app/shutdown\" -Method Post -WebSession $qbSession -UseBasicParsing | Out-Null\n     $owned = $false; $idleSince = $null\n     if ($mode -eq 'once') { break }\n     $nextStart = (Get-Date).AddMinutes($wake)\n    }\n   }\n   @{checked=(Get-Date).ToString('o');mode=$mode;ownsDownloader=$owned;nextStart=$nextStart.ToString('o');error=$null} | ConvertTo-Json -Compress | Set-Content -LiteralPath \"$taskRoot\\scheduler-status.json\" -Encoding UTF8\n  } catch {\n   $idleSince = $null\n   if ($InspectOnly) { throw }\n   @{checked=(Get-Date).ToString('o');error=$_.Exception.Message} | ConvertTo-Json -Compress | Set-Content -LiteralPath \"$taskRoot\\scheduler-status.json\" -Encoding UTF8\n  }\n  if (-not $InspectOnly) { Start-Sleep -Seconds 15 }\n  } while (-not $InspectOnly)\n} finally {\n if (-not $InspectOnly) { $taskMutex.ReleaseMutex() }\n $taskMutex.Dispose()\n}\n","install-scheduler.ps1":"param(\n [string]$PluginDataPath,\n [string]$InstallRoot = (Join-Path $env:LOCALAPPDATA 'AniLink\\services'),\n [string]$QbExe,\n [string]$QbProfile = '',\n [switch]$Uninstall\n)\n$ErrorActionPreference = 'Stop'\n$startup = Join-Path $env:APPDATA 'Microsoft\\Windows\\Start Menu\\Programs\\Startup\\AniLink-downloads.lnk'\nif ($Uninstall) {\n if (Test-Path -LiteralPath $startup) { Remove-Item -LiteralPath $startup }\n Write-Output 'AniLink login startup shortcut removed; downloads and files were not changed.'\n exit\n}\nif (-not $PluginDataPath -or -not (Test-Path -LiteralPath $PluginDataPath -PathType Leaf)) { throw 'A configured AniLink data.json path is required.' }\n$dataDocument = Get-Content -LiteralPath $PluginDataPath -Raw -Encoding UTF8 | ConvertFrom-Json\nif (-not $dataDocument.state.settings -and -not $dataDocument.settings) { throw 'The selected data document has no AniLink settings.' }\nif (-not (Test-Path -LiteralPath $QbExe -PathType Leaf)) { throw 'qBittorrent executable does not exist.' }\nNew-Item -ItemType Directory -Path $InstallRoot -Force | Out-Null\n$target = Join-Path $InstallRoot 'download-scheduler.ps1'\nif ([IO.Path]::GetFullPath($target) -ne [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'download-scheduler.ps1'))) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'download-scheduler.ps1') -Destination $target -Force }\nif ($QbProfile -and -not (Test-Path -LiteralPath $QbProfile -PathType Container)) { throw 'qBittorrent profile directory does not exist.' }\n@{dataFile=[IO.Path]::GetFullPath($PluginDataPath);exe=[IO.Path]::GetFullPath($QbExe);profile=if($QbProfile){[IO.Path]::GetFullPath($QbProfile)}else{''}} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $InstallRoot 'scheduler.json') -Encoding UTF8\n$shell = New-Object -ComObject WScript.Shell\n$shortcut = $shell.CreateShortcut($startup)\n$shortcut.TargetPath = Join-Path $env:SystemRoot 'System32\\WindowsPowerShell\\v1.0\\powershell.exe'\n$shortcut.Arguments = \"-NoProfile -WindowStyle Hidden -File `\"$target`\" -Once\"\n$shortcut.WorkingDirectory = $InstallRoot\n$shortcut.WindowStyle = 7\n$shortcut.Save()\nWrite-Output 'AniLink login startup shortcut created; it takes effect at the next login.'\n"};

@@ -5,15 +5,23 @@ AniLink.prototype.installRclone = async function () {
   const root = path.join(this.app.vault.adapter.getBasePath(), this.manifest.dir, "tools");
   await fs.mkdir(root, { recursive: true });
   const archive = path.join(root, "rclone.zip");
-  const response = await requestUrl({ url: "https://downloads.rclone.org/rclone-current-windows-amd64.zip" });
+  const system = { win32: "windows", darwin: "osx", linux: "linux" }[process.platform];
+  const architecture = { x64: "amd64", arm64: "arm64" }[process.arch];
+  if (!system || !architecture) throw Error("当前系统架构需要手动安装 rclone");
+  const suffix = system + "-" + architecture;
+  const response = await requestUrl({ url: "https://downloads.rclone.org/rclone-current-" + suffix + ".zip" });
   await fs.writeFile(archive, Buffer.from(response.arrayBuffer));
   const quote = (value) => "'" + value.replace(/'/g, "''") + "'";
   const command = "Expand-Archive -LiteralPath " + quote(archive) + " -DestinationPath " + quote(root) + " -Force";
-  await new Promise((resolve, reject) => execFile("powershell.exe", ["-NoProfile", "-WindowStyle", "Hidden", "-Command", command], { windowsHide: true }, (error) => error ? reject(error) : resolve()));
-  const directory = (await fs.readdir(root)).find((name) => /^rclone-.*windows-amd64$/.test(name));
+  const program = process.platform === "win32" ? "powershell.exe" : "unzip";
+  const args = process.platform === "win32" ? ["-NoProfile", "-WindowStyle", "Hidden", "-Command", command] : ["-o", archive, "-d", root];
+  await new Promise((resolve, reject) => execFile(program, args, { windowsHide: true }, (error) => error ? reject(error) : resolve()));
+  const directory = (await fs.readdir(root)).find((name) => name.startsWith("rclone-") && name.endsWith(suffix));
   if (!directory) throw Error("rclone 安装包中未找到程序");
-  const executable = path.join(root, "rclone.exe");
-  await fs.copyFile(path.join(root, directory, "rclone.exe"), executable);
+  const binary = process.platform === "win32" ? "rclone.exe" : "rclone";
+  const executable = path.join(root, binary);
+  await fs.copyFile(path.join(root, directory, binary), executable);
+  if (process.platform !== "win32") await fs.chmod(executable, 0o755);
   this.state.settings.rcloneExe = executable;
   await this.persist();
   new Notice("rclone 组件已安装");
@@ -21,7 +29,7 @@ AniLink.prototype.installRclone = async function () {
 AniLink.prototype.remoteCommand = async function (settings, args, input) {
   let executable = settings.rcloneExe;
   if (!executable) {
-    const bundled = path.join(this.app.vault.adapter.getBasePath(), this.manifest.dir, "tools", "rclone.exe");
+    const bundled = path.join(this.app.vault.adapter.getBasePath(), this.manifest.dir, "tools", process.platform === "win32" ? "rclone.exe" : "rclone");
     try { await fs.access(bundled); executable = bundled; }
     catch { executable = "rclone"; }
   }

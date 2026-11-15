@@ -1,7 +1,14 @@
 // Settings behaviours are installed after the existing feature adapters.
 const settingsRedraw = AniLink.prototype.redraw;
-AniLink.prototype.redraw = function () {
+AniLink.prototype.redraw = function (background = false) {
   if (this.app.setting?.containerEl?.isShown()) return;
+  if (background || (this.backgroundTasks?.size && !this.busy)) {
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW)) {
+      const cards = leaf.view.contentEl?.querySelector(".al-cards");
+      if (cards) leaf.view.renderCards(cards);
+    }
+    return;
+  }
   return settingsRedraw.call(this);
 };
 AniLink.prototype.syncModal = function () {
@@ -11,20 +18,77 @@ AniLink.prototype.syncModal = function () {
 AniLink.prototype.syncBiliFilters = async function () {
   const response = await this.http.json("https://api.bilibili.com/x/dm/filter/user", "GET", undefined, { Referer: "https://www.bilibili.com/" });
   if (response.code !== 0 || !Array.isArray(response.data?.rule)) throw Error("屏蔽词同步失败，请确认 B站登录有效");
-  this.state.settings.biliFilterRules = response.data.rule.filter((rule) => rule.type === 0 || rule.type === 1);
+  this.state.settings.biliFilterRules = response.data.rule.filter((rule) => [0, 1, 2].includes(rule.type));
+  this.state.settings.biliFilterRevision = (this.state.settings.biliFilterRevision || 0) + 1;
   await this.persist();
   new Notice("已同步 " + this.state.settings.biliFilterRules.length + " 条屏蔽规则");
 };
 AniLink.prototype.filterDanmaku = function (document) {
   for (const node of document.querySelectorAll("d")) {
     const blocked = (this.state.settings.biliFilterRules || []).some((rule) => {
+      if (rule.enabled === false) return false;
       if (rule.type === 0) return node.textContent.includes(rule.filter);
+      if (rule.type === 2) return node.getAttribute("p")?.split(",")[6] === rule.filter;
       try { return new RegExp(rule.filter, "i").test(node.textContent); } catch { return false; }
     });
     if (blocked) node.remove();
   }
 };
+AniLink.prototype.filterRulesModal = function () {
+  new Panel(this, "弹幕屏蔽词库", (el) => {
+    const rules = this.state.settings.biliFilterRules ||= [];
+    const persistRules = async () => {
+      this.state.settings.biliFilterRevision = (this.state.settings.biliFilterRevision || 0) + 1;
+      await this.persist();
+    };
+    let editedRule;
+    const list = el.createDiv();
+    const render = () => {
+      list.empty();
+      for (const control of tabs.children) control.classList.toggle("mod-cta", control.textContent === ["关键词", "正则表达式", "屏蔽用户"][Number(kind.value)]);
+      for (const rule of rules.filter((item) => item.type === Number(kind.value))) {
+        const row = new Setting(list).setName(rule.filter);
+        row.addToggle((control) => control.setValue(rule.enabled !== false).onChange((value) => this.run(async () => { rule.enabled = value; await persistRules(); })));
+        row.addButton((control) => control.setButtonText("编辑").onClick(() => {
+          editedRule = rule;
+          kind.value = String(rule.type);
+          value.value = rule.filter;
+          value.scrollIntoView({ block: "nearest" });
+          value.focus();
+        }));
+        row.addButton((control) => control.setButtonText("删除").onClick(() => this.run(async () => { rules.splice(rules.indexOf(rule), 1); await persistRules(); render(); })));
+      }
+    };
+    const kind = { value: "0" };
+    const tabs = el.createDiv("al-actions al-filter-tabs");
+    for (const [type, label] of [["0", "关键词"], ["1", "正则表达式"], ["2", "屏蔽用户"]]) {
+      button(tabs, label, () => { kind.value = type; editedRule = null; value.value = ""; value.placeholder = type === "2" ? "输入用户哈希" : type === "1" ? "输入正则表达式" : "输入关键词"; render(); });
+    }
+    const value = field(el, "屏蔽内容", "");
+    button(el, "保存规则", () => this.run(async () => {
+      const filter = value.value.trim();
+      if (!filter) throw Error("请输入屏蔽内容");
+      if (kind.value === "1") { try { new RegExp(filter); } catch { throw Error("正则表达式无效"); } }
+      if (editedRule && rules.includes(editedRule)) Object.assign(editedRule, { type: Number(kind.value), filter });
+      else rules.push({ type: Number(kind.value), filter, enabled: true });
+      editedRule = null;
+      await persistRules(); value.value = ""; render();
+    }));
+    render();
+    el.appendChild(list);
+  }).open();
+};
 const settingsPlay = AniLink.prototype.play;
+AniLink.prototype.refreshRssSubscriptions = async function () {
+  for (const show of this.state.shows.filter((item) => item.subscription?.enabled && item.subscription.feed)) {
+    try {
+      await this.qb().call("rss/refreshItem", { itemPath: C.feedPath(show) });
+      if (this.installSubscription && (show.subscription.appliedRevisionPolicy !== C.revisionPolicy(this.state.settings, show.subscription)))
+        await this.installSubscription(show, show.subscription);
+    }
+    catch (error) { C.record(this.state, `${show.title} · RSS 刷新失败：${error.message}`); }
+  }
+};
 AniLink.prototype.focusLocalPlayer = async function () {
   if (process.platform !== "win32") return;
   const script = path.join(this.app.vault.adapter.getBasePath(), this.manifest.dir, "focus-player.ps1");
@@ -72,7 +136,7 @@ const settingsUploader = AniLink.prototype.prepareUploaderDanmaku;
 AniLink.prototype.prepareUploaderDanmaku = async function (show, episode, file) {
   let uploaderResult;
   try { uploaderResult = await settingsUploader.call(this, show, episode, file); }
-  catch (error) { C.record(this.state, "UP主弹幕获取：" + error.message); }
+  catch (error) { C.record(this.state, `${show.title} 第${episode.sort}集 · UP ${this.state.settings.biliUploaders || C.defaults().settings.biliUploaders} · 弹幕获取失败：${error.message}`); }
   if (this.state.settings.biliOfficialFirst !== false) {
     try {
       let url = show.biliOfficialUrl;
@@ -127,7 +191,7 @@ AniLink.prototype.prepareUploaderDanmaku = async function (show, episode, file) 
           return;
         }
       }
-    } catch (error) { C.record(this.state, "官方弹幕获取失败：" + error.message); }
+    } catch (error) { C.record(this.state, `${show.title} 第${episode.sort}集 · 官方弹幕获取失败：${error.message}`); }
   }
   episode.danmaku ||= {};
   episode.danmaku.officialCheckedAt = Date.now();
@@ -151,7 +215,9 @@ AniLink.prototype.applyRssDefaults = async function () {
 
 const settingsInstallSubscription = AniLink.prototype.installSubscription;
 AniLink.prototype.installSubscription = async function (show, sub) {
-  if (["latest", "upgrade"].includes(sub.revisionPolicy)) {
+  const policy = C.revisionPolicy(this.state.settings, sub);
+  if (policy === "standard") { sub.supersededTitles = []; for (const episode of show.episodes) delete episode.pendingRevision; }
+  if (sub.enabled && ["latest", "upgrade"].includes(policy)) {
     const rows = await this.readFeed(sub.feed);
     const latest = new Map();
     for (const row of rows.filter((row) => C.previewMatch(row.title, { ...sub, supersededTitles: [] }))) {
@@ -166,7 +232,7 @@ AniLink.prototype.installSubscription = async function (show, sub) {
       const best = episode && latest.get(episode.id);
       return best && Number(row.title.match(/\d+v(\d+)/i)?.[1] || 1) < best.revision;
     }).map((row) => row.title);
-    if (sub.revisionPolicy === "upgrade") {
+    if (policy === "upgrade") {
       for (const [episodeId, best] of latest) {
         const episode = show.episodes.find((episode) => episode.id === episodeId);
         for (const hash of new Set((episode.files || []).filter((file) => file.hash && Number((file.taskTitle || file.name).match(/\d+v(\d+)/i)?.[1] || 1) < best.revision).map((file) => file.hash))) {
@@ -176,13 +242,15 @@ AniLink.prototype.installSubscription = async function (show, sub) {
       }
     }
   }
-  return settingsInstallSubscription.call(this, show, sub);
+  const result = await settingsInstallSubscription.call(this, show, sub);
+  sub.appliedRevisionPolicy = policy;
+  return result;
 };
 const revisionRefresh = AniLink.prototype.refresh;
 AniLink.prototype.refresh = async function (manual) {
   const result = await revisionRefresh.call(this, manual);
   for (const show of this.state.shows) {
-    for (const episode of show.episodes.filter((episode) => !episode.watched && episode.pendingRevision)) {
+    for (const episode of show.episodes.filter((episode) => C.revisionPolicy(this.state.settings, show.subscription) === "upgrade" && !episode.watched && episode.pendingRevision)) {
       const pending = episode.pendingRevision;
       if (!(episode.files || []).some((file) => file.progress === 1 && file.hash !== pending.hash && file.taskTitle === pending.title)) continue;
       if (show.episodes.some((other) => other.id !== episode.id && other.files?.some((file) => file.hash === pending.hash))) continue;
@@ -194,7 +262,7 @@ AniLink.prototype.refresh = async function (manual) {
   }
   if (Date.now() - (this.lastRevisionCheck || 0) < 600000) return result;
   this.lastRevisionCheck = Date.now();
-  for (const show of this.state.shows.filter((show) => show.subscription.enabled && ["latest", "upgrade"].includes(show.subscription.revisionPolicy))) {
+  for (const show of this.state.shows.filter((show) => show.subscription.enabled && (["latest", "upgrade"].includes(C.revisionPolicy(this.state.settings, show.subscription)) || show.subscription.appliedRevisionPolicy !== C.revisionPolicy(this.state.settings, show.subscription)))) {
     try {
       await this.qb().call("app/version");
       await this.installSubscription(show, show.subscription);
@@ -227,6 +295,12 @@ Dashboard.prototype.renderDetail = function (el, show) {
 const settingsOnload = AniLink.prototype.onload;
 AniLink.prototype.onload = async function () {
   await settingsOnload.call(this);
+  this.background("启动分集资料", async () => {
+    for (const show of this.state.shows.filter((item) => item.status === 1 || item.status === 3)) {
+      try { await this.updateEpisodes(show); }
+      catch (error) { C.record(this.state, `${show.title} · 启动分集资料更新失败：${error.message}`); }
+    }
+  });
   const synchronize = async () => {
     if (this.settingsSyncRunning || !this.state.settings.bgmToken) return;
     this.settingsSyncRunning = true;
@@ -260,4 +334,17 @@ AniLink.prototype.onunload = function () {
   this.settingsUnloadTask = finish();
   this.settingsUnloadTask.catch((error) => console.error("AniLink 退出保存失败", error));
   settingsUnload.call(this);
+};
+
+// Retain existing library folders without renaming or moving user files.
+AniLink.prototype.showFolder = async function (show, root) {
+  if (show.subscription.savePath) return show.subscription.savePath;
+  const target = path.join(root, C.folderName(show.title, show.id));
+  const oldName = show.title.replace(/[<>:"/\\|?*]/g, "_");
+  const legacy = path.resolve(root, oldName);
+  const relative = path.relative(path.resolve(root), legacy);
+  if (relative && !relative.startsWith("..") && !path.isAbsolute(relative)) {
+    try { if ((await fs.stat(legacy)).isDirectory()) return legacy; } catch { /* Create a portable folder for new downloads. */ }
+  }
+  return target;
 };

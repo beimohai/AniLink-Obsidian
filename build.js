@@ -25,6 +25,7 @@ const source = ("\"use strict\";\nconst ANI_ICON = " + JSON.stringify(icon) + ";
         "device-sync",
         "preferences-runtime",
         "aniclip",
+        "mobile",
       ]
         .map((f) =>
           fs
@@ -35,13 +36,13 @@ const source = ("\"use strict\";\nconst ANI_ICON = " + JSON.stringify(icon) + ";
                 `(()=>{const module={exports:{}};${fs.readFileSync("src/sync-model.js", "utf8").replace(/^"use strict";/, "")}\nreturn module.exports;})()`,
             ),
         )
-        .join("\n") + "\nmodule.exports=AniLink;",
+        .join("\n") + "\nmodule.exports=Platform?.isMobile ? MobileAniLink : AniLink;",
   );
 fs.writeFileSync(
   "main.js",
   source.replace(/\r\n?/g, "\n").replace(
     /require\((['"])\.\/core\1\)/,
-    () => `(()=>{const module={exports:{}};${core.replace(/^"use strict";/, "")}\nreturn module.exports;})()`,
+    () => `(()=>{const module={exports:{}};${core.replace(/^"use strict";/, "").replace('const path = require("path");', 'const path = Platform?.isMobile ? null : require("path");')}\nreturn module.exports;})()`,
   ),
 );
 console.log("Built main.js (no external runtime dependencies)");
@@ -50,3 +51,11 @@ console.log("Built main.js (no external runtime dependencies)");
 const audio = fs.readFileSync("scripts/align-audio.py", "utf8").replace(/\r\n?/g, "\n");
 fs.appendFileSync("main.js", "\nAniLink.prototype.bundledAudioScript = " + JSON.stringify(audio) + ";\n");
 fs.appendFileSync("main.js", "\nAniLink.prototype.bundledFocusScript = " + JSON.stringify(fs.readFileSync("scripts/focus-player.ps1", "utf8")) + ";\n");
+
+const schedulerScripts = Object.fromEntries(
+  ["download-scheduler.ps1", "install-scheduler.ps1"].map((name) => [
+    name,
+    fs.readFileSync("scripts/" + name, "utf8").replace(/\r\n?/g, "\n"),
+  ]),
+);
+fs.appendFileSync("main.js", "\nAniLink.prototype.bundledSchedulerScripts = " + JSON.stringify(schedulerScripts) + ";\n");

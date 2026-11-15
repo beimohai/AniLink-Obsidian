@@ -57,7 +57,7 @@ Connections.prototype.display = function () {
       p.run(async () => {
         const result = await require("electron").remote.dialog.showOpenDialog({
           properties: [directory ? "openDirectory" : "openFile"],
-          filters: directory ? undefined : [{ name: "程序", extensions: ["exe"] }],
+          filters: directory || process.platform !== "win32" ? undefined : [{ name: "程序", extensions: ["exe"] }],
         });
         if (!result.canceled && result.filePaths[0]) {
           getInput().value = result.filePaths[0];
@@ -71,10 +71,11 @@ Connections.prototype.display = function () {
   };
 
   heading("通用");
+  choice("网页打开方式", "browserMode", { external: "默认浏览器", obsidian: "Obsidian Web viewer" }, "external");
   toggle("默认打开第一个番剧", "openFirstShow", false);
-  new Setting(el).setName("运行日志").addButton((b) => b.setButtonText("查看日志").onClick(() => p.logsModal()));
+  new Setting(el).setName("运行日志").setClass("al-log-setting").addButton((b) => b.setButtonText("查看日志").onClick(() => p.logsModal()));
   choice("日志记录范围", "logScope", { all: "全量操作", errors: "错误信息" }, "all");
-  choice("日志缓存时间", "logRetention", { session: "退出插件后清除", day: "一天", week: "七天", forever: "长期保留" }, "session");
+  choice("日志缓存时间", "logRetention", { session: "退出后清除", day: "一天", week: "七天", forever: "长期保留" }, "session");
 
   heading("页面设置");
   choice("默认季度", "shelfQuarterDefault", { all: "全部季度", current: "当前季度", last: "上次设置" }, "all");
@@ -94,8 +95,8 @@ Connections.prototype.display = function () {
   text("自动同步间隔（分钟）", "bgmSyncMinutes", "0 为关闭定时同步。");
   toggle("启动时自动同步", "bgmSyncStartup", true);
   toggle("退出时自动同步", "bgmSyncExit", true);
-  choice("冲突处理", "bgmConflictPolicy", { ask: "检测差异并询问", remote: "以远端为准", local: "以本地为准" }, "ask");
-  new Setting(el).setName("同步操作")
+  choice("冲突处理", "bgmConflictPolicy", { ask: "询问", remote: "以远端为准", local: "以本地为准" }, "ask");
+  new Setting(el).setName("同步操作").setClass("al-sync-actions")
     .addButton((b) => b.setButtonText("推送").onClick(() => p.run(() => p.sync())))
     .addButton((b) => b.setButtonText("拉取").onClick(() => p.run(() => p.pullAccount())));
   for (const show of p.state.shows.filter((show) => show.remoteConflict))
@@ -111,31 +112,36 @@ Connections.prototype.display = function () {
   picker(qbExe.row, qbExe.input, false);
   const root = text("下载目录", "downloadRoot");
   picker(root.row, root.input, true);
-  choice("运行方式", "downloadMode", { off: "不自动管理", once: "登录后检查一次，完成后退出", cycle: "循环检查（高级）" }, "off", "只管理 AniLink 启动的本机 qBittorrent；不会关闭原本已手动启动的下载器。");
   text("空闲后退出（分钟）", "idleMinutes");
-  new Setting(el).setName("Windows 登录自动启动").addToggle((control) => {
+  const startupSetting = new Setting(el).setName("开机自动启动").addToggle((control) => {
     const startup = path.join(process.env.APPDATA || "", "Microsoft", "Windows", "Start Menu", "Programs", "Startup", "AniLink-downloads.lnk");
     control.setValue(require("fs").existsSync(startup));
+    control.setDisabled(process.platform !== "win32");
     control.onChange((enabled) => p.run(() => p.configureLoginScheduler(enabled)));
   });
-  new Setting(el).setName("检查连接").addButton((b) => b.setButtonText("检查连接").onClick(() => p.run(async () => {
-    await p.qb().call("app/version");
-    new Notice("qBittorrent 连接正常");
+  const connectionSetting = new Setting(el).setName("检查连接").addButton((b) => b.setButtonText("检查连接").onClick(() => p.run(async () => {
+    b.setButtonText("检查中…").setDisabled(true);
+    connectionSetting.setDesc("正在检查连接…");
+    new Notice("正在检查 qBittorrent 连接…");
+    try { await p.qb().call("app/version"); connectionSetting.setDesc("qBittorrent 连接正常"); new Notice("qBittorrent 连接正常"); }
+    catch (error) { const message = C.qbConnectionMessage(error); connectionSetting.setDesc(message); new Notice(message, 8000); C.record(p.state, "qBittorrent 连接检查失败：" + error.message); await p.persist(); }
+    finally { b.setButtonText("检查连接").setDisabled(false); }
   })));
   new Setting(el).setName("RSS 自动配置").setDesc("检查本机下载器并写入 AniLink 的 RSS 规则。").addButton((b) =>
     b.setButtonText("一键配置").onClick(() => p.run(() => p.autoConfigure(false))),
   );
 
-  toggle("自动刷新下载与同步", "autoRefresh", true, "", (value) => { polling.settingEl.hidden = !value; });
-  const polling = text("下载状态刷新秒数", "pollSeconds", "最小 30 秒。").row;
-  polling.settingEl.hidden = s.autoRefresh === false;
-  text("分集资料更新间隔（小时）", "metadataHours", "重新获取想看、在看番剧的分集标题与播出日期的间隔。");
+  el.appendChild(startupSetting.settingEl);
   toggle("下载完成通知", "downloadNotifications", true);
+  toggle("自动刷新 RSS 订阅", "autoRefresh", true, "", (value) => { polling.settingEl.hidden = !value; });
+  const polling = text("自动刷新 RSS 订阅（分钟）", "rssRefreshMinutes").row;
+  polling.settingEl.hidden = s.autoRefresh === false;
+  toggle("有 v2 版本自动替换未看视频", "rssUpgradeUnwatched", false);
 
   heading("本地管理");
-  const library = text("番剧库路径", "libraryRoot", "留空时默认使用 qBittorrent 下载目录");
+  const library = text("番剧库路径", "libraryRoot", "留空时默认使用 qBittorrent 下载目录。");
   picker(library.row, library.input, true);
-  choice("自动清理", "cleanupMode", { none: "不清理", current: "清理当前文件", watched: "清理已看文件" }, s.cleanupAfterWatch === false ? "none" : "watched", "点击看到这里按钮后的操作。");
+  choice("自动清理", "cleanupMode", { none: "不清理", current: "清理当前文件", watched: "清理已看文件" }, s.cleanupAfterWatch === false ? "none" : "watched").settingEl.addClass("al-cleanup-setting");
   toggle("删除文件时同步删除种子", "deleteTorrentWithFiles", true);
 
   heading("远程服务");
@@ -179,7 +185,7 @@ Connections.prototype.display = function () {
   for (const node of networkControls) node.hidden = !s.remoteEnabled;
   toggle("播放前校准弹幕", "calibrateDanmaku", true, "", (value) => { dependency.hidden = !value && !s.calibrationStatus; });
   toggle("启用官方番剧弹幕", "biliOfficialFirst", true);
-  toggle("启用港澳台弹幕", "biliRegional", false);
+  toggle("启用港澳台弹幕（需要对应网络环境）", "biliRegional", false);
   toggle("删减番剧弹幕校准", "biliCutAlignment", true);
   const dependency = el.createDiv("al-settings-dependency");
   const dependencyStatus = new Setting(dependency).setName("依赖状态").setDesc("播放前校准弹幕所需的依赖。");
@@ -193,27 +199,30 @@ Connections.prototype.display = function () {
     })),
     ffmpeg: button(installers, "安装 FFmpeg", () => p.openWebsite("https://ffmpeg.org/download.html")),
   };
-  for (const control of Object.values(install)) control.hidden = true;
+  const showDependencies = (ready) => {
+    dependencyStatus.setDesc(ready
+      ? `Python：${ready.python ? "已就绪" : "未找到"}；NumPy：${ready.numpy ? "已就绪" : "未安装"}；FFmpeg：${ready.ffmpeg ? "已就绪" : "未找到"}。`
+      : "点击检查依赖以查看状态。");
+    for (const [key, control] of Object.entries(install)) {
+      control.classList.toggle("al-dependency-unneeded", !ready || !!ready[key]);
+      control.disabled = !ready || ready[key];
+    }
+  };
   const inspect = async () => {
     const ready = await p.calibrationDependencies();
     s.calibrationStatus = ready;
     await p.persist();
-    dependencyStatus.setDesc(`Python：${ready.python ? "已就绪" : "未找到"}；NumPy：${ready.numpy ? "已就绪" : "未安装"}；FFmpeg：${ready.ffmpeg ? "已就绪" : "未找到"}。`);
-    for (const [key, control] of Object.entries(install)) control.hidden = ready[key];
-    installers.hidden = Object.values(install).every((control) => control.hidden);
+    showDependencies(ready);
   };
   dependencyStatus.addButton((b) => b.setButtonText("检查依赖").onClick(() => p.run(inspect)));
   dependency.hidden = !(s.calibrateDanmaku ?? true) && !s.calibrationStatus;
-  dependencyStatus.setDesc("点击检查依赖以查看状态。");
-  if (s.calibrationStatus) {
-    const ready = s.calibrationStatus;
-    dependencyStatus.setDesc(`Python：${ready.python ? "已就绪" : "未找到"}；NumPy：${ready.numpy ? "已就绪" : "未安装"}；FFmpeg：${ready.ffmpeg ? "已就绪" : "未找到"}。`);
-  }
+  showDependencies(s.calibrationStatus);
 
   heading("bilibili");
   p.biliAccountPanel(el);
-  new Setting(el).setName("屏蔽词库").addButton((b) => b.setButtonText("同步屏蔽词库").onClick(() => p.run(() => p.syncBiliFilters())));
+  new Setting(el).setName("弹幕屏蔽").addButton((b) => b.setButtonText("同步").onClick(() => p.run(() => p.syncBiliFilters()))).addButton((b) => b.setButtonText("屏蔽词库").onClick(() => p.filterRulesModal()));
   const uploaders = text("弹幕来源 UP 主 UID", "biliUploaders", "多个 UID 用英文逗号分隔。");
+  uploaders.row.settingEl.addClass("al-uploader-setting");
   const uploaderProfiles = el.createDiv("al-bili-uploaders");
   let uploaderGeneration = 0;
   const renderUploaders = async () => {
@@ -236,6 +245,7 @@ Connections.prototype.display = function () {
         profile.empty();
         if (user.face) profile.createEl("img", { attr: { src: user.face, referrerpolicy: "no-referrer", alt: user.name } });
         profile.createSpan({ text: user.name + " · UID " + uid });
+        button(profile, "打开主页", () => p.openWebsite("https://space.bilibili.com/" + uid));
       } catch (error) {
         if (generation === uploaderGeneration) profile.setText("UID " + uid + " · " + error.message);
       }
@@ -265,9 +275,9 @@ Connections.prototype.display = function () {
   }
   const footer = el.createDiv("al-plugin-footer");
   const logo = new DOMParser().parseFromString(ANI_ICON, "image/svg+xml").documentElement;
-  footer.createDiv("al-plugin-footer-logo").appendChild(document.importNode(logo, true));
+  footer.createEl("a", { cls: "al-plugin-footer-logo", attr: { href: "https://github.com/beimohai/AniLink-Obsidian", target: "_blank" } }).appendChild(document.importNode(logo, true));
   const details = footer.createDiv("al-plugin-footer-details");
-  for (const label of ["AniLink", "作者：北漠海", "版本号：" + p.manifest.version, "更新日期：2026-11-15"]) details.createDiv({ text: label });
+  for (const [label, url] of [["AniLink", "https://github.com/beimohai/AniLink-Obsidian"], ["作者：北漠海", "https://space.bilibili.com/1065768987"], ["版本号：" + p.manifest.version, "https://github.com/beimohai/AniLink-Obsidian/releases"], ["更新日期：2026-11-15", "https://github.com/beimohai/AniLink-Obsidian/releases"]]) details.createEl("a", { text: label, attr: { href: url, target: "_blank" } });
   footer.createDiv({ text: "本项目基于 MIT License 开源", cls: "al-plugin-footer-license" });
   const authorLinks = el.createDiv("al-author-links");
   for (const [name, label, icon, url] of [

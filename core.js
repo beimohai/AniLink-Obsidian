@@ -23,18 +23,76 @@ const defaults = () => ({
     libraryRoot: "",
     cleanupMode: "watched",
     downloadMode: "off",
-    idleMinutes: 10,
+    idleMinutes: 5,
     remoteRoot: "",
     localRoot: "",
     storageMode: "local",
     storageLabel: "",
     pollSeconds: 60,
+    rssRefreshMinutes: 1,
+    browserMode: "obsidian",
+    openFirstShow: true,
+    logScope: "all",
+    logRetention: "session",
+    shelfQuarterDefault: "all",
+    shelfSort: "ready",
+    shelfColumns: "auto",
+    cardDensity: "comfortable",
+    searchStatuses: [3],
+    showOriginalName: true,
+    informationPanel: true,
+    informationPage: "fanku",
+    bgmMirror: false,
+    bgmSyncMinutes: 0,
+    bgmSyncStartup: true,
+    bgmSyncExit: true,
+    bgmConflictPolicy: "ask",
+    qbExe: "",
+    autoRefresh: false,
+    downloadNotifications: false,
+    rssUpgradeUnwatched: true,
+    deleteTorrentWithFiles: true,
+    remoteEnabled: false,
+    remoteProtocol: "webdav",
+    networkPlayer: "local",
+    calibrateDanmaku: true,
+    biliOfficialFirst: true,
+    biliRegional: true,
+    biliCutAlignment: true,
+    biliFilterRules: [],
+    biliUploaders: "4262884,5306996,690151424,154244413,442715778,3546957240862932",
   },
   shows: [],
   queue: [],
   events: [],
 });
 const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+// A single directory component valid on Windows, macOS and Linux.
+function folderName(title, id) {
+  const original = String(title || "");
+  let name = original.replace(/[<>:"/\\|?*\x00-\x1f\x7f]/g, "_").trim().replace(/[. ]+$/g, "");
+  if (!name || /^\.+$/.test(name)) name = "番剧";
+  if (/^(?:CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])$/i.test(name.split(".")[0].trim())) name = "_" + name;
+  // Leave room for the id and filesystem encoding limits.
+  if (utf8Length(name) > 180) {
+    let short = "";
+    for (const char of name) { if (utf8Length(short + char) > 180) break; short += char; }
+    name = short.replace(/[. ]+$/g, "");
+  }
+  // Stable ids prevent collisions when punctuation is removed or a name is truncated.
+  return name !== original && /^\d+$/.test(String(id)) ? `${name} [${id}]` : name;
+}
+function utf8Length(value) { return Array.from(value).reduce((n, char) => n + (char.codePointAt(0) > 65535 ? 4 : char.charCodeAt(0) > 2047 ? 3 : char.charCodeAt(0) > 127 ? 2 : 1), 0); }
+function qbConnectionMessage(error) {
+  const detail = String(error?.message || error || "");
+  return /(?:connection[_ ]refused|econnrefused|err_connection_refused)/i.test(detail)
+    ? "qBittorrent 未启动，请启动后重试。"
+    : "qBittorrent 连接失败：" + detail;
+}
+function revisionPolicy(settings, subscription = {}) {
+  if (subscription.customized && subscription.revisionPolicy) return subscription.revisionPolicy;
+  return settings.rssUpgradeUnwatched ? "upgrade" : "standard";
+}
 function feedUrl(value) {
   const u = new URL(value);
   if (
@@ -111,7 +169,17 @@ function buildRule(show, sub = show.subscription) {
     end > 999
   )
     throw Error("集数范围应为 1–999 的整数，结束集不能小于起始集");
-  const words = [sub.keyword, sub.group, sub.quality, sub.language]
+  const languages = {
+    简繁: "(?:[简簡]繁|CHS[ _&+/-]*CHT|CHT[ _&+/-]*CHS)",
+    简中: "(?:[简簡]|CHS)", 繁中: "(?:繁|CHT)",
+    简日: "(?:[简簡]日|CHS[ _&+/-]*J(?:PN|AP)?)",
+    繁日: "(?:繁日|CHT[ _&+/-]*J(?:PN|AP)?)",
+    双语: "(?:[双雙]语|[多][国國语語]|dual[ -]?(?:sub|audio))",
+    多语: "(?:[双雙]语|[多][国國语語]|dual[ -]?(?:sub|audio))",
+    生肉: "(?:生肉|\\bRAW\\b)",
+  };
+  const legacyTitles = sub.profile?.legacyTitles || [];
+  const words = [sub.keyword, sub.group, sub.quality, legacyTitles.length || languages[sub.profile?.language] ? "" : sub.language]
     .filter((x) => x?.trim())
     .map((x) => x.trim());
   if (!words.length)
@@ -126,15 +194,11 @@ function buildRule(show, sub = show.subscription) {
   const profile = sub.profile;
   const required = [];
   if (profile) {
-    const langs = {
-      简繁: "[简簡]繁",
-      简中: "[简簡]",
-      繁中: "繁",
-      多语: "多[国國]",
-    };
-    if (langs[profile.language]) required.push(langs[profile.language]);
-    if (["简中", "繁中"].includes(profile.language)) excludes.push("[简簡]繁");
-    if (profile.codec) required.push(esc(profile.codec));
+    if (languages[profile.language]) required.push(languages[profile.language]);
+    if (["简中", "繁中"].includes(profile.language)) {
+      excludes.push(languages.简繁);
+    }
+    if (profile.codec) required.push(/^(HEVC|H[. ]?265|X265)$/i.test(profile.codec) ? "(?:HEVC|H[. ]?265|X265)" : /^(AVC|H[. ]?264|X264)$/i.test(profile.codec) ? "(?:AVC|H[. ]?264|X264)" : esc(profile.codec));
     const subtitles = { 内封: "[内內]封", 内嵌: "[内內]嵌", 外挂: "外[挂掛]" };
     if (subtitles[profile.subtitle]) required.push(subtitles[profile.subtitle]);
   }
@@ -168,8 +232,12 @@ function buildRule(show, sub = show.subscription) {
     useRegex: true,
     mustContain:
       "^" +
-      words.map((w) => `(?=.*${esc(w)})`).join("") +
-      required.map((w) => `(?=.*${w})`).join("") +
+      words.map((w) => {
+        const quality = w === sub.quality && w.match(/^(480|720|1080|2160)[pi]?$/i);
+        const pattern = quality ? quality[1] === "2160" ? "(?:2160[pi]?|4K)" : quality[1] + "[pi]?" : esc(w);
+        return `(?=.*${pattern})`;
+      }).join("") +
+      (legacyTitles.length ? `(?:${required.map((w) => `(?=.*${w})`).join("")}|(?=^(?:${legacyTitles.map(esc).join("|")})$))` : required.map((w) => `(?=.*${w})`).join("")) +
       `(?=.*${episode}).*`,
     mustNotContain: excludes.join("|"),
     episodeFilter: "",
@@ -221,18 +289,19 @@ function biliNames(show) {
     ? ["魔法的姐妹露露和莉莉 第二季"]
     : [];
   const official = show.title === "异世界舅舅" ? ["奇幻世界舅舅"] : [];
+  if (Number(show.id) === 513878) official.push("赛博朋克 边缘行者 第二季");
   return [...new Set([show.title, show.name, ...(show.biliAliases || []), ...verified, ...official].filter(Boolean))];
 }
 function biliTitleMatches(show, title) {
   const seasonPattern = /第\s*([0-9一二三四五六七八九十]+)\s*(?:部分|クール|季|期)|(?:season|part)\s*(\d+)/i;
   const season = (text) => {
     const match = String(text || "").match(seasonPattern);
-    if (!match) return null;
+    if (!match) return Number(String(text || "").match(/\s+(\d{1,2})$/)?.[1]) || null;
     const value = match[1] || match[2];
     return /^\d+$/.test(value) ? Number(value) : "一二三四五六七八九十".indexOf(value) + 1 || null;
   };
   const normalize = (text) => String(text).normalize("NFKC")
-    .replace(seasonPattern, "").replace(/[\s\p{P}\p{S}]/gu, "").toLowerCase();
+    .replace(seasonPattern, "").replace(/\s+\d{1,2}$/, "").replace(/[\s\p{P}\p{S}]/gu, "").toLowerCase();
   if (/解说|預告|预告|混剪|盘点|速看|reaction|AMV|MAD/i.test(title)) return false;
   const expected = season(show.title) || season(show.name) || 1;
   const actual = season(title) || 1;
@@ -241,6 +310,13 @@ function biliTitleMatches(show, title) {
     const base = normalize(name);
     return base.length >= 3 && normalize(title).includes(base);
   });
+}
+function biliPageEpisode(page, title) {
+  const explicit = parseEpisode(page.part);
+  if (explicit !== null) return explicit;
+  const leading = Number(String(page.part || "").match(/^\s*(\d{1,3})(?=\s|$|[.、_])/)?.[1]);
+  if (leading > 0 && leading === Number(page.page)) return leading;
+  return parseEpisode(title);
 }
 function queueJob(state, job) {
   const found = state.queue.find((x) => x.key === job.key);
@@ -587,21 +663,20 @@ function sourceQueries(show, query) {
 }
 function releaseTags(title) {
   return {
-    language: /简繁|簡繁/.test(title)
+    language: /简繁|簡繁|CH[ST][ _&+/-]*CH[ST]/i.test(title)
       ? "简繁"
-      : /简|簡/.test(title)
-        ? "简中"
-        : /繁/.test(title)
-          ? "繁中"
-          : /多国|多國/.test(title)
-            ? "多语"
-            : "未标注",
-    quality: (
+      : /简日|簡日|CHS[ _&+/-]*J(?:PN|AP)?/i.test(title) ? "简日"
+        : /繁日|CHT[ _&+/-]*J(?:PN|AP)?/i.test(title) ? "繁日"
+          : /简|簡|\bCHS\b/i.test(title) ? "简中"
+            : /繁|\bCHT\b/i.test(title) ? "繁中"
+              : /双语|雙語|多国|多國|多语|多語|dual[ -]?(?:sub|audio)/i.test(title) ? "双语"
+                : /生肉|\bRAW\b/i.test(title) ? "生肉" : "未标注",
+    quality: /\b4k\b/i.test(title) ? "2160p" : (
       (title.match(/(?:2160|1080|720|480)[pi]?/i) || [])[0] || "未标注"
     ).toLowerCase(),
     codec: (
-      (title.match(/HEVC|AVC|H[. ]?26[45]|AV1/i) || [])[0] || ""
-    ).toUpperCase(),
+      (title.match(/HEVC|AVC|[HX][. ]?26[45]|AV1/i) || [])[0] || ""
+    ).toUpperCase().replace(/^[HX][. ]?265$/, "HEVC").replace(/^[HX][. ]?264$/, "AVC"),
     subtitle: /内封|內封/.test(title)
       ? "内封"
       : /内嵌|內嵌/.test(title)
@@ -610,6 +685,36 @@ function releaseTags(title) {
           ? "外挂"
           : "未标注",
   };
+}
+function releaseProfiles(articles) {
+  const fields = ["language", "quality", "codec", "subtitle"];
+  const known = (value) => value && value !== "未标注";
+  const groups = new Map();
+  for (const row of articles) {
+    const tags = releaseTags(row.title);
+    const key = fields.map((field) => tags[field]).join(" · ");
+    if (!groups.has(key)) groups.set(key, { tags, rows: [] });
+    groups.get(key).rows.push(row);
+  }
+  const profiles = [...groups.values()];
+  const count = (profile) => fields.filter((field) => known(profile.tags[field])).length;
+  const merged = new Set();
+  for (const profile of profiles) {
+    const candidates = profiles.filter((candidate) => count(candidate) > count(profile) && fields.every((field) => !known(profile.tags[field]) || profile.tags[field] === candidate.tags[field]));
+    const maximal = candidates.filter((candidate) => !candidates.some((other) => count(other) > count(candidate) && fields.every((field) => !known(candidate.tags[field]) || candidate.tags[field] === other.tags[field])));
+    if (maximal.length !== 1) continue;
+    const target = maximal[0];
+    target.rows.push(...profile.rows);
+    target.tags.legacyTitles = [...new Set([...(target.tags.legacyTitles || []), ...profile.rows.map((row) => row.title)])];
+    merged.add(profile);
+  }
+  return profiles.filter((profile) => !merged.has(profile));
+}
+function matchesSourceSearch(tags, search) {
+  return ["language", "quality", "codec", "subtitle"].every((field) => {
+    const selected = Array.isArray(search[field]) ? search[field] : [search[field]].filter(Boolean);
+    return !selected.length || selected.some((value) => field === "quality" ? tags[field].includes(value) : tags[field] === (value === "多语" ? "双语" : value));
+  });
 }
 function mergeFiles(show, torrents, fileLists, settings) {
   const old = new Map(
@@ -665,13 +770,19 @@ module.exports = {
   STATUS,
   VIDEO,
   defaults,
+  folderName,
+  qbConnectionMessage,
+  revisionPolicy,
   esc,
   baseUrl,
   parseEpisode,
   biliNames,
   biliTitleMatches,
+  biliPageEpisode,
   resolveEpisode,
   releaseTags,
+  releaseProfiles,
+  matchesSourceSearch,
   sourceQueries,
   feedPath,
   episodeRanges,

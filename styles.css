@@ -3048,44 +3048,7 @@
 .al-calibration-installers { grid-column: 1 / -1; justify-content: flex-start; margin: 0; gap: 8px; }
 .al-calibration-installers button { margin: 0; }
 
-/* Native settings follow the same grouped Setting layout as the bookkeeping
-   plugin.  The dependency installers are intentionally a separate left-aligned
-   row so they never occupy space while all dependencies are available. */
-.al-settings-v2 .setting-item-heading {
-  position: relative;
-  margin: 26px 0 10px;
-  padding-left: 13px;
-  font-size: var(--font-ui-medium);
-}
-.al-settings-v2 .setting-item-heading::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 4px;
-  height: 26px;
-  transform: translateY(-50%);
-  border-radius: 2px;
-  background: var(--interactive-accent);
-}
-.al-settings-v2 .setting-item-heading:first-child { margin-top: 0; }
-.al-settings-v2 .setting-item-control { width: 372px; min-width: 372px; position: relative; display: flex; justify-content: flex-end; gap: 8px; }
-.al-settings-v2 .setting-item-control > input[type="text"],
-.al-settings-v2 .setting-item-control > input[type="password"] { flex: 0 0 280px; width: 280px; min-width: 280px; box-sizing: border-box; }
-.al-settings-v2 .setting-item:not(.al-setting-has-side-action) .setting-item-control > input[type="text"],
-.al-settings-v2 .setting-item:not(.al-setting-has-side-action) .setting-item-control > input[type="password"] { margin-right: 92px; }
-.al-settings-v2 .setting-item-control > button:not(.clickable-icon) { flex: 0 0 84px; width: 84px; min-width: 84px; white-space: nowrap; }
-.al-settings-v2 .setting-item-control > .clickable-icon { position: absolute; z-index: 1; right: 92px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; }
-.al-settings-v2 .setting-item:has(input[type="password"]) .setting-item-control > input { padding-right: 32px; }
-.al-settings-v2 .al-settings-dependency { margin: 8px 0 14px; }
-.al-settings-v2 .al-settings-dependency .setting-item-heading { margin-top: 0; }
-.al-settings-v2 .al-calibration-installers { justify-content: flex-start; margin: 0 0 8px; }
-.al-settings-v2 .setting-item-info { flex: 1 1 auto; min-width: 160px; }
-.al-settings-v2 .setting-item-description { white-space: normal; overflow: visible; text-overflow: clip; max-width: none; }
-.al-settings-v2 .setting-item-control { min-width: 0; width: auto; flex: 0 0 auto; }
-.al-settings-v2 .setting-item:not(.al-setting-has-side-action) .setting-item-control > input { margin-right: 0 !important; }
-.al-settings-v2 .setting-item-control > .clickable-icon { right: 4px; }
-.al-settings-v2 [hidden] { display: none !important; }
+
 .al-root .al-inline-subscription .al-subscription-meta { margin-top: 8px; margin-bottom: 8px; }
 .al-root .al-specials { margin: 6px 0 0; }
 .al-root .al-specials summary { min-height: 22px; }
@@ -3093,29 +3056,11 @@
 .al-root .al-inline-subscription > h3 { margin-bottom: 8px; }
 .al-root .al-inline-subscription .al-subscription-meta { margin: 0 0 8px; }
 .al-root .al-inline-subscription .al-subscription-meta p { margin: 0; }
-.al-settings-v2 .setting-item-control > .clickable-icon { padding: 3px; margin: 0; top: 50%; transform: translateY(-50%); }
-.al-settings-v2 .setting-item-control > input { padding-right: 34px; }
-.al-settings-v2 .setting-item-control > button:not(.clickable-icon) { width: auto; min-width: 0; flex: 0 0 auto; padding: var(--size-4-1) var(--size-4-3); }
 .al-author-links { margin-top: 18px; padding-top: 10px; border-top: 1px solid var(--background-modifier-border); }
 .al-author-links .setting-item, .al-community-modal .setting-item { display: flex; align-items: center; width: 100%; }
 .al-community-modal { width: min(720px, calc(100vw - 24px)); }
 .al-community-modal .al-community-image { display: block; width: 100%; height: min(50vh, 480px); object-fit: contain; margin: 0 auto 10px; }
-.al-settings-v2 .al-settings-conditional { overflow: hidden; }
-.al-settings-v2 .al-settings-conditional[hidden] { display: none !important; }
-.al-settings-v2 .setting-item:not(.setting-item-heading) { margin: 8px 0; padding: 16px; }
-.al-settings-v2 .setting-item-name { font-size: var(--font-ui-medium); }
-.al-plugin-settings.al-settings-v2 { padding-inline: 28px; max-width: 1120px; width: 100%; margin-inline: auto; box-sizing: border-box; }
-.al-settings-v2 .al-settings-section-header { margin: 28px 0 0; padding: 0 0 8px; border: 0; border-bottom: 2px solid var(--background-modifier-border); border-radius: 0; }
-.al-settings-v2 .al-settings-section-header::before { top: 1px; bottom: 9px; left: -12px; width: 4px; height: auto; transform: none; border-radius: 999px; }
-.al-settings-v2 .setting-item-control { position: static; flex: 0 1 360px; min-width: 0; gap: 8px; flex-wrap: wrap; }
-.al-settings-v2 .setting-item-control > input[type="text"],
-.al-settings-v2 .setting-item-control > input[type="password"] { flex: 1 1 180px; min-width: 0; width: 100%; padding-right: 8px; }
-.al-settings-v2 .setting-item-control > .clickable-icon { position: static; flex: 0 0 26px; transform: none; margin: 0; }
-.al-settings-v2 .al-bili-profile { display: flex; align-items: center; gap: 10px; margin: 12px 0; }
-.al-settings-v2 .al-bili-profile img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
 .al-source-modal, .al-version-modal { width: min(620px, calc(100vw - 24px)); }
-.al-settings-v2 .setting-item-control { flex-basis: 430px; }
-.al-settings-v2 .setting-item-control > select { width: 100%; min-width: 210px; max-width: 430px; }
 .al-review-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .al-review-options .al-field { margin: 0 0 12px; }
 .al-review-options select { width: 100%; height: 34px; }
@@ -3127,24 +3072,9 @@
 .al-plugin-footer-details > :first-child { font-weight: var(--font-semibold); color: var(--text-normal); }
 .al-plugin-footer-license { grid-column: 1/-1; text-align: center; font-size: var(--font-ui-smaller); color: var(--text-faint); }
 .al-plugin-footer-logo, .al-plugin-footer-logo svg { width: 160px; height: 160px; }
-.al-settings-v2 .setting-item { box-sizing: border-box; }
-.al-settings-v2 .setting-item-info { min-width: 160px; flex: 1 1 45%; }
-.al-settings-v2 .setting-item-control { flex: 0 1 55%; max-width: 55%; flex-wrap: nowrap; }
-.al-settings-v2 .setting-item-control > select { min-width: 0; width: 100%; }
-.al-settings-v2 .setting-item-control > input[type="text"], .al-settings-v2 .setting-item-control > input[type="password"] { flex: 1 1 0; min-width: 0; width: 0; padding-right: 8px; }
-.al-settings-v2 .setting-item-control > button { flex: 0 0 auto; }
-.al-settings-v2 .al-bili-profile { min-height: 48px; }
 .al-root .al-web-pending { visibility: visible; }
 .al-root .al-web-loading { pointer-events: none; }
 .al-footer { min-height: 26px; padding-top: 3px; }
-.al-settings-v2 .setting-item-control > select { width: 220px; max-width: 100%; flex: 0 1 220px; }
-.al-settings-v2 .setting-item-description { max-width: none; }
-.al-settings-v2 .al-password-setting .setting-item-control { position: relative; }
-.al-settings-v2 .al-password-setting .setting-item-control > input { padding-right: 36px !important; font-family: Arial, sans-serif !important; letter-spacing: 0 !important; font-size: var(--font-ui-small); }
-.al-settings-v2 .setting-item:has(.checkbox-container) .setting-item-control { flex: 0 0 auto; }
-.al-settings-v2 .al-password-setting .setting-item-control > .clickable-icon { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); }
-.al-settings-v2 .al-settings-dependency .setting-item { flex-wrap: wrap; }
-.al-settings-v2 .al-settings-dependency .setting-item-info { flex-basis: 100%; }
 .al-root .al-watch-section,
 .al-root .al-watch-section .al-episode-focus,
 .al-root .al-watch-section .al-inline-subscription { display: flex; flex-direction: column; gap: 8px; }
@@ -3154,4 +3084,81 @@
 .al-root .al-watch-section .al-episode-focus,
 .al-root .al-watch-section .al-inline-subscription { padding-top: 8px; }
 .al-root .al-watch-section > h3 { margin: 0 !important; }
+.al-mobile-dashboard { padding: 16px; overflow-y: auto; }
+.al-mobile-dashboard .al-mobile-show { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--background-modifier-border); }
+.al-mobile-dashboard .al-mobile-show-title { height: auto; min-height: 44px; white-space: normal; text-align: left; }
+.al-mobile-dashboard .al-field { margin: 12px 0; }
+.al-mobile-dashboard .al-field :is(input,textarea,select) { width: 100%; }
+.al-plugin-footer-details > a { color: inherit; text-decoration: none; }
+.al-plugin-footer-details > a:hover { text-decoration: underline; }
+.al-root .al-card.al-selected { border: 1px solid var(--interactive-accent); outline: 0; box-shadow: inset 0 0 0 1px var(--interactive-accent); }
+.al-root .al-card { box-sizing: border-box; }
+.al-root .al-search:focus { border: 1px solid var(--interactive-accent); outline: 0; box-shadow: inset 0 0 0 1px var(--interactive-accent); }
+.al-root .al-section-trend { position: relative; }
+.al-root .al-information-empty { position: absolute; inset: 52px 12px 12px; display: grid; place-content: center; margin: 0; text-align: center; font-size: var(--font-ui-small); }
+.al-search-empty { width: 100%; min-height: 120px; display: grid; place-content: center; text-align: center; color: var(--text-muted); }
+.al-rss-manager-row > :first-child { flex: 1; min-width: 0; }
+.al-rss-manager-row > .al-actions { display: grid; grid-template-columns: repeat(2, auto); flex: 0 0 auto; }
+.al-rss-manager-row > .al-actions > button:nth-child(2) { grid-row: 2; grid-column: 1; }
+.al-rss-manager-row > .al-actions > button:nth-child(4) { grid-row: 2; grid-column: 2; }
+.al-search-facet { display: grid; grid-template-columns: 70px 1fr; gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--background-modifier-border); }
+.al-search-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.al-search-chips > button { border-radius: 999px; }
+.al-search-chips > button.al-active { background: var(--interactive-accent); color: var(--text-on-accent); }
+.al-root .al-cards:has(> .al-empty) { display: grid; place-items: center; }
+.al-root .al-cards > .al-empty { grid-column: 1 / -1; align-self: center; text-align: center; margin: 0; }
+.al-root .al-information-empty[hidden] { display: none !important; }
+.al-root .al-information-empty, .al-root .al-web-loading { font-size: var(--font-ui-small); }
 .al-source-modal, .al-version-modal { width: min(620px, calc(100vw - 24px)); }
+
+/* Native Setting sizing uses the available pane width, including pop-out settings. */
+.al-plugin-settings.al-settings-v2 { container: al-settings / inline-size; box-sizing: border-box; width: 100%; max-width: 1120px; margin-inline: auto; padding-inline: clamp(16px, 3%, 28px); }
+.al-settings-v2 [hidden] { display: none !important; }
+.al-settings-v2 .setting-item { box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 320px); align-items: center; gap: 12px; margin: 8px 0; padding: 16px; }
+.al-settings-v2 .setting-item-info { min-width: 0; margin: 0; }
+.al-settings-v2 .setting-item-name { font-size: var(--font-ui-medium); overflow-wrap: anywhere; }
+.al-settings-v2 .setting-item-description { white-space: normal; overflow-wrap: anywhere; max-width: none; }
+.al-settings-v2 .setting-item-control { position: relative; display: flex; justify-content: flex-end; align-items: center; gap: 8px; width: 100%; min-width: 0; max-width: none; flex-wrap: nowrap; }
+.al-settings-v2 .setting-item-control > input:is([type="text"],[type="password"]) { box-sizing: border-box; width: 224px; min-width: 0; max-width: 100%; flex: 0 1 224px; margin: 0; padding-inline: 8px; }
+.al-settings-v2 .al-uploader-setting .setting-item-control > input { width: 100%; flex-basis: 100%; }
+.al-settings-v2 .setting-item-control > select { width: 112px; min-width: 0; max-width: 100%; flex: 0 1 112px; }
+.al-settings-v2 .setting-item:has(option[value="obsidian"]) select { width: 190px; flex-basis: 190px; }
+.al-settings-v2 .al-cleanup-setting select { width: 160px; flex-basis: 160px; }
+.al-settings-v2 .setting-item-control > button:not(.clickable-icon) { width: auto; min-width: 0; flex: 0 0 auto; margin: 0; padding: var(--size-4-1) var(--size-4-3); white-space: nowrap; }
+.al-settings-v2 .al-sync-actions .setting-item-control { width: 112px; justify-self: end; }
+.al-settings-v2 .al-sync-actions .setting-item-control > button { flex: 1 1 0; width: 0; padding-inline: 0; }
+.al-settings-v2 .al-setting-has-side-action .setting-item-control > input { flex: 1 1 0; max-width: 224px; }
+.al-settings-v2 .al-password-setting input { padding-right: 36px !important; font-family: Arial, sans-serif !important; letter-spacing: 0 !important; }
+.al-settings-v2 .al-password-setting .clickable-icon { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; padding: 3px; margin: 0; }
+.al-settings-v2 .al-settings-section-header { position: relative; display: flex; align-items: center; gap: 0; margin: 28px 0 0; padding: 8px 0; border: 0; border-bottom: 2px solid var(--background-modifier-border); border-radius: 0; }
+.al-settings-v2 .al-settings-section-header:first-child { margin-top: 0; }
+.al-settings-v2 .al-settings-section-header::before { content: ""; position: static; flex: 0 0 4px; height: 26px; margin-left: -12px; margin-right: 8px; border-radius: 999px; background: var(--interactive-accent); }
+.al-settings-v2 .al-settings-dependency { margin: 8px 0 14px; }
+.al-settings-v2 .al-settings-dependency .setting-item { grid-template-columns: minmax(0, 1fr) auto; }
+.al-settings-v2 .al-settings-dependency .setting-item-description { min-height: 2lh; }
+.al-settings-v2 .al-calibration-installers { display: flex; flex-wrap: wrap; gap: 8px; min-height: var(--input-height); margin: 0 16px 8px; }
+.al-settings-v2 .al-calibration-installers button { margin: 0; }
+.al-settings-v2 .al-bili-profile { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-height: 48px; margin: 12px 0; }
+.al-settings-v2 .al-bili-profile img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+.al-settings-v2 .al-bili-profile > span { min-width: 0; overflow-wrap: anywhere; }
+.al-settings-v2 .al-bili-profile > button { margin-left: auto; }
+@container al-settings (max-width: 560px) {
+  .al-settings-v2 .setting-item { grid-template-columns: minmax(0, 1fr); padding: 12px 4px; gap: 8px; }
+  .al-settings-v2 .setting-item-control { justify-self: end; max-width: 100%; }
+  .al-settings-v2 .setting-item:has(.checkbox-container), .al-settings-v2 .al-settings-dependency .setting-item { grid-template-columns: minmax(0, 1fr) auto; }
+  .al-settings-v2 .al-settings-dependency .setting-item-description { min-height: 3lh; }
+  .al-settings-v2 .al-calibration-installers { margin-inline: 4px; }
+  .al-settings-v2 .al-plugin-footer { gap: 12px; padding-inline: 0; }
+  .al-settings-v2 .al-plugin-footer-logo, .al-settings-v2 .al-plugin-footer-logo svg { width: 100px; height: 100px; }
+}
+.al-custom-search-modal.modal { width: min(600px, calc(100vw - 24px)); }
+.al-search-facet { align-items: center; grid-template-columns: 60px minmax(0, 1fr); }
+.al-custom-search-modal .al-search-chips { gap: 6px; }
+.al-custom-search-modal .al-search-chips > button { padding-inline: 10px; }
+@media (max-width: 480px) {
+  .al-custom-search-modal .al-search-facet { grid-template-columns: 48px minmax(0, 1fr); gap: 8px; }
+}
+
+.al-calibration-installers .al-dependency-unneeded { visibility: hidden; }
+
+.al-settings-v2 .al-settings-section-header .setting-item-control { display: none; }

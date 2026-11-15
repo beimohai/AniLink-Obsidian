@@ -186,9 +186,8 @@ AniLink.prototype.downloadRelease = async function (s, article) {
   const torrent = await this.http.request(url.href);
   const bytes = Buffer.from(torrent.arrayBuffer);
   if (!bytes.length || bytes[0] !== 100) throw Error("种子文件响应无效");
-  const folder = path.join(
+  const folder = await this.showFolder(s,
     this.state.settings.downloadRoot || path.join(require("os").homedir(), "Videos", "Anime"),
-    s.title.replace(/[<>:"/\\|?*]/g, "_"),
   );
   await fs.mkdir(folder, { recursive: true });
   const cats = await qb.call("torrents/categories");

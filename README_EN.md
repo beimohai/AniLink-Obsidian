@@ -6,17 +6,9 @@
 [中文](README.md) | English
 </div>
 
-<div align="center">
-
-**Anime subscriptions, downloads, playback and progress in Obsidian**
-
-[中文文档](README.md) | English
-
-</div>
-
 ## Project overview
 
-AniLink is a Windows desktop plugin for [Obsidian](https://obsidian.md/). It brings anime discovery, subtitle-group RSS subscriptions, qBittorrent downloads, local playback, Bilibili danmaku, and Bangumi progress and reviews into one dashboard.
+AniLink is an anime management plugin for [Obsidian](https://obsidian.md/). It brings anime discovery, subtitle-group RSS subscriptions, qBittorrent downloads, local playback, Bilibili danmaku, and Bangumi progress and reviews into one dashboard.
 
 - Browse your anime shelf by season, collection status, title, or recently downloaded updates.
 - Search Bangumi and find subtitle-group feeds through Mikan, or provide a custom RSS feed.
@@ -25,7 +17,17 @@ AniLink is a Windows desktop plugin for [Obsidian](https://obsidian.md/). It bri
 - Update watched progress manually, save ratings and reviews, and push changes through the Bangumi task queue.
 - Preview Bangumi, Fanku and rating trends, or open their websites.
 
+Current release **1.0.8**, updated **2026-11-15**.
+
+Desktop builds support Windows, macOS and Linux service connections, local players and platform-specific rclone installation. Startup scheduling and idle shutdown management currently use Windows scripts. Mobile builds provide a separate Bangumi shelf, collection status, ratings, comments and episode progress interface. The mobile entry point is tested without Node.js or Electron imports. Physical mobile devices, macOS and Linux still require end-to-end verification.
+
 Author on Bilibili [北漠海](https://space.bilibili.com/1065768987). See the [changelog](CHANGELOG.md) for releases and the [Chinese documentation](README.md) for detailed configuration.
+
+## Factory preferences
+
+The shelf opens its first displayed show, previews Fanku and uses Obsidian Web viewer. Startup and exit Bangumi synchronization are enabled with conflict prompts. qBittorrent automatic refresh and completion notifications are disabled, the refresh interval is one minute, idle shutdown is five minutes, and unwatched revision upgrades are enabled. Watched-file cleanup and linked torrent deletion are enabled. Playback alignment, official and regional danmaku, and cut alignment are enabled. Remote services are disabled.
+
+Credentials, executable paths, media directories and personal block rules are configured by each user. The initial WebUI endpoint is `http://127.0.0.1:8080`. Existing settings take precedence on upgrade. Windows login startup requires opting in.
 
 ## Quick start
 
@@ -36,13 +38,13 @@ Author on Bilibili [北漠海](https://space.bilibili.com/1065768987). See the [
 3. Reload Obsidian and enable AniLink under Community plugins.
 4. Open Connection configuration and configure your accounts, downloader and player.
 
-AniLink has not been listed in the community plugin catalog. For manual updates, replace the three release files and keep `data.json`. The audio helper is bundled in `main.js` and extracted when alignment runs.
+AniLink is available in the Obsidian community plugin directory. For manual updates, replace the three release files and keep `data.json`. Audio and Windows scheduler helpers are bundled in `main.js` and extracted when their features run.
 
 ### Requirements
 
 | Application or account | Purpose |
 | --- | --- |
-| Windows desktop Obsidian 1.15.0 or later | Plugin runtime |
+| Obsidian 1.15.0 or later | Desktop features and a Bangumi-only mobile interface |
 | qBittorrent with Web UI and RSS enabled | Downloads and subscription rules |
 | DanDanPlay, or another configured video player | Local playback |
 | Python, NumPy and FFmpeg on PATH | Optional audio alignment |
@@ -66,7 +68,7 @@ Sign in to Bilibili using the QR login window and configure uploader UIDs as nee
 3. Keep qBittorrent running to check RSS and download new releases. AniLink displays locally available unwatched episodes.
 4. Select an episode and play it. When alignment is enabled, AniLink matches source audio, calculates a reliable offset, prepares merged XML and starts the player afterwards.
 5. After watching, use the manual progress action to mark episodes up to the selected one as watched.
-6. Save your rating and review. Bangumi writes run through the background queue. Use Sync and Logs to inspect failed tasks.
+6. Save your rating and review. Bangumi writes run through the background queue. Use Bangumi settings to push or pull and General settings to inspect logs.
 7. Depending on your cleanup settings, completing a season or dropping it can remove its dedicated media folder and RSS tasks. Putting a show on hold pauses subscriptions and keeps files.
 
 Cleanup deletes actual files. Configure a dedicated directory and review cleanup settings before use. qBittorrent RSS checks run only while qBittorrent is running. Windows startup and automatic shutdown scheduling require separate setup.
@@ -79,7 +81,7 @@ Older per-vault files under `%LOCALAPPDATA%/AniLink/` migrate automatically on u
 
 Credentials in `data.json` are unencrypted. Use private synchronization storage and keep this file out of public repositories. Media files remain in the configured download directory. Website cookies are stored by Electron and can require another login on a different machine. Check executable and media paths after moving devices.
 
-The optional `AniLink-sync` folder exchanges field-level shelf and progress changes between devices while excluding credentials and local execution settings. It requires your own file synchronization service. Private reviews are included in shared progress files. Concurrent file synchronization can still produce conflicts, so keep backups. Read [Security and privacy](SECURITY.md) for details.
+Field-level progress records merge independently across devices. Configure your own synchronization tool to include plugin data, and keep the complete data file in private storage.
 
 ## Customization and limitations
 
@@ -113,7 +115,11 @@ If AniLink helps you manage your watching routine, you can support its maintenan
 - [Report a problem or request a feature](https://github.com/beimohai/AniLink-Obsidian/issues)
 - [Submit a pull request](https://github.com/beimohai/AniLink-Obsidian/pulls)
 - [Author on GitHub](https://github.com/beimohai)
-- [Author on Bilibili](https://space.bilibili.com/1065768987)
+- [Current release **1.0.8**, updated **2026-11-15**.
+
+Desktop builds support Windows, macOS and Linux service connections, local players and platform-specific rclone installation. Startup scheduling and idle shutdown management currently use Windows scripts. Mobile builds provide a separate Bangumi shelf, collection status, ratings, comments and episode progress interface. The mobile entry point is tested without Node.js or Electron imports. Physical mobile devices, macOS and Linux still require end-to-end verification.
+
+Author on Bilibili](https://space.bilibili.com/1065768987)
 - QQ group **588526922**
 
 ![QQ community group](assets/community/qq-group.jpg)

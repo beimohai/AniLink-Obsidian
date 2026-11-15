@@ -271,16 +271,17 @@ AniLink.prototype.subscriptionsManager = function () {
       const row = list.createDiv("al-group-row"),
         info = row.createDiv();
       info.createEl("strong", { text: s.title });
-      info.createEl("p", {
-        text: [
-          s.subscription.sourceGroup || s.subscription.group,
-          [s.subscription.profile?.quality || s.subscription.quality, s.subscription.profile?.language, s.subscription.profile?.codec, s.subscription.profile?.subtitle].filter((v) => v && v !== "未标注").join(" · "),
-          s.subscription.enabled ? "自动下载" : "已暂停",
-        ]
-          .filter(Boolean)
-          .join(" · "),
-        cls: "al-muted",
-      });
+      row.addClass("al-rss-manager-row");
+      info.createEl("p", { text: s.subscription.sourceGroup || s.subscription.group || "未指定字幕组" });
+      const tags = info.createDiv("al-version-tags");
+      for (const tag of [s.subscription.profile?.quality || s.subscription.quality, s.subscription.profile?.language || s.subscription.language, s.subscription.profile?.codec, s.subscription.profile?.subtitle].filter((value) => value && value !== "未标注")) tags.createSpan({ text: tag });
+      const status = info.createEl("p", { cls: "al-muted" });
+      const showUpdate = () => status.setText((s.subscription.enabled ? "自动下载" : "已暂停") + " · 最近更新 " + (s.subscription.rssUpdatedAt ? new Date(s.subscription.rssUpdatedAt).toLocaleDateString("zh-CN") : "暂无记录"));
+      showUpdate();
+      this.readFeed(s.subscription.feed).then((rows) => {
+        s.subscription.rssUpdatedAt = Math.max(0, ...rows.map((item) => Date.parse(item.date)).filter(Number.isFinite));
+        if (status.isConnected) showUpdate();
+      }).catch((error) => C.record(this.state, `${s.title} · RSS 更新日期读取失败：${error.message}`));
       const actions = row.createDiv("al-actions");
       button(actions, "更换", () => {
         m.close();
@@ -507,12 +508,7 @@ AniLink.prototype.scanLocalVideos = async function () {
   for (const s of this.state.shows) {
     for (const e of s.episodes)
       e.files = (e.files || []).filter((f) => f.localExists !== false);
-    const root =
-      s.subscription.savePath ||
-      path.join(
-        this.state.settings.libraryRoot || this.state.settings.downloadRoot || "",
-        s.title.replace(/[<>:"/\\|?*]/g, "_"),
-      );
+    const root = await this.showFolder(s, this.state.settings.libraryRoot || this.state.settings.downloadRoot || "");
     if (!path.isAbsolute(root)) continue;
     const walk = async (dir, depth) => {
       let entries;
@@ -615,10 +611,15 @@ AniLink.prototype.openDownloader = async function () {
   await fs.access(exe);
   const args = this.state.settings.qbProfile ? ["--profile="+this.state.settings.qbProfile,"--no-splash"] : ["--no-splash"];
   await new Promise((resolve, reject) => {
-    const child = execFile(exe, args, { windowsHide: true }, () => {});
+    const macApplication = process.platform === "darwin" && exe.endsWith(".app");
+    const child = execFile(macApplication ? "open" : exe, macApplication ? ["-a", exe, "--args", ...args] : args, { windowsHide: true }, () => {});
     child.once("error", reject);
     child.once("spawn", resolve);
   });
+};
+AniLink.prototype.prepareSchedulerScripts = async function (root) {
+  for (const [name, content] of Object.entries(this.bundledSchedulerScripts))
+    await fs.writeFile(path.join(root, name), content, "utf8");
 };
 AniLink.prototype.runScheduler = async function (args = []) {
   const root = path.join(this.app.vault.adapter.getBasePath(), this.manifest.dir);
@@ -626,7 +627,7 @@ AniLink.prototype.runScheduler = async function (args = []) {
   const config = path.join(root, "scheduler.json");
   const exe = this.state.settings.qbExe;
   if (!exe) throw Error("请先选择 qBittorrent 程序路径");
-  await fs.access(script);
+  await this.prepareSchedulerScripts(root);
   await fs.access(exe);
   await fs.writeFile(config, JSON.stringify({ dataFile: this.deviceFile, exe, profile: this.state.settings.qbProfile || "" }), "utf8");
   const powerShell = path.join(process.env.SystemRoot || "C:\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
@@ -641,9 +642,9 @@ AniLink.prototype.configureLoginScheduler = async function (enable) {
   const script = path.join(root, "install-scheduler.ps1");
   const exe = this.state.settings.qbExe;
   if (enable && !exe) throw Error("请先选择 qBittorrent 程序路径");
-  await fs.access(script);
+  await this.prepareSchedulerScripts(root);
   if (enable) await fs.access(exe);
-  if (enable && (!this.state.settings.downloadMode || this.state.settings.downloadMode === "off")) this.state.settings.downloadMode = "once";
+  if (enable) this.state.settings.downloadMode = "once";
   await this.persist();
   const powerShell = path.join(process.env.SystemRoot || "C:\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
   const args = ["-NoProfile", "-WindowStyle", "Hidden", "-File", script];
@@ -655,7 +656,8 @@ AniLink.prototype.configureLoginScheduler = async function (enable) {
   new Notice(enable ? "已启用 AniLink 登录检查" : "已停用 AniLink 登录检查");
 };
 AniLink.prototype.armIdleShutdown = async function () {
-  if (this.state.settings.downloadMode !== "once" || !this.downloaderStartedByAniLink) return;
+  if (typeof process !== "undefined" && process.platform !== "win32") return;
+  if (!this.downloaderStartedByAniLink || Number(this.state.settings.idleMinutes || 10) <= 0) return;
   await this.runScheduler(["-Once", "-ManageRunning"]);
 };
 const tidyRender = Dashboard.prototype.render;
@@ -992,7 +994,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
   bar.insertBefore(opener, wrap);
   opener.addClass("al-link");
   const empty = panel.createEl("p", {
-    text: "未加载预览。选择上方网站后才会开始加载。",
+    text: "未加载预览。",
     cls: "al-muted al-information-empty",
   });
   const activateInformation = activate;
@@ -1510,7 +1512,7 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
   const uploaders = new Set(
     String(
       this.state.settings.biliUploaders ||
-        "690151424,4262884,5306996,442715778,3546957240862932",
+        "4262884,5306996,690151424,154244413,442715778,3546957240862932",
     )
       .split(/[\s,，]+/)
       .filter(Boolean)
@@ -1535,7 +1537,7 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
           { Referer: "https://www.bilibili.com/" },
         );
         if (response.code !== 0) {
-          C.record(this.state, "B站来源搜索失败 " + response.code);
+          C.record(this.state, `${show.title} 第${number}集 · 搜索词 ${name} · 第${page}页 · UP ${[...uploaders].join(",")}：B站搜索失败 ${response.code} ${response.message || ""}`);
           break;
         }
         for (const candidate of response.data?.result || [])
@@ -1544,7 +1546,7 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
         if (page >= Number(response.data?.numPages || 1)) break;
       }
     } catch (error) {
-      C.record(this.state, "B站来源检索：" + error.message);
+      C.record(this.state, `${show.title} 第${number}集 · 搜索词 ${name} · UP ${[...uploaders].join(",")}：B站检索失败 ${error.message}`);
     }
   }
   const sources = [],
@@ -1556,17 +1558,23 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
         candidate.title,
         "text/html",
       ).body.textContent;
-      if (!C.biliTitleMatches(show, title)) continue;
+      if (!C.biliTitleMatches(show, title)) {
+        C.record(this.state, `${show.title} 第${number}集 · UP ${candidate.mid} · ${candidate.bvid}：番名或季数核验失败，视频标题 ${title}`);
+        continue;
+      }
       const detail = await this.http.json(
         "https://api.bilibili.com/x/web-interface/view?bvid=" +
           encodeURIComponent(candidate.bvid),
       );
-      if (detail.code !== 0) continue;
+      if (detail.code !== 0) {
+        C.record(this.state, `${show.title} 第${number}集 · UP ${candidate.mid} · ${candidate.bvid}：视频详情读取失败 ${detail.code} ${detail.message || ""}`);
+        continue;
+      }
       if (!uploaders.has(Number(detail.data?.owner?.mid))) continue;
       if (!C.biliTitleMatches(show, detail.data?.title || "")) continue;
       for (const page of detail.data?.pages || []) {
         try {
-          const ep = C.parseEpisode(page.part) ?? C.parseEpisode(title);
+          const ep = C.biliPageEpisode(page, title);
           if (ep !== number || page.duration < 600) continue;
           let calibration = { offsetSeconds: 0, disabled: true };
           if (this.state.settings.calibrateDanmaku !== false) {
@@ -1614,16 +1622,17 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
         } catch (error) {
           C.record(
             this.state,
-            "弹幕来源 " + candidate.bvid + "：" + error.message,
+            `${show.title} 第${number}集 · UP ${candidate.mid} · ${candidate.bvid}：${error.message}`,
           );
         }
       }
     } catch (error) {
-      C.record(this.state, "弹幕来源 " + candidate.bvid + "：" + error.message);
+      C.record(this.state, `${show.title} 第${number}集 · UP ${candidate.mid} · ${candidate.bvid}：${error.message}`);
     }
   }
+  for (const uid of uploaders) if (!sources.some((source) => Number(source.mid) === uid)) C.record(this.state, `${show.title} 第${number}集 · ${this.biliUploaderCache?.get(String(uid))?.name || "UP"}（UID ${uid}）弹幕获取失败：未通过番名、季数、集数及时长核验，候选视频 ${[...candidates.values()].filter((item) => Number(item.mid) === uid).map((item) => item.bvid).join("、") || "无"}`);
   if (!sources.length || !comments.size)
-    throw Error("指定UP主暂无可核对的同集弹幕");
+    throw Error(`${show.title} 第${number}集 · UP ${[...uploaders].join(",")}：没有可用弹幕`);
   const target = file.path.replace(/\.[^.]+$/, ".xml");
   let existing = "";
   try {
@@ -1661,7 +1670,8 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
 AniLink.prototype.play = async function (show, episode, file) {
   if (file.remotePath) await this.cacheRemoteVideo(file);
   let cached = !!episode.danmaku?.biliMatchedAt;
-  const sourceOptions = [this.state.settings.biliOfficialFirst !== false, !!this.state.settings.biliRegional, this.state.settings.biliCutAlignment !== false].join(":");
+  const uploaderIds = String(this.state.settings.biliUploaders || "").split(/[\s,，]+/).filter(Boolean).sort().join(",");
+  const sourceOptions = [this.state.settings.biliOfficialFirst !== false, !!this.state.settings.biliRegional, this.state.settings.biliCutAlignment !== false, uploaderIds, this.state.settings.biliFilterRevision || 0].join(":");
   if (cached && episode.danmaku.sourceOptions !== sourceOptions) {
     const xml = file.path.replace(/\.[^.]+$/, ".xml");
     this.danmakuResetPaths ||= new Set();
@@ -1686,7 +1696,7 @@ AniLink.prototype.play = async function (show, episode, file) {
       await this.prepareUploaderDanmaku(show, episode, file);
       if (episode.danmaku) episode.danmaku.sourceOptions = sourceOptions;
     } catch (error) {
-      C.record(this.state, "UP主弹幕匹配：" + error.message);
+      C.record(this.state, `${show.title} 第${episode.sort}集 · UP ${this.state.settings.biliUploaders || C.defaults().settings.biliUploaders}：弹幕匹配失败 ${error.message}`);
     } finally {
       this.danmakuResetPaths?.delete(file.path.replace(/\.[^.]+$/, ".xml"));
     }
@@ -1747,7 +1757,7 @@ AniLink.prototype.cleanupShow = async function (show) {
   );
   const configured = show.subscription.savePath;
   const folder = path.resolve(
-    configured || path.join(root, show.title.replace(/[<>:"/\\|?*]/g, "_")),
+    configured || await this.showFolder(show, root),
   );
   const relative = path.relative(root, folder);
   if (!relative || relative.startsWith("..") || path.isAbsolute(relative))
@@ -1888,7 +1898,7 @@ AniLink.prototype.settingsModal = function () {
     const uploaders = add(bili, "biliUploaders", "弹幕抓取来源（UP 主 UID）");
     uploaders.placeholder = "多个 UID 用逗号或换行分隔";
     if (!uploaders.value)
-      uploaders.value = "690151424,4262884,5306996,442715778,3546957240862932";
+      uploaders.value = "4262884,5306996,690151424,154244413,442715778,3546957240862932";
     this.biliAccountPanel(bili);
     const save = async () => {
       const values = Object.fromEntries(
@@ -2119,6 +2129,7 @@ AniLink.prototype.biliAccountPanel = function (el) {
           attr: { src: user.face, referrerpolicy: "no-referrer" },
         });
       profile.createSpan({ text: user.uname + " · UID " + user.mid });
+      button(profile, "打开主页", () => this.openWebsite("https://space.bilibili.com/" + user.mid));
     } catch (error) {
       profile.setText("登录状态检查失败");
       C.record(this.state, error.message);
@@ -2143,6 +2154,7 @@ AniLink.prototype.biliAccountPanel = function (el) {
     }),
   );
   refresh().catch((error) => profile.setText("登录状态读取失败：" + error.message));
+  [...actions.children].find((control) => control.textContent === "退出登录")?.addClass("mod-warning");
 };
 const detectPlayerOnload = AniLink.prototype.onload;
 AniLink.prototype.onload = async function () {

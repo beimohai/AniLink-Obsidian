@@ -27,4 +27,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" main.js manifest.json styles.css --title "AniLink $GITHUB_REF_NAME" --notes "See CHANGELOG.md for changes and README.md for installation and dependencies."
+          python - <<'PY'
+          import os, pathlib, re
+          version = os.environ["GITHUB_REF_NAME"]
+          changelog = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8")
+          match = re.search(r"^## " + re.escape(version) + r"[^\n]*\n(.*?)(?=^## |\Z)", changelog, re.M | re.S)
+          if not match:
+              raise SystemExit("Missing changelog for " + version)
+          pathlib.Path("release-notes.md").write_text(match.group(1).strip() + "\n", encoding="utf-8")
+          PY
+          gh release create "$GITHUB_REF_NAME" main.js manifest.json styles.css --title "AniLink $GITHUB_REF_NAME" --notes-file release-notes.md

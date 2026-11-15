@@ -16,3 +16,35 @@ test('repeated build produces identical bytes', () => {
  cp.execFileSync(process.execPath, ['build.js']);
  assert.deepEqual(fs.readFileSync('main.js'), before);
 });
+
+
+test('factory settings contain preferences and exclude personal configuration', () => {
+ const C = require('../core');
+ const a = C.defaults();
+ const b = C.defaults();
+ for (const key of ['qbUser', 'qbPassword', 'qbExe', 'downloadRoot', 'libraryRoot', 'bgmToken', 'playerExe']) assert.equal(a.settings[key], '');
+ assert.equal(a.settings.qbUrl, 'http://127.0.0.1:8080');
+ assert.equal(a.settings.biliUploaders, '4262884,5306996,690151424,154244413,442715778,3546957240862932');
+ assert.deepEqual(a.settings.biliFilterRules, []);
+ assert.equal(a.settings.idleMinutes, 5);
+ assert.equal(a.settings.openFirstShow, true);
+ assert.equal(a.settings.rssUpgradeUnwatched, true);
+ assert.equal(a.settings.autoRefresh, false);
+ assert.equal(a.settings.downloadNotifications, false);
+ assert.equal(a.settings.browserMode, 'obsidian');
+ a.settings.searchStatuses.push(1);
+ a.settings.biliFilterRules.push({ filter: 'private' });
+ assert.deepEqual(b.settings.searchStatuses, [3]);
+ assert.deepEqual(b.settings.biliFilterRules, []);
+});
+
+
+test('standard release embeds both maintained Windows scheduler scripts', () => {
+ const source = fs.readFileSync('main.js', 'utf8');
+ const line = source.split('\n').find(line => line.startsWith('AniLink.prototype.bundledSchedulerScripts = '));
+ const sandbox = { AniLink: function(){} };
+ vm.runInNewContext(line, sandbox);
+ for (const [name, content] of Object.entries(sandbox.AniLink.prototype.bundledSchedulerScripts))
+   assert.equal(content, fs.readFileSync('scripts/' + name, 'utf8').replace(/\r\n?/g, '\n'));
+ assert.equal(Object.keys(sandbox.AniLink.prototype.bundledSchedulerScripts).length, 2);
+});

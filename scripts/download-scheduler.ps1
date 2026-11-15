@@ -60,7 +60,7 @@ try {
    @{checked=(Get-Date).ToString('o');error=$_.Exception.Message} | ConvertTo-Json -Compress | Set-Content -LiteralPath "$taskRoot\scheduler-status.json" -Encoding UTF8
   }
   if (-not $InspectOnly) { Start-Sleep -Seconds 15 }
-  } while (-not $InspectOnly -and -not $Once)
+  } while (-not $InspectOnly)
 } finally {
  if (-not $InspectOnly) { $taskMutex.ReleaseMutex() }
  $taskMutex.Dispose()

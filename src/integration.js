@@ -79,7 +79,7 @@ AniLink.prototype.refresh = async function (manual) {
       !s.demo &&
       (s.status === 1 || s.status === 3 || s.subscription.enabled) &&
       Date.now() - (s.metadataAttempt || s.metadataAt || 0) >
-        Math.max(1, Number(this.state.settings.metadataHours) || 6) * 3600000,
+        6 * 3600000,
   )) {
     s.metadataAttempt = Date.now();
     try {
@@ -263,7 +263,7 @@ AniLink.prototype.searchModal = function () {
             });
         }
         if (!results.children.length)
-          results.createEl("p", { text: "没有找到动画条目，可试用日文名。" });
+          results.createEl("p", { text: "这里还没有番剧。", cls: "al-search-empty" });
         label.setText(
           `第 ${Math.floor(offset / 20) + 1} 页 · 共 ${data.total || 0} 条`,
         );
@@ -400,31 +400,16 @@ AniLink.prototype.subscriptionModal = function (s) {
                     1: "自动下载",
                   });
                   const versions = body.createDiv("al-version-list");
-                  const profiles = new Map();
-                  for (const a of articles) {
+                  const filtered = articles.filter((a) => {
                     const search = s.sourceSearch || {};
-                    const parsed = C.releaseTags(a.title);
-                    if (search.quality && !parsed.quality.includes(search.quality)) continue;
-                    if (search.language && parsed.language !== search.language) continue;
-                    if (search.codec && parsed.codec !== search.codec) continue;
-                    if (search.subtitle && parsed.subtitle !== search.subtitle) continue;
-                    if (search.exclude && search.exclude.split("|").some((word) => word.trim() && a.title.includes(word.trim()))) continue;
-                    const tags = C.releaseTags(a.title),
-                      key = [
-                        tags.language,
-                        tags.quality,
-                        tags.codec,
-                        tags.subtitle,
-                      ].join(" · ");
-                    if (!profiles.has(key))
-                      profiles.set(key, { tags, rows: [] });
-                    profiles.get(key).rows.push(a);
-                  }
-                  if (!profiles.size)
+                    return !(search.exclude && search.exclude.split(/[\s|]+/).some((word) => word.trim() && a.title.includes(word.trim())));
+                  });
+                  const profiles = C.releaseProfiles(filtered).filter((profile) => C.matchesSourceSearch(profile.tags, s.sourceSearch || {}));
+                  if (!profiles.length)
                     body.createEl("p", {
                       text: "该字幕组暂无资源，稍后重试。",
                     });
-                  for (const [key, profile] of profiles) {
+                  for (const profile of profiles) {
                     const box = versions.createDiv("al-version-card");
                     const info = box.createDiv("al-version-info");
                     const latest = profile.rows
@@ -437,8 +422,7 @@ AniLink.prototype.subscriptionModal = function (s) {
                         cls: "al-muted",
                       });
                     const tags = info.createDiv("al-version-tags");
-                    for (const value of key
-                      .split(" · ")
+                    for (const value of [profile.tags.language, profile.tags.quality, profile.tags.codec, profile.tags.subtitle]
                       .filter((v) => v && v !== "未标注"))
                       tags.createSpan({ text: value });
                     const episodes = [
@@ -526,12 +510,8 @@ AniLink.prototype.subscriptionModal = function (s) {
                             numbering,
                             enabled: enabled.value === "1",
                             savePath:
-                              s.subscription.savePath ||
-                              path.join(
-                                this.state.settings.downloadRoot ||
-                                  "D:\\Application\\qBittorrent\\downloads",
-                                s.title.replace(/[<>:"/\\|?*]/g, "_"),
-                              ),
+                              await this.showFolder(s, this.state.settings.downloadRoot || path.join(require("os").homedir(), "Videos", "Anime")),
+                            rssUpdatedAt: latest || 0,
                             profile: profile.tags,
                             sourceGroup: group.name,
                           };
@@ -576,15 +556,31 @@ AniLink.prototype.subscriptionModal = function (s) {
     button(header, "搜索", load, "mod-cta");
     button(header, "自定义搜索", () => {
       new Panel(this, "自定义搜索", (body, modal) => {
-        const name = field(body, "番剧名称或别名", query.value);
-        const group = field(body, "字幕组包含文字", s.sourceSearch?.group || "");
-        const quality = select(body, "分辨率", s.sourceSearch?.quality || "", { "": "不限", "2160": "2160p", "1080": "1080p", "720": "720p" });
-        const language = select(body, "语言", s.sourceSearch?.language || "", { "": "不限", "简中": "简中", "繁中": "繁中", "简繁": "简繁", "多语": "多语" });
-        const codec = select(body, "编码", s.sourceSearch?.codec || "", { "": "不限", HEVC: "HEVC", AVC: "AVC", AV1: "AV1" });
-        const subtitle = select(body, "字幕方式", s.sourceSearch?.subtitle || "", { "": "不限", "内嵌": "内嵌", "内封": "内封", "外挂": "外挂" });
-        const exclude = field(body, "排除关键词（| 分隔）", s.sourceSearch?.exclude || "");
+        modal.modalEl.addClass("al-custom-search-modal");
+        const name = field(body, "番剧名称", query.value);
+        const group = field(body, "字幕组名称", s.sourceSearch?.group || "");
+        const exclude = field(body, "排除关键词（空格分隔）", (s.sourceSearch?.exclude || "").replace(/\|/g, " "));
+        const chips = (label, key, options) => {
+          const selected = new Set(Array.isArray(s.sourceSearch?.[key]) ? s.sourceSearch[key] : [s.sourceSearch?.[key]].filter(Boolean));
+          const row = body.createDiv("al-search-facet");
+          row.createEl("strong", { text: label });
+          const choices = row.createDiv("al-search-chips");
+          for (const [value, text] of Object.entries(options)) {
+            const control = button(choices, text, () => {
+              if (selected.has(value)) selected.delete(value); else selected.add(value);
+              control.classList.toggle("al-active", selected.has(value));
+              control.setAttribute("aria-pressed", String(selected.has(value)));
+            }, selected.has(value) ? "al-active" : "");
+            control.setAttribute("aria-pressed", String(selected.has(value)));
+          }
+          return selected;
+        };
+        const language = chips("语言", "language", { 简中: "简体", 繁中: "繁体", 简繁: "简繁", 简日: "简日", 繁日: "繁日", 双语: "双语", 生肉: "生肉" });
+        const quality = chips("分辨率", "quality", { "720": "720p", "1080": "1080p", "2160": "2160p/4K" });
+        const codec = chips("编码", "codec", { HEVC: "HEVC / H.265", AVC: "AVC / H.264", AV1: "AV1" });
+        const subtitle = chips("封装", "subtitle", { 内嵌: "内嵌", 内封: "内封", 外挂: "外挂" });
         button(body, "应用并搜索", () => this.run(async () => {
-          s.sourceSearch = { group: group.value.trim(), quality: quality.value, language: language.value, codec: codec.value, subtitle: subtitle.value, exclude: exclude.value.trim() };
+          s.sourceSearch = { group: group.value.trim(), quality: [...quality], language: [...language], codec: [...codec], subtitle: [...subtitle], exclude: exclude.value.trim() };
           query.value = name.value.trim();
           await this.persist();
           modal.close();
@@ -607,46 +603,19 @@ AniLink.prototype.checkConnections = async function () {
 };
 AniLink.prototype.autoConfigure = async function (useSystemProxy = false) {
   const settings = this.state.settings;
-  const exe = "D:\\Application\\qBittorrent\\qbittorrent.exe";
-  await fs.access(exe);
+  // Respect the configured executable and the downloader's existing profile.
+  await this.ensureDownloader({ allowStart: true });
+  const preferences = await this.qb().call("app/preferences");
   if (!settings.downloadRoot)
-    settings.downloadRoot = "D:\\Application\\qBittorrent\\downloads";
-  await fs.mkdir(settings.downloadRoot, { recursive: true });
-  if (!settings.playerExe)
-    settings.playerExe = "D:\\Application\\DanDanPlay\\dandanplay.exe";
-  try {
-    await this.qb().call("app/version");
-  } catch (e) {
-    // Never reset credentials or modify another application's profile.
-    if (/HTTP|登录/.test(e.message))
-      throw Error(
-        "服务已响应但认证失败，请在高级设置填写现有 Web UI 用户名和密码",
-      );
-    execFile(
-      exe,
-      ["--profile=D:\\Application\\qBittorrent\\profile"],
-      { windowsHide: true },
-      () => {},
-    );
-    let ready = false;
-    for (let i = 0; i < 8; i++) {
-      await new Promise((r) => window.setTimeout(r, 500));
-      try {
-        await this.qb().call("app/version");
-        ready = true;
-        break;
-      } catch  { /* Best-effort optional operation; retain the existing state on failure. */ }
-    }
-    if (!ready)
-      throw Error("已启动下载器，请检查 Web UI 是否启用及现有账号密码");
-  }
+    settings.downloadRoot = preferences.save_path || path.join(require("os").homedir(), "Videos", "Anime");
+  if (path.isAbsolute(settings.downloadRoot)) await fs.mkdir(settings.downloadRoot, { recursive: true });
   await this.qb().call("app/setPreferences", {
     json: JSON.stringify({
       rss_processing_enabled: true,
       rss_auto_downloading_enabled: true,
     }),
   });
-  if (useSystemProxy) {
+  if (useSystemProxy && process.platform === "win32") {
     const registry = await new Promise((resolve, reject) =>
       execFile(
         "reg.exe",
@@ -705,7 +674,7 @@ AniLink.prototype.settingsModal = function () {
       text: "必需：Bangumi（搜索与收藏）、qBittorrent（后台 RSS 下载）、弹弹play（播放）。蜜柑作为内置来源，无需安装。",
     });
     el.createEl("p", {
-      text: "一键配置会检查 D:\\Application 的现有安装、启动本机下载器、开启 RSS，并检查播放器。不会覆盖已有 Web UI 密码。",
+      text: "一键配置会连接已配置的下载器并开启 RSS，不会覆盖已有 WebUI 密码。",
     });
     const proxy = select(el, "RSS 网络", "1", {
       1: "沿用 Windows 已启用的本机 HTTP 代理（下载连接保持直连）",

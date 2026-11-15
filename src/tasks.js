@@ -12,10 +12,10 @@ AniLink.prototype.background = function (key, fn) {
     })
     .finally(() => {
       this.backgroundTasks.delete(key);
-      if (!this.disposed) this.redraw();
+      if (!this.disposed) this.redraw(true);
     });
   this.backgroundTasks.set(key, task);
-  this.redraw();
+  this.redraw(true);
   return task;
 };
 const oldRun = AniLink.prototype.run;

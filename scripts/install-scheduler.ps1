@@ -24,7 +24,7 @@ if ($QbProfile -and -not (Test-Path -LiteralPath $QbProfile -PathType Container)
 $shell = New-Object -ComObject WScript.Shell
 $shortcut = $shell.CreateShortcut($startup)
 $shortcut.TargetPath = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-$shortcut.Arguments = "-NoProfile -WindowStyle Hidden -File `"$target`""
+$shortcut.Arguments = "-NoProfile -WindowStyle Hidden -File `"$target`" -Once"
 $shortcut.WorkingDirectory = $InstallRoot
 $shortcut.WindowStyle = 7
 $shortcut.Save()
