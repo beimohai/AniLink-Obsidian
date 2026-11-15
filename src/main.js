@@ -130,6 +130,7 @@ class Dashboard extends ItemView {
     button(actions, `任务 ${p.state.queue.length}`, () => p.jobs());
     button(actions, "设置", () => p.settingsModal());
     button(actions, "RSS 订阅", () => p.subscriptionsManager());
+    button(actions, "打开下载器", () => p.run(() => p.openDownloader()));
 
     const layout =
         root.querySelector(":scope > .al-layout") ||
@@ -366,7 +367,6 @@ class Dashboard extends ItemView {
         );
         button(body, "自定义 RSS", () => p.customRssModal(s));
       }
-      button(body, "打开下载器", () => p.run(() => p.openDownloader()));
     } else if (this.tab === "danmaku") {
       body.createEl("h3", { text: "B站弹幕" });
       body.createEl("p", {

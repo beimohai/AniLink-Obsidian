@@ -267,7 +267,7 @@ Connections.prototype.display = function () {
   const logo = new DOMParser().parseFromString(ANI_ICON, "image/svg+xml").documentElement;
   footer.createDiv("al-plugin-footer-logo").appendChild(document.importNode(logo, true));
   const details = footer.createDiv("al-plugin-footer-details");
-  for (const label of ["AniLink", "作者：北漠海", "版本号：" + p.manifest.version, "更新日期：2026-11-14"]) details.createDiv({ text: label });
+  for (const label of ["AniLink", "作者：北漠海", "版本号：" + p.manifest.version, "更新日期：2026-11-15"]) details.createDiv({ text: label });
   footer.createDiv({ text: "本项目基于 MIT License 开源", cls: "al-plugin-footer-license" });
   const authorLinks = el.createDiv("al-author-links");
   for (const [name, label, icon, url] of [

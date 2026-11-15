@@ -1631,13 +1631,7 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
   }
-  if (existing)
-    await fs.writeFile(
-      target + ".before-alignment-" + Date.now() + ".bak",
-      existing,
-      { flag: "wx" },
-    );
-  if (existing) {
+  if (existing && !this.danmakuResetPaths?.has(target)) {
     const old = new DOMParser().parseFromString(existing, "text/xml");
     if (old.querySelector("parsererror")) throw Error("已有弹幕 XML 无法解析，已保留原文件");
     for (const node of old.querySelectorAll("d")) {
@@ -1652,6 +1646,7 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
       "</i>",
     "utf8",
   );
+  this.danmakuResetPaths?.delete(target);
   episode.danmaku = {
     ...episode.danmaku,
     sources,
@@ -1669,8 +1664,8 @@ AniLink.prototype.play = async function (show, episode, file) {
   const sourceOptions = [this.state.settings.biliOfficialFirst !== false, !!this.state.settings.biliRegional, this.state.settings.biliCutAlignment !== false].join(":");
   if (cached && episode.danmaku.sourceOptions !== sourceOptions) {
     const xml = file.path.replace(/\.[^.]+$/, ".xml");
-    try { await fs.rename(xml, xml + ".before-options-" + Date.now() + ".bak"); }
-    catch (error) { if (error.code !== "ENOENT") throw error; }
+    this.danmakuResetPaths ||= new Set();
+    this.danmakuResetPaths.add(xml);
     cached = false;
   }
   if (this.state.settings.biliOfficialFirst !== false && !episode.danmaku?.official && !episode.danmaku?.officialCheckedAt) cached = false;
@@ -1692,6 +1687,8 @@ AniLink.prototype.play = async function (show, episode, file) {
       if (episode.danmaku) episode.danmaku.sourceOptions = sourceOptions;
     } catch (error) {
       C.record(this.state, "UP主弹幕匹配：" + error.message);
+    } finally {
+      this.danmakuResetPaths?.delete(file.path.replace(/\.[^.]+$/, ".xml"));
     }
   }
   const result = await launchLocalMedia.call(this, show, episode, file);
@@ -2208,6 +2205,9 @@ Dashboard.prototype.render = function () {
     );
     if (button) bar.appendChild(button);
   }
+  const rss = [...bar.children].find((control) => /RSS\s*订阅/.test(control.textContent));
+  const downloader = [...bar.children].find((control) => control.textContent === "打开下载器");
+  if (rss && downloader) rss.after(downloader);
 };
 const orderSettings = Connections.prototype.display;
 Connections.prototype.display = function () {

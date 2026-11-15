@@ -3145,4 +3145,13 @@
 .al-settings-v2 .al-password-setting .setting-item-control > .clickable-icon { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); }
 .al-settings-v2 .al-settings-dependency .setting-item { flex-wrap: wrap; }
 .al-settings-v2 .al-settings-dependency .setting-item-info { flex-basis: 100%; }
+.al-root .al-watch-section,
+.al-root .al-watch-section .al-episode-focus,
+.al-root .al-watch-section .al-inline-subscription { display: flex; flex-direction: column; gap: 8px; }
+.al-root .al-watch-section > *,
+.al-root .al-watch-section .al-episode-focus > *,
+.al-root .al-watch-section .al-inline-subscription > * { margin-top: 0; margin-bottom: 0; }
+.al-root .al-watch-section .al-episode-focus,
+.al-root .al-watch-section .al-inline-subscription { padding-top: 8px; }
+.al-root .al-watch-section > h3 { margin: 0 !important; }
 .al-source-modal, .al-version-modal { width: min(620px, calc(100vw - 24px)); }

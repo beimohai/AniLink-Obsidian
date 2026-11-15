@@ -115,13 +115,13 @@ AniLink.prototype.prepareUploaderDanmaku = async function (show, episode, file) 
             const existing = await fs.readFile(target, "utf8");
             const previous = new DOMParser().parseFromString(existing, "text/xml");
             const known = new Set([...document.querySelectorAll("d")].map((node) => node.getAttribute("p") + "|" + node.textContent));
-            for (const node of previous.querySelectorAll("d")) {
+            for (const node of this.danmakuResetPaths?.has(target) ? [] : previous.querySelectorAll("d")) {
               const key = node.getAttribute("p") + "|" + node.textContent;
               if (!known.has(key)) { document.documentElement.appendChild(document.importNode(node, true)); known.add(key); }
             }
-            if (existing !== new XMLSerializer().serializeToString(document)) await fs.writeFile(target + ".before-alignment-" + Date.now() + ".bak", existing, { flag: "wx" });
           } catch (error) { if (error.code !== "ENOENT") throw error; }
           await fs.writeFile(target, new XMLSerializer().serializeToString(document), "utf8");
+          this.danmakuResetPaths?.delete(target);
           episode.danmaku = { ...episode.danmaku, cid: match.cid, official: true, cuts, xmlPath: target, biliMatchedAt: Date.now() };
           await this.persist();
           return;
