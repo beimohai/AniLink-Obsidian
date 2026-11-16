@@ -95,6 +95,13 @@ Dashboard.prototype.renderDetail = function (el, s) {
       cls: "al-error",
     });
 };
+AniLink.prototype.completeWatchedShow = function (show, target) {
+  const normal = show.episodes.filter((episode) => episode.type === 0).sort((a, b) => a.sort - b.sort);
+  if (this.state.settings.bgmAutoComplete === false || target.type !== 0 || target.id !== normal.at(-1)?.id
+    || normal.length < Number(show.total || 1) || !normal.every((episode) => episode.watched)) return;
+  show.status = 2;
+  C.queueJob(this.state, { key: `collection:${show.id}`, kind: "collection", showId: show.id, payload: { type: 2 } });
+};
 AniLink.prototype.markThrough = async function (s, target) {
   s.localRevision = (s.localRevision || 0) + 1;
   const affected =
@@ -121,11 +128,31 @@ AniLink.prototype.markThrough = async function (s, target) {
       payload: { type: 2 },
     });
   }
+  this.completeWatchedShow(s, target);
+  for (const leaf of this.app?.workspace?.getLeavesOfType(VIEW) || []) {
+    if (leaf.view.selected !== s.id) continue;
+    const next = s.episodes.filter((episode) => episode.type === 0 && episode.sort > target.sort && !episode.watched).sort((a, b) => a.sort - b.sort)[0];
+    if (next) leaf.view.episodeFocus = next.id;
+    leaf.view.render();
+  }
+  new Notice(`已看到第 ${target.ep || target.sort} 集`);
   await this.persist();
+  this.background("Bangumi 推送", () => this.sync());
   const cleanupMode = this.state.settings.cleanupMode ||
     (this.state.settings.cleanupAfterWatch === false ? "none" : "watched");
-  if (cleanupMode === "current") await this.cleanupWatched(s, [target]);
-  else if (cleanupMode === "watched") await this.cleanupWatched(s, affected);
+  if (cleanupMode !== "none") {
+    this.cleanupChain = (this.cleanupChain || Promise.resolve()).catch(() => {}).then(async () => {
+      try {
+        await this.cleanupWatched(s, cleanupMode === "current" ? [target] : affected);
+        await this.persist();
+        this.redraw(true);
+      } catch (error) {
+        C.record(this.state, `${s.title} · 进度已保存，自动清理失败：${error.message}`);
+        await this.persist();
+        new Notice("进度已保存，自动清理失败，请查看日志", 8000);
+      }
+    });
+  }
   C.record(this.state, `${s.title}：已看到第 ${target.ep || target.sort} 集`);
   await this.persist();
   this.background("Bangumi 推送", () => this.sync());
@@ -156,6 +183,7 @@ AniLink.prototype.cleanupWatched = async function (s, episodes) {
         .filter((f) => f.progress === 1 && f.hash && !f.localOnly)
         .map((f) => f.hash),
     );
+  if (hashes.size && this.ensureDownloader) await this.ensureDownloader({ allowStart: true });
   for (const hash of hashes) {
     const group = files.filter((f) => f.hash === hash);
     if (
@@ -216,7 +244,31 @@ AniLink.prototype.cleanupWatched = async function (s, episodes) {
         e.files = (e.files || []).filter((f) => f.hash !== hash);
       }
     } catch (e) {
+      if (/HTTP 404/.test(e.message)) {
+        const remaining = await this.qb().call("torrents/info", { hashes: hash });
+        if (Array.isArray(remaining) && remaining.length === 0) {
+          const root = path.resolve(this.state.settings.libraryRoot || this.state.settings.downloadRoot);
+          for (const media of group) {
+            const relative = path.relative(root, path.resolve(media.path));
+            if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) throw Error("自动清理文件不在番剧库目录内");
+            const owner = s.episodes.find((episode) => episode.id === media.episodeId);
+            const targets = new Set([media.path, media.path.replace(/\.[^.]+$/, ".xml"), ...(owner?.danmaku?.ownedPaths || [])]);
+            for (const target of targets) {
+              const targetRelative = path.relative(root, path.resolve(target));
+              if (!targetRelative || targetRelative.startsWith("..") || path.isAbsolute(targetRelative)) throw Error("弹幕清理文件不在番剧库目录内");
+              try { await fs.unlink(target); } catch (error) { if (error.code !== "ENOENT") throw error; }
+            }
+            if (media.taskTitle && !s.blockedTitles.includes(media.taskTitle)) s.blockedTitles.push(media.taskTitle);
+            if (owner) { owner.files = owner.files.filter((file) => file !== media); if (!owner.files.length) delete owner.danmaku; }
+          }
+          if (s.subscription.feed) await this.qb().setRule(s);
+          C.record(this.state, `${s.title} · 已清理下载任务移除后遗留的视频与弹幕`);
+          await this.persist();
+          continue;
+        }
+      }
       C.record(this.state, "进度已保存，清理失败：" + e.message);
+      new Notice("进度已保存，文件清理失败，请查看日志", 8000);
     }
   }
 };

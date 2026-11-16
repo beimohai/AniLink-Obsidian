@@ -323,7 +323,9 @@ AniLink.prototype.onload = async function () {
 
 const settingsUnload = AniLink.prototype.onunload;
 AniLink.prototype.onunload = function () {
+  this.exitSyncRunning = true;
   const finish = async () => {
+    await this.cleanupChain;
     if (this.state.settings.bgmSyncExit !== false && this.state.settings.bgmToken) {
       try { await this.pullAccount(); await this.sync(); } catch (error) { C.record(this.state, "退出同步失败：" + error.message); }
     }
@@ -331,7 +333,7 @@ AniLink.prototype.onunload = function () {
     await this.saveChain;
     await this.saveData(JSON.parse(JSON.stringify(this.state)));
   };
-  this.settingsUnloadTask = finish();
+  this.settingsUnloadTask = finish().finally(() => { this.exitSyncRunning = false; });
   this.settingsUnloadTask.catch((error) => console.error("AniLink 退出保存失败", error));
   settingsUnload.call(this);
 };

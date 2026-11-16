@@ -148,5 +148,5 @@ AniLink.prototype.onunload = function () {
 };
 const beforePersist = AniLink.prototype.persist;
 AniLink.prototype.persist = function () {
-  return this.disposed ? Promise.resolve() : beforePersist.call(this);
+  return this.disposed && !this.exitSyncRunning ? Promise.resolve() : beforePersist.call(this);
 };

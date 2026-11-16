@@ -380,15 +380,8 @@ Dashboard.prototype.render = function () {
     this.render();
   };
 };
-const standardSettings = Connections.prototype.display;
-Connections.prototype.display = function () {
-  standardSettings.call(this);
-  new Setting(this.containerEl)
-    .setName("显示与下载偏好")
-    .addButton((b) =>
-      b.setButtonText("配置").onClick(() => this.p.preferencesModal()),
-    );
-};
+
+
 const flatDetail = Dashboard.prototype.renderDetail;
 Dashboard.prototype.renderDetail = function (el, s) {
   const previous = this.tab;
@@ -823,6 +816,7 @@ Dashboard.prototype.render = function () {
   const root = this.contentEl;
   root.querySelector(".al-cards").scrollTop = scroll;
   this.alignWorkspace = () => {
+    if (Platform.isMobile) return;
     const cards = root.querySelector(".al-cards"),
       head = root.querySelector(".al-detail-head");
     if (!cards || !head) return;
@@ -922,10 +916,18 @@ Dashboard.prototype.renderDetail = function (el, s) {
         cls: "al-web-loading",
         text: "加载中…",
       });
-      page.guest = panel.createEl("webview", {
+      page.guest = panel.createEl(Platform.isMobile ? "iframe" : "webview", {
         attr: { src: page.url, partition: "persist:anilink-preview", allowpopups: "true" },
       });
       page.guest.addClass("al-trend-frame");
+      if (Platform.isMobile) {
+        page.guest.addEventListener("load", () => { page.ready = true; page.loading.hidden = true; });
+        page.guest.addEventListener("error", () => {
+          page.failed = true;
+          page.loading.textContent = "预览加载失败，请点击打开网页。";
+          page.loading.hidden = active !== key;
+        });
+      }
       page.guest.addEventListener("did-start-loading", () => {
         page.failed = false;
         page.loading.textContent = "加载中…";
@@ -989,7 +991,9 @@ Dashboard.prototype.renderDetail = function (el, s) {
   }
   opener.onclick = () => this.p.run(async () => {
     const page = pages[active === "none" ? "bangumi" : active];
-    await shell.openExternal(page.url || await this.p.resolveFanku(s));
+    const url = page.url || await this.p.resolveFanku(s);
+    if (Platform.isMobile) await this.p.openWebsite(url);
+    else await shell.openExternal(url);
   });
   bar.insertBefore(opener, wrap);
   opener.addClass("al-link");
@@ -1009,19 +1013,8 @@ Dashboard.prototype.renderDetail = function (el, s) {
     if (["Bangumi", "番库"].includes(b.textContent)) b.remove();
 };
 
-const informationSettings = Connections.prototype.display;
-Connections.prototype.display = function () {
-  informationSettings.call(this);
-  new Setting(this.containerEl).setName("默认番剧信息").addDropdown((d) =>
-    d
-      .addOptions({ fanku: "番库", bangumi: "Bangumi", trend: "评分趋势" })
-      .setValue(this.p.state.settings.informationPage || "fanku")
-      .onChange(async (value) => {
-        this.p.state.settings.informationPage = value;
-        await this.p.persist();
-      }),
-  );
-};
+
+
 const refreshWithFeedFallback = AniLink.prototype.refresh;
 AniLink.prototype.refresh = async function (manual) {
   // RSS is owned by qBittorrent. Refreshing AniLink deliberately only scans
@@ -1286,19 +1279,8 @@ Dashboard.prototype.render = function () {
     !this.p.state.shows.some((s) => s.id === this.selected),
   );
 };
-const defaultsSettings = Connections.prototype.display;
-Connections.prototype.display = function () {
-  defaultsSettings.call(this);
-  new Setting(this.containerEl).setName("默认季度").addDropdown((d) =>
-    d
-      .addOptions({ all: "全部季度", current: "当前季度", last: "上次设置" })
-      .setValue(this.p.state.settings.shelfQuarterDefault || "all")
-      .onChange(async (value) => {
-        this.p.state.settings.shelfQuarterDefault = value;
-        await this.p.persist();
-      }),
-  );
-};
+
+
 const loadingDetail = Dashboard.prototype.renderDetail;
 Dashboard.prototype.renderDetail = function (el, show) {
   loadingDetail.call(this, el, show);
@@ -1417,20 +1399,8 @@ AniLink.prototype.websiteLogin = function (service) {
     );
   }).open();
 };
-const accountSettings = Connections.prototype.display;
-Connections.prototype.display = function () {
-  accountSettings.call(this);
-  for (const [key, label] of [
-    ["bili", "B站扫码登录"],
-    ["bangumi", "Bangumi网页登录"],
-    ["fanku", "番库网页登录"],
-  ])
-    new Setting(this.containerEl)
-      .setName(label)
-      .addButton((b) =>
-        b.setButtonText("登录").onClick(() => this.p.websiteLogin(key)),
-      );
-};
+
+
 const browserSessionOnload = AniLink.prototype.onload;
 AniLink.prototype.onload = async function () {
   await browserSessionOnload.call(this);
@@ -1459,6 +1429,7 @@ Dashboard.prototype.render = function () {
   fittedInformationRender.call(this);
   const root = this.contentEl;
   this.fitInformation = () => {
+    if (Platform.isMobile) return;
     const detail = root.querySelector(".al-detail");
     const head = root.querySelector(".al-detail-head");
     const top = root.querySelector(".al-top>.al-actions");
@@ -1631,8 +1602,10 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
     }
   }
   for (const uid of uploaders) if (!sources.some((source) => Number(source.mid) === uid)) C.record(this.state, `${show.title} 第${number}集 · ${this.biliUploaderCache?.get(String(uid))?.name || "UP"}（UID ${uid}）弹幕获取失败：未通过番名、季数、集数及时长核验，候选视频 ${[...candidates.values()].filter((item) => Number(item.mid) === uid).map((item) => item.bvid).join("、") || "无"}`);
-  if (!sources.length || !comments.size)
-    throw Error(`${show.title} 第${number}集 · UP ${[...uploaders].join(",")}：没有可用弹幕`);
+  if (!sources.length)
+    throw Error(`${show.title} 第${number}集 · UP ${[...uploaders].join(",")}：没有通过校验的弹幕来源`);
+  if (!comments.size)
+    throw Error(`${show.title} 第${number}集：已匹配 ${sources.length} 个来源，来源弹幕为空或均被屏蔽`);
   const target = file.path.replace(/\.[^.]+$/, ".xml");
   let existing = "";
   try {
@@ -1671,7 +1644,7 @@ AniLink.prototype.play = async function (show, episode, file) {
   if (file.remotePath) await this.cacheRemoteVideo(file);
   let cached = !!episode.danmaku?.biliMatchedAt;
   const uploaderIds = String(this.state.settings.biliUploaders || "").split(/[\s,，]+/).filter(Boolean).sort().join(",");
-  const sourceOptions = [this.state.settings.biliOfficialFirst !== false, !!this.state.settings.biliRegional, this.state.settings.biliCutAlignment !== false, uploaderIds, this.state.settings.biliFilterRevision || 0].join(":");
+  const sourceOptions = ["opening-consensus-v2", this.state.settings.biliOfficialFirst !== false, !!this.state.settings.biliRegional, this.state.settings.biliCutAlignment !== false, uploaderIds, this.state.settings.biliFilterRevision || 0].join(":");
   if (cached && episode.danmaku.sourceOptions !== sourceOptions) {
     const xml = file.path.replace(/\.[^.]+$/, ".xml");
     this.danmakuResetPaths ||= new Set();
@@ -1794,23 +1767,6 @@ AniLink.prototype.changeStatus = async function (show, status) {
   await lifecycleStatus.call(this, show, status);
   if (Number(status) === 5) await this.cleanupShow(show);
 };
-const lifecycleMark = AniLink.prototype.markThrough;
-AniLink.prototype.markThrough = async function (show, target) {
-  await lifecycleMark.call(this, show, target);
-  const normal = show.episodes
-    .filter((e) => e.type === 0)
-    .sort((a, b) => a.sort - b.sort);
-  if (
-    target.type === 0 &&
-    target.id === normal.at(-1)?.id &&
-    normal.length >= Number(show.total || 1) &&
-    normal.every((e) => e.watched)
-  ) {
-    await this.changeStatus(show, 2);
-    await this.cleanupShow(show);
-  }
-};
-
 const retryCleanupRefresh = AniLink.prototype.refresh;
 AniLink.prototype.refresh = async function (manual) {
   const result = await retryCleanupRefresh.call(this, manual);
@@ -1946,130 +1902,7 @@ Dashboard.prototype.renderDetail = function (el, show) {
     if (button.textContent === "弹幕") button.remove();
 };
 
-Connections.prototype.display = function () {
-  const el = this.containerEl;
-  el.empty();
-  el.addClass("al-plugin-settings");
-  const settings = this.p.state.settings;
-  const heading = (text) => new Setting(el).setName(text).setHeading();
-  const dropdown = (key, name, description, choices, fallback) =>
-    new Setting(el)
-      .setName(name)
-      .setDesc(description)
-      .addDropdown((d) =>
-        d
-          .addOptions(choices)
-          .setValue(String(settings[key] ?? fallback))
-          .onChange(async (value) => {
-            settings[key] = value;
-            await this.p.persist();
-          }),
-      );
-  const toggle = (key, name, description, fallback) =>
-    new Setting(el)
-      .setName(name)
-      .setDesc(description)
-      .addToggle((t) =>
-        t.setValue(settings[key] ?? fallback).onChange(async (value) => {
-          settings[key] = value;
-          await this.p.persist();
-        }),
-      );
-  heading("服务连接");
-  new Setting(el)
-    .setName("连接配置")
-    .setDesc("Bangumi、下载器、播放器与 bilibili 账号。")
-    .addButton((b) =>
-      b.setButtonText("配置").onClick(() => this.p.settingsModal()),
-    );
-  heading("书架与检索");
-  dropdown(
-    "shelfQuarterDefault",
-    "默认季度",
-    "打开插件时采用的季度范围。",
-    { all: "全部季度", current: "当前季度", last: "上次设置" },
-    "all",
-  );
-  dropdown(
-    "shelfSort",
-    "默认排序",
-    "最近更新按本地下载完成时间排列。",
-    {
-      ready: "最近更新",
-      title: "名称",
-      progress: "观看进度",
-      added: "最近加入",
-    },
-    "ready",
-  );
-  dropdown(
-    "shelfColumns",
-    "书架列数",
-    "自动模式随面板宽度切换。",
-    { auto: "自动", 1: "单列", 2: "双列" },
-    "auto",
-  );
-  toggle("showOriginalName", "原文标题", "在中文标题下显示日文原名。", true);
-  for (const status of [1, 3, 4, 5])
-    new Setting(el).setName("搜索按钮 · " + C.STATUS[status]).addToggle((t) =>
-      t
-        .setValue((settings.searchStatuses || [3]).includes(status))
-        .onChange(async (enabled) => {
-          const values = new Set(settings.searchStatuses || [3]);
-          if (enabled) values.add(status);
-          else values.delete(status);
-          settings.searchStatuses = [...values];
-          await this.p.persist();
-        }),
-    );
-  heading("网页");
-  dropdown(
-    "browserMode",
-    "打开方式",
-    "选择条目链接的打开位置。",
-    { external: "默认浏览器", obsidian: "Obsidian Web viewer" },
-    "external",
-  );
-  dropdown(
-    "informationPage",
-    "默认番剧信息",
-    "首次进入番剧时显示的网页。",
-    { none: "不预览（按需加载）", fanku: "番库", bangumi: "Bangumi", trend: "评分趋势" },
-    "none",
-  );
-  toggle("informationPanel", "番剧信息面板", "关闭后右侧不显示网页预览面板。", true);
-  heading("存储与 NAS");
-  new Setting(el)
-    .setName("媒体路径映射")
-    .setDesc("配置下载器路径到 NAS、映射盘或 WebDAV 同步目录的对应关系。")
-    .addButton((b) => b.setButtonText("配置").onClick(() => this.p.settingsModal()));
-  heading("下载与清理");
-  toggle(
-    "cleanupAfterWatch",
-    "已看文件清理",
-    "点击看到这里后删除已看文件。全季完成和弃番会清理番剧目录及 RSS。",
-    true,
-  );
-  toggle(
-    "downloadNotifications",
-    "下载完成通知",
-    "发现本地新增待看集时显示通知。",
-    true,
-  );
-  heading("同步与维护");
-  new Setting(el)
-    .setName("更多下载与同步设置")
-    .setDesc("刷新周期、元数据更新与设备同步。")
-    .addButton((b) =>
-      b.setButtonText("配置").onClick(() => this.p.preferencesModal()),
-    );
-  new Setting(el)
-    .setName("日志")
-    .setDesc("查看失败原因并导出排查记录。")
-    .addButton((b) =>
-      b.setButtonText("查看").onClick(() => this.p.logsModal()),
-    );
-};
+
 
 AniLink.prototype.pathPicker = function (input, directory) {
   const row = input.parentElement.createDiv("al-path-picker");
@@ -2221,50 +2054,8 @@ Dashboard.prototype.render = function () {
   const downloader = [...bar.children].find((control) => control.textContent === "打开下载器");
   if (rss && downloader) rss.after(downloader);
 };
-const orderSettings = Connections.prototype.display;
-Connections.prototype.display = function () {
-  orderSettings.call(this);
-  new Setting(this.containerEl)
-    .setName("顶部按钮顺序")
-    .setDesc("用逗号分隔按钮名称。")
-    .addText((t) =>
-      t
-        .setValue(
-          (
-            this.p.state.settings.toolbarOrder || [
-              "添加番剧",
-              "刷新",
-              "设置",
-              "同步",
-              "连接配置",
-              "新番表",
-              "RSS订阅",
-            ]
-          ).join("，"),
-        )
-        .onChange(async (value) => {
-          const values = value.split(/[,，]/).map((s) => s.trim());
-          const allowed = [
-            "添加番剧",
-            "刷新",
-            "设置",
-            "同步",
-            "连接配置",
-            "新番表",
-            "RSS订阅",
-          ];
-          if (
-            values.length !== 7 ||
-            new Set(values).size !== 7 ||
-            values.some((v) => !allowed.includes(v))
-          )
-            return;
-          this.p.state.settings.toolbarOrder = values;
-          await this.p.persist();
-          this.p.redraw();
-        }),
-    );
-};
+
+
 const refinedConnections = AniLink.prototype.settingsModal;
 AniLink.prototype.settingsModal = function () {
   refinedConnections.call(this);
@@ -2454,39 +2245,3 @@ AniLink.prototype.downloadRelease = async function (show, article, allowStart = 
   await this.ensureDownloader({ allowStart });
   return readyDownload.call(this, show, article);
 };
-const releaseSettings = Connections.prototype.display;
-Connections.prototype.display = function () {
-  releaseSettings.call(this);
-  for (const [kind, name] of [
-    ["sponsor", "赞助与支持"],
-    ["feedback", "问题反馈"],
-  ])
-    new Setting(this.containerEl).setName(name).addButton((b) =>
-      b.setButtonText("打开面板").onClick(() =>
-        new Panel(this.p, name, (el) => {
-          el.createEl("img", {
-            attr: { src: communityImages[kind], alt: name },
-            cls: "al-community-image",
-          });
-          button(el, "作者B站主页", () =>
-            shell.openExternal("https://space.bilibili.com/1065768987"),
-          );
-          if (kind === "feedback")
-            button(el, "GitHub Issues", () =>
-              shell.openExternal(
-                "https://github.com/beimohai/AniLink-Obsidian/issues",
-              ),
-            );
-        }).open(),
-      ),
-    );
-  this.containerEl.createEl("p", {
-    text:
-      "AniLink " +
-      this.p.manifest.version +
-      " · 更新日期 2026-11-12 · 作者 北漠海",
-    cls: "al-muted",
-  });
-};
-
-

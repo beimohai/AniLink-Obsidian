@@ -5,7 +5,7 @@ const vm = require("node:vm");
 const C = require("../core");
 
 test("mobile loads and saves Bangumi edits without Node or Electron imports", async () => {
-  const storage = new Map([["anilink-mobile-device", "fixture-mobile-device"]]);
+  const storage = new Map([["anilink-mobile-device", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"]]);
   let saved;
   class Plugin {
     constructor() {
@@ -20,10 +20,11 @@ test("mobile loads and saves Bangumi edits without Node or Electron imports", as
     addRibbonIcon() {}
     addCommand() {}
     addSettingTab() {}
+    registerInterval() {}
   }
   const sandbox = {
     module: { exports: {} }, console, URL, URLSearchParams,
-    window: { localStorage: { getItem: (key) => storage.get(key), setItem: () => { throw Error("New identity writes must use the Obsidian API"); } } },
+    window: { setInterval: () => 1, localStorage: { getItem: (key) => storage.get(key), setItem: () => { throw Error("New identity writes must use the Obsidian API"); } } },
     require(id) {
       assert.equal(id, "obsidian", "Mobile attempted to import a desktop module");
       return { Plugin, ItemView: class {}, Modal: class {}, PluginSettingTab: class {}, Setting: class {}, Notice: class {}, Platform: { isMobile: true, isDesktop: false }, requestUrl() { throw Error("Unexpected network"); } };
@@ -33,8 +34,8 @@ test("mobile loads and saves Bangumi edits without Node or Electron imports", as
   const plugin = new sandbox.module.exports();
   assert.equal(plugin.constructor.name, "MobileAniLink");
   await plugin.onload();
-  assert.equal(plugin.mobileDeviceId, "fixture-mobile-device");
-  assert.equal(storage.get("vault-anilink-mobile-device"), "fixture-mobile-device");
+  assert.equal(plugin.mobileDeviceId, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+  assert.equal(storage.get("vault-anilink-mobile-device"), "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
   storage.delete("anilink-mobile-device");
   const reloaded = new sandbox.module.exports();
   await reloaded.onload();

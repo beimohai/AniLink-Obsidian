@@ -1,5 +1,9 @@
 # 开发验证
 
-运行 npm test、npm run lint、npm run check 检查代码。真实服务验证应在独立库完成，凭据、日志、截图和结果应保存在仓库外或已忽略目录。公开文档不收录个人追番与账号操作记录。
+使用 Node.js 24 与锁文件执行 npm ci、npm run build、npm run lint、npm test、npm run check、npm run package。音频算法另外运行 python tests/test_audio_alignment.py，需要 NumPy。CI 同时运行 JavaScript 和 Python 回归测试。
 
-实际页面与服务测试使用 Obsidian 库。部署仅替换 main.js、manifest.json、styles.css，保留 data.json。Obsidian_test 不再作为部署目标。测试前备份私人状态，公开材料不记录账号与实际媒体文件。
+测试覆盖订阅规则、季度与分集匹配、离线进度、清理保护、同名脚本内置、构建复现、存储迁移、移动端导入边界和逐字段合并。音频测试覆盖尾部拼接、异常点重采样、短音频和无关音轨拒绝。
+
+真实服务测试在自己的专用库进行，凭据、日志、截图和结果保存在已忽略目录或仓库外。部署替换 main.js、manifest.json、styles.css，保留 data.json。
+
+Windows 上已进行设置布局、观看进度、遗留文件清理和片头音频校准验证。实体手机、macOS、Linux、受认证保护的远程视频及所有第三方播放器组合仍需对应设备验证。

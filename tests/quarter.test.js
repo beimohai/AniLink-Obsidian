@@ -556,6 +556,7 @@ test("manual mark-through marks only earlier normal episodes and queues them wit
   p.state.shows = [s];
   s.episodes.push({ id: 999, sort: 1, type: 1, watched: false, files: [] });
   await p.markThrough(s, s.episodes[3]);
+  await p.cleanupChain;
   assert.equal(s.episodes.filter((e) => e.watched).length, 4);
   assert.equal(s.episodes[4].watched, false);
   assert.equal(s.episodes.at(-1).watched, false);
@@ -651,6 +652,7 @@ test("cleanup refuses a pack containing an unwatched episode", async () => {
     ];
   h.state.tasks = [{ hash: "pack" }];
   await p.markThrough(s, s.episodes[0]);
+  await p.cleanupChain;
   assert.equal(h.state.tasks.length, 1);
   assert.equal(s.episodes[0].files.length, 1);
   assert.equal(s.episodes[1].watched, false);
@@ -668,6 +670,7 @@ test("cleanup deletes a watched single-episode task and retains its watch record
   h.state.tasks = [{ hash: "one" }];
   h.state.files.one = [{ index: 0, name: "Show - 01.mkv", progress: 1 }];
   await p.markThrough(s, s.episodes[0]);
+  await p.cleanupChain;
   assert.equal(h.state.tasks.length, 0);
   assert.equal(s.episodes[0].files.length, 0);
   assert.equal(s.episodes[0].watched, true);
@@ -773,6 +776,7 @@ test("disabled cleanup preserves watched files and download tasks", async () => 
   ];
   h.state.tasks = [{ hash: "keep" }];
   await p.markThrough(s, s.episodes[0]);
+  await p.cleanupChain;
   assert.equal(h.state.tasks.length, 1);
   assert.equal(s.episodes[0].watched, true);
   assert.equal(s.episodes[0].files.length, 1);
@@ -831,6 +835,7 @@ test("cleanup preserves torrents containing videos absent from local metadata", 
     { index: 1, name: "Bonus.mkv", progress: 1 },
   ];
   await p.markThrough(s, s.episodes[0]);
+  await p.cleanupChain;
   assert.equal(h.state.tasks.length, 1);
   assert.equal(s.episodes[0].files.length, 1);
   assert.equal(s.episodes[0].watched, true);
@@ -1001,4 +1006,47 @@ test("season prefix before episode separator is not rejected as a batch in downl
  const profile = C.releaseTags(title);
  assert.ok(C.previewMatch(title, {feed:"https://example.test/rss",profile,quality:profile.quality,language:profile.language,start:1,end:12}));
  assert.ok(C.sourceQueries({title:"赛博朋克：边缘行者 2"}, "").includes("边缘行者"));
+});
+
+test("mark through updates the focused episode before background cleanup finishes", async () => {
+  const h = harness(), p = plugin(h.http), s = fixture();
+  p.state.settings.bgmToken = "";
+  p.state.shows = [s];
+  let release;
+  p.cleanupWatched = () => new Promise((resolve) => { release = resolve; });
+  let rendered = 0;
+  const view = { selected: s.id, render() { rendered++; } };
+  p.app = { workspace: { getLeavesOfType: () => [{ view }] } };
+  await p.markThrough(s, s.episodes[1]);
+  assert.equal(s.episodes[0].watched, true);
+  assert.equal(s.episodes[1].watched, true);
+  assert.equal(view.episodeFocus, s.episodes[2].id);
+  assert.ok(rendered > 0);
+  release();
+  await p.cleanupChain;
+});
+
+test("last episode completion follows the Bangumi preference", () => {
+  const h = harness(), p = plugin(h.http), s = fixture();
+  s.status = 3;
+  for (const episode of s.episodes) episode.watched = true;
+  p.state.settings.bgmAutoComplete = false;
+  p.completeWatchedShow(s, s.episodes.at(-1));
+  assert.equal(s.status, 3);
+  p.state.settings.bgmAutoComplete = true;
+  p.completeWatchedShow(s, s.episodes.at(-1));
+  assert.equal(s.status, 2);
+  assert.equal(p.state.queue.find((job) => job.kind === "collection").payload.type, 2);
+});
+
+test("exit synchronization can drain the queue after normal background work is disposed", async () => {
+  const h = harness(), p = plugin(h.http), s = fixture();
+  p.state.shows = [s];
+  C.queueJob(p.state, { key: `collection:${s.id}`, kind: "collection", showId: s.id, payload: { type: 3 } });
+  p.disposed = true;
+  await p.sync();
+  assert.equal(p.state.queue.length, 1);
+  p.exitSyncRunning = true;
+  await p.sync();
+  assert.equal(p.state.queue.length, 0);
 });

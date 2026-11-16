@@ -27,7 +27,7 @@ AniLink.prototype.sync = function () {
       const jobs = [...this.state.queue];
       if (!jobs.length) break;
       for (const job of jobs) {
-        if (this.disposed) return;
+        if (this.disposed && !this.exitSyncRunning) return;
         const version = job.revision,
           snapshot = JSON.parse(JSON.stringify(job));
         const subject = this.state.shows.find((s) => s.id === job.showId);

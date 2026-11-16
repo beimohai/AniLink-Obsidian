@@ -1,141 +1,332 @@
-// Mobile uses Obsidian storage and Bangumi without loading desktop services.
-class MobileAniLink extends Plugin {
+// Mobile shares the dashboard and settings, with platform-safe service adapters.
+class MobileAniLink extends AniLink {
   async onload() {
     this.document = await this.loadData();
-    this.state = this.document?.state || this.document || C.defaults();
-    this.state.settings ||= {};
-    this.state.shows ||= [];
+    const saved = this.document?.state || this.document || {};
+    this.state = { ...C.defaults(), ...saved, settings: { ...C.defaults().settings, ...saved.settings } };
     this.mobileBaseline = DeviceModel.project(this.state);
     const deviceKey = "anilink-mobile-device";
     /** @type {unknown} */
     const savedDeviceId = this.app.loadLocalStorage(deviceKey);
-    this.mobileDeviceId = typeof savedDeviceId === "string" ? savedDeviceId : null;
-    if (!this.mobileDeviceId) {
-      // Read the legacy key once so existing field-level edits keep their device identity.
-      this.mobileDeviceId = window.localStorage.getItem(deviceKey) || "mobile-" + Date.now() + "-" + Math.random().toString(36).slice(2);
-      this.app.saveLocalStorage(deviceKey, this.mobileDeviceId);
+    const legacyDeviceId = typeof savedDeviceId === "string" ? savedDeviceId : window.localStorage.getItem(deviceKey);
+    this.mobileDeviceId = legacyDeviceId;
+    if (!/^[a-f0-9]{32}$/.test(this.mobileDeviceId || "")) {
+      this.mobileDeviceId = Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+      for (const record of Object.values(this.document?.records || {}))
+        if (record.device === legacyDeviceId) record.device = this.mobileDeviceId;
     }
+    this.app.saveLocalStorage(deviceKey, this.mobileDeviceId);
     this.http = new C.Http(requestUrl);
+    this.health = {};
+    this.saveChain = Promise.resolve();
+    this.backgroundTasks = new Map();
+    if ((this.state.settings.logRetention || "session") === "session") this.state.events = [];
     this.registerView(VIEW, (leaf) => new MobileDashboard(leaf, this));
     this.addRibbonIcon("tv", "打开 AniLink", () => this.open());
     this.addCommand({ id: "open", name: "打开", callback: () => this.open() });
-    this.addSettingTab(new MobileConnections(this.app, this));
+    this.addCommand({ id: "open-settings", name: "打开插件设置", callback: () => this.settingsModal() });
+    this.addSettingTab(new Connections(this.app, this));
+    const synchronize = () => this.background("Bangumi 自动同步", () => this.syncMobile());
+    this.lastMobileSync = Date.now();
+    this.registerInterval(window.setInterval(() => {
+      const minutes = Number(this.state.settings.bgmSyncMinutes);
+      if (minutes > 0 && Date.now() - this.lastMobileSync >= Math.max(1, minutes) * 60000) synchronize();
+    }, 30000));
+    if (this.state.settings.bgmToken && this.state.settings.bgmSyncStartup !== false) synchronize();
   }
-  bgm() { return new C.Bangumi(this.http, this.state.settings.bgmToken, this.state.settings.bgmMirror ? "https://api.bangumi.lat" : "https://api.bgm.tv"); }
   async persistMobile() {
-    if (this.document?.storage === "vault") {
-      this.document.state = this.state;
-      this.document.records = DeviceModel.capture(this.document.records || {}, this.mobileBaseline, DeviceModel.project(this.state), this.mobileDeviceId);
-      this.mobileBaseline = DeviceModel.project(this.state);
-      await this.saveData(this.document);
-    } else await this.saveData(this.state);
+    const state = JSON.parse(JSON.stringify(this.state));
+    const after = DeviceModel.project(state);
+    const records = DeviceModel.capture(this.document?.records || {}, this.mobileBaseline, after, this.mobileDeviceId);
+    const document = { version: 3, storage: "vault", records, state };
+    await this.saveData(document);
+    this.document = document;
+    this.mobileBaseline = after;
+  }
+  persist() {
+    this.saveChain = this.saveChain.catch(() => {}).then(() => this.persistMobile());
+    return this.saveChain;
+  }
+  async onExternalSettingsChange() {
+    await this.saveChain;
+    const incoming = await this.loadData();
+    if (incoming?.storage !== "vault" || !incoming.state) return;
+    const local = DeviceModel.capture(this.document?.records || {}, this.mobileBaseline, DeviceModel.project(this.state), this.mobileDeviceId);
+    const combined = DeviceModel.merge(local, incoming.records);
+    if (JSON.stringify(combined) === JSON.stringify(this.document?.records || {})) return;
+    DeviceModel.apply(this.state, combined, C.newShow);
+    this.document = { ...incoming, records: combined, state: this.state };
+    this.mobileBaseline = DeviceModel.project(this.state);
+    for (const job of this.state.queue) {
+      const show = this.state.shows.find((item) => item.id === job.showId);
+      if (!show) continue;
+      if (job.kind === "collection") C.queueJob(this.state, { ...job, payload: { type: show.status, rate: show.rate, comment: show.comment, private: show.private } });
+      if (job.kind === "episode") {
+        const episode = show.episodes.find((item) => item.id === job.episodeId);
+        if (episode) C.queueJob(this.state, { ...job, payload: { type: episode.watched ? 2 : 0 } });
+      }
+    }
+    await this.persist();
+    this.redraw();
   }
   async open() {
     const leaf = this.app.workspace.getLeavesOfType(VIEW)[0] || this.app.workspace.getLeaf("tab");
     await leaf.setViewState({ type: VIEW, active: true });
     await this.app.workspace.revealLeaf(leaf);
   }
+  settingsModal() {
+    this.app.setting.open();
+    this.app.setting.openTabById(this.manifest.id);
+  }
+  async openWebsite(value) {
+    const url = new URL(value);
+    if (!["https:", "http:"].includes(url.protocol)) throw Error("链接地址无效");
+    if (this.state.settings.bgmMirror && ["bgm.tv", "bangumi.tv", "www.bgm.tv"].includes(url.hostname)) url.hostname = "bangumi.lat";
+    if (this.state.settings.browserMode === "obsidian" && this.app.viewRegistry?.getViewCreatorByType("webviewer")) {
+      const leaf = this.app.workspace.getLeaf("tab");
+      try { await leaf.setViewState({ type: "webviewer", state: { url: url.href }, active: true }); }
+      catch (error) { leaf.detach(); throw error; }
+      await this.app.workspace.revealLeaf(leaf);
+    } else window.open(url.href, "_blank");
+  }
+  async pullAccount() {
+    await AniLink.prototype.pullAccount.call(this);
+    for (const show of this.state.shows.filter((item) => item.status !== 0)) {
+      try { await this.loadMobileEpisodes(show); }
+      catch (error) { C.record(this.state, `${show.title} · 分集同步失败：${error.message}`); }
+    }
+    await this.persist();
+  }
+  async loadMobileEpisodes(show) {
+    await this.updateEpisodes(show);
+    const progress = await this.bgm().pages(`/v0/users/-/collections/${show.id}/episodes`);
+    const pending = new Set(this.state.queue.filter((job) => job.kind === "episode").map((job) => job.episodeId));
+    for (const entry of progress) {
+      const episode = show.episodes.find((item) => item.id === entry.episode.id);
+      if (episode && !pending.has(episode.id)) episode.watched = entry.type === 2;
+    }
+    show.progressAt = Date.now();
+  }
   async syncMobile() {
-    try {
-      const bgm = this.bgm();
-      const me = await bgm.call("/v0/me");
-      const rows = await bgm.pages(`/v0/users/${encodeURIComponent(me.username)}/collections?subject_type=2`);
-      for (const row of rows) {
-        let show = this.state.shows.find((item) => item.id === row.subject_id);
-        if (!show) { show = C.newShow(row.subject); this.state.shows.push(show); }
-        Object.assign(show, { status: row.type, rate: row.rate || 0, comment: row.comment || "", private: !!row.private });
+    if (this.mobileSyncTask) return this.mobileSyncTask;
+    this.mobileSyncTask = (async () => {
+      await this.pullAccount();
+      await this.sync();
+      this.lastMobileSync = Date.now();
+      await this.persist();
+      this.redraw();
+    })().finally(() => { this.mobileSyncTask = null; });
+    return this.mobileSyncTask;
+  }
+  async refresh() {
+    await this.syncMobile();
+    if (this.state.settings.remoteEnabled) await this.scanRemoteVideos();
+    this.redraw();
+  }
+  async refreshAndReopen() { return this.run(() => this.refresh()); }
+  async markWatched(show, episode, watched) {
+    episode.watched = watched;
+    show.localRevision = (show.localRevision || 0) + 1;
+    C.queueJob(this.state, { key: `episode:${episode.id}`, kind: "episode", showId: show.id, episodeId: episode.id, payload: { type: watched ? 2 : 0 } });
+    await this.persist();
+    this.background("Bangumi 推送", () => this.sync());
+  }
+  async markThrough(show, target) {
+    const episodes = target.type === 0 ? show.episodes.filter((episode) => episode.type === 0 && episode.sort <= target.sort) : [target];
+    for (const episode of episodes) {
+      if (episode.watched) continue;
+      episode.watched = true;
+      C.queueJob(this.state, { key: `episode:${episode.id}`, kind: "episode", showId: show.id, episodeId: episode.id, payload: { type: 2 } });
+    }
+    if ([0, 1].includes(show.status)) await this.changeStatus(show, 3);
+    show.localRevision = (show.localRevision || 0) + 1;
+    this.completeWatchedShow(show, target);
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW)) {
+      if (leaf.view.selected !== show.id) continue;
+      leaf.view.episodeFocus = show.episodes.filter((episode) => episode.type === 0 && episode.sort > target.sort && !episode.watched).sort((a, b) => a.sort - b.sort)[0]?.id || target.id;
+      leaf.view.render();
+    }
+    this.redraw();
+    new Notice(`已看到第 ${target.ep || target.sort} 集`);
+    await this.persist();
+    this.background("Bangumi 推送", () => this.sync());
+  }
+  async changeStatus(show, status) {
+    show.status = status;
+    show.localRevision = (show.localRevision || 0) + 1;
+    C.queueJob(this.state, { key: `collection:${show.id}`, kind: "collection", showId: show.id, payload: { type: status } });
+    await this.persist();
+    this.background("Bangumi 推送", () => this.sync());
+  }
+  removeShow(show) {
+    this.confirm("移出书架？", "保留 Bangumi 收藏与媒体文件。", () => this.run(async () => {
+      this.state.hiddenShows ||= [];
+      this.state.hiddenShows.push(show.id);
+      this.state.shows = this.state.shows.filter((item) => item !== show);
+      this.state.queue = this.state.queue.filter((job) => job.showId !== show.id);
+      await this.persist();
+    }));
+  }
+  logsModal() {
+    new Panel(this, "日志", (el) => {
+      const logs = [...this.state.queue.filter((job) => job.error).map((job) => ({ at: Date.now(), message: job.error })), ...this.state.events];
+      button(el, "导出日志", () => this.run(async () => {
+        const file = "AniLink-log-" + Date.now() + ".txt";
+        await this.app.vault.create(file, logs.map((log) => time(log.at) + " " + log.message).join("\n"));
+        new Notice("日志已导出到仓库根目录");
+      }));
+      const list = el.createDiv("al-log-list");
+      for (const log of logs) {
+        const row = list.createDiv("al-log-row");
+        row.createEl("time", { text: time(log.at) });
+        row.createEl("p", { text: log.message });
       }
-      await this.persistMobile();
-      for (const leaf of this.app.workspace.getLeavesOfType(VIEW)) await leaf.view.render();
-      new Notice("收藏已同步");
-    } catch (error) { new Notice(error.message); }
+    }).open();
+  }
+  async onunload() {
+    try {
+      if (this.state.settings.bgmSyncExit !== false && this.state.settings.bgmToken) await this.syncMobile();
+    } catch (error) { C.record(this.state, "退出同步失败：" + error.message); }
+    this.disposed = true;
+    if ((this.state.settings.logRetention || "session") === "session") this.state.events = [];
+    await this.persist();
+  }
+  mobileRemoteUrl(settings, relative = "") {
+    if ((settings.remoteProtocol || "webdav") !== "webdav") throw Error("手机端支持 WebDAV，请使用 WebDAV 服务地址");
+    const base = new URL(settings.remoteAddress);
+    if (!["http:", "https:"].includes(base.protocol) || base.username || base.password) throw Error("请使用 HTTP(S) 服务地址，并在账号输入框填写凭据");
+    const segments = String(relative).replace(/\\/g, "/").split("/").filter(Boolean);
+    if (segments.some((part) => part === ".." || /[\r\n\0]/.test(part))) throw Error("远程目录无效");
+    base.pathname = base.pathname.replace(/\/$/, "") + "/" + segments.map(encodeURIComponent).join("/");
+    return base;
+  }
+  async mobileRemoteList(settings, directory) {
+    const url = this.mobileRemoteUrl(settings, directory);
+    if (!url.pathname.endsWith("/")) url.pathname += "/";
+    const headers = { Depth: "1", "Content-Type": "application/xml" };
+    if (settings.remoteUser || settings.remotePassword) {
+      const bytes = new TextEncoder().encode((settings.remoteUser || "") + ":" + (settings.remotePassword || ""));
+      headers.Authorization = "Basic " + btoa(Array.from(bytes, (byte) => String.fromCharCode(byte)).join(""));
+    }
+    const response = await requestUrl({ url: url.href, method: "PROPFIND", headers, body: '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/><d:displayname/></d:prop></d:propfind>' });
+    const xml = new DOMParser().parseFromString(response.text, "application/xml");
+    if (xml.querySelector("parsererror")) throw Error("WebDAV 返回的目录数据无效");
+    const rows = [];
+    for (const item of xml.getElementsByTagNameNS("DAV:", "response")) {
+      const status = item.getElementsByTagNameNS("DAV:", "status")[0]?.textContent;
+      if (status && !/HTTP\/\S+\s+2\d\d/.test(status)) continue;
+      const href = item.getElementsByTagNameNS("DAV:", "href")[0]?.textContent;
+      if (!href) continue;
+      const resolved = new URL(href, url);
+      if (resolved.origin !== url.origin) continue;
+      const pathname = decodeURIComponent(resolved.pathname).replace(/\/$/, "");
+      if (pathname === decodeURIComponent(url.pathname).replace(/\/$/, "")) continue;
+      const root = decodeURIComponent(new URL(settings.remoteAddress).pathname).replace(/\/$/, "") + "/";
+      if (!pathname.startsWith(root)) continue;
+      const relative = pathname.slice(root.length);
+      rows.push({ Name: relative.split("/").pop(), Path: relative, IsDir: !!item.getElementsByTagNameNS("DAV:", "collection").length });
+    }
+    return rows;
+  }
+  async remoteDirectories(settings, directory) {
+    return (await this.mobileRemoteList(settings, directory)).filter((row) => row.IsDir);
+  }
+  chooseRemoteDirectory(settings, input) {
+    new Panel(this, "选择远程目录", (el, modal) => {
+      let current = input.value || "/";
+      const location = el.createEl("p");
+      const list = el.createDiv("al-results");
+      const load = async () => {
+        location.setText(current); list.empty();
+        for (const row of await this.remoteDirectories(settings, current)) button(list, row.Name, () => this.run(async () => { current = row.Path; await load(); }));
+      };
+      const actions = el.createDiv("al-actions");
+      button(actions, "上一级", () => this.run(async () => { current = current.split("/").filter(Boolean).slice(0, -1).join("/"); await load(); }));
+      button(actions, "选择此目录", () => { input.value = current; input.dispatchEvent(new Event("input", { bubbles: true })); modal.close(); });
+      this.run(load);
+    }).open();
+  }
+  async scanRemoteVideos() {
+    const settings = this.state.settings;
+    const walk = async (directory, depth) => {
+      for (const row of await this.mobileRemoteList(settings, directory)) {
+        if (row.IsDir) { if (depth < 3) await walk(row.Path, depth + 1); continue; }
+        if (!C.VIDEO.test(row.Name)) continue;
+        const normalize = (value) => String(value).normalize("NFKC").replace(/[\s\p{P}\p{S}]/gu, "").toLowerCase();
+        const shows = this.state.shows.filter((show) => [show.title, show.name].filter(Boolean).some((name) => normalize(row.Path).includes(normalize(name))));
+        if (shows.length !== 1) continue;
+        const episode = C.resolveEpisode(shows[0], row.Name);
+        if (!episode) continue;
+        const file = { name: row.Name, remotePath: "/" + row.Path, progress: 1, localExists: true, episodeId: episode.id };
+        const existing = episode.files.find((item) => item.remotePath === file.remotePath);
+        if (existing) Object.assign(existing, file); else episode.files.push(file);
+      }
+    };
+    await walk(settings.remoteDirectory || "/", 0);
+    await this.persist();
+  }
+  pickFile(show, episode, files) {
+    const remote = files.filter((file) => file.remotePath);
+    if (remote.length === 1) return this.play(show, episode, remote[0]);
+    new Panel(this, "选择播放文件", (el) => {
+      for (const file of remote) button(el, file.name, () => this.play(show, episode, file));
+    }).open();
+  }
+  async play(show, episode, file) {
+    return this.run(async () => {
+      const settings = this.state.settings;
+      const url = this.mobileRemoteUrl(settings, file.remotePath);
+      new Panel(this, `${show.title} · 第${episode.sort}集`, (el) => {
+        const video = el.createEl("video", { attr: { controls: "", playsinline: "", src: url.href }, cls: "al-mobile-video" });
+        video.addEventListener("error", () => new Notice("视频无法播放，请检查服务认证、网络及视频编码支持。", 8000));
+        button(el, "打开网页", () => this.openWebsite(url.href));
+      }).open();
+    });
   }
 }
-class MobileDashboard extends ItemView {
-  constructor(leaf, plugin) { super(leaf); this.p = plugin; }
-  getViewType() { return VIEW; }
-  getDisplayText() { return "AniLink"; }
-  getIcon() { return "tv"; }
-  async onOpen() { await this.render(); }
-  async render() {
-    const el = this.contentEl;
-    el.empty();
-    el.addClass("al-mobile-dashboard");
-    const top = el.createDiv("al-actions");
-    button(top, "同步", () => this.p.syncMobile());
-    const query = field(el, "搜索番剧", "");
-    const results = el.createDiv();
-    button(el, "搜索", async () => {
-      try {
-        const response = await this.p.bgm().search(query.value.trim());
-        results.empty();
-        for (const subject of response.data || []) {
-          new Setting(results).setName(subject.name_cn || subject.name).addButton((control) => control.setButtonText("加入想看").onClick(async () => {
-            try {
-              await this.p.bgm().call(`/v0/users/-/collections/${subject.id}`, "POST", { type: 1 });
-              let show = this.p.state.shows.find((item) => item.id === subject.id);
-              if (!show) { show = C.newShow(subject); this.p.state.shows.push(show); }
-              show.status = 1;
-              await this.p.persistMobile();
-              await this.render();
-            } catch (error) { new Notice(error.message); }
-          }));
-        }
-      } catch (error) { new Notice(error.message); }
-    });
-    for (const show of this.p.state.shows) {
-      const row = el.createDiv("al-mobile-show");
-      const open = button(row, show.title, () => this.show(show));
-      open.addClass("al-mobile-show-title");
-      row.createSpan({ text: C.STATUS[show.status] || "未收藏" });
+class MobileDashboard extends Dashboard {
+  render() {
+    super.render();
+    this.contentEl.addClass("al-mobile-dashboard");
+    this.contentEl.dataset.columns = "1";
+    const back = this.contentEl.querySelector(".al-mobile-back");
+    if (back) back.onclick = () => { this.mobilePane = "shelf"; this.render(); };
+    const toolbar = this.contentEl.querySelector(".al-top > .al-actions");
+    for (const control of toolbar?.querySelectorAll("button") || [])
+      if (/RSS|下载器|任务/.test(control.textContent)) control.remove();
+    if (this.selectFirstShow === false && this.selected && this.p.state.settings.openFirstShow && !this.mobilePane) {
+      this.mobilePane = "detail";
+      this.contentEl.addClass("al-mobile-detail");
+      this.render();
     }
   }
-  async show(show) {
-    const el = this.contentEl;
-    el.empty();
-    button(el, "返回书架", () => this.render());
-    el.createEl("h2", { text: show.title });
-    const status = select(el, "收藏状态", String(show.status), C.STATUS);
-    const rate = select(el, "评分", String(show.rate || 0), Object.fromEntries(Array.from({ length: 11 }, (_, index) => [index, index ? index + "分" : "未评分"])));
-    const comment = field(el, "短评", show.comment, "textarea");
-    button(el, "保存评价", async () => {
-      try {
-        const payload = { type: Number(status.value), rate: Number(rate.value), comment: comment.value, private: !!show.private };
-        await this.p.bgm().call(`/v0/users/-/collections/${show.id}`, "POST", payload);
-        Object.assign(show, { status: payload.type, rate: payload.rate, comment: payload.comment });
-        await this.p.persistMobile();
-        new Notice("评价已同步");
-      } catch (error) { new Notice(error.message); }
-    });
-    const list = el.createDiv("al-mobile-episodes");
-    try {
-      const episodes = await this.p.bgm().pages(`/v0/users/-/collections/${show.id}/episodes`);
-      for (const entry of episodes) {
-        const episode = entry.episode;
-        if (episode.type !== 0) continue;
-        const row = new Setting(list).setName(`第${episode.sort}集 ${episode.name_cn || episode.name || ""}`);
-        row.addToggle((toggle) => toggle.setValue(entry.type === 2).onChange(async (watched) => {
-          try {
-            await this.p.bgm().call(`/v0/users/-/collections/-/episodes/${episode.id}`, "PUT", { type: watched ? 2 : 0 });
-            const local = show.episodes?.find((item) => item.id === episode.id);
-            if (local) local.watched = watched;
-            await this.p.persistMobile();
-          } catch (error) { toggle.setValue(!watched); new Notice(error.message); }
-        }));
+  renderDetail(el, show) {
+    super.renderDetail(el, show);
+    if (this.mobilePane === "detail" && !el.querySelector(".al-mobile-back")) {
+      const head = el.querySelector(".al-detail-head");
+      if (head) button(head, "← 返回番单", () => { this.mobilePane = "shelf"; this.render(); }, "al-mobile-back");
+    }
+    el.querySelectorAll(".al-section-subscription,.al-inline-subscription,.al-subscription-strip").forEach((node) => node.remove());
+    const normal = show.episodes.filter((episode) => episode.type === 0).sort((a, b) => a.sort - b.sort);
+    const selected = show.episodes.find((episode) => episode.id === this.episodeFocus)
+      || normal.find((episode) => !episode.watched && episode.files?.some((file) => file.progress === 1 && file.localExists !== false))
+      || normal.find((episode) => !episode.watched) || normal.at(-1);
+    const remoteFiles = (selected?.files || []).filter((file) => file.remotePath);
+    for (const control of el.querySelectorAll("button")) {
+      if (/下载本集|打开文件位置|删除文件|刷新文件|弹幕|取消想看/.test(control.textContent)) control.remove();
+      if (control.textContent === "播放") {
+        if (!this.p.state.settings.remoteEnabled || !remoteFiles.length) control.remove();
       }
-    } catch (error) { list.createEl("p", { text: error.message }); }
-  }
-}
-
-class MobileConnections extends PluginSettingTab {
-  constructor(app, plugin) {
-    super(app, plugin);
-    this.p = plugin;
-  }
-  display() {
-    this.containerEl.empty();
-    new Setting(this.containerEl).setName("Bangumi 访问令牌").addText((input) => input.setValue(this.p.state.settings.bgmToken || "").onChange(async (value) => { this.p.state.settings.bgmToken = value.trim(); await this.p.persistMobile(); }));
-    new Setting(this.containerEl).setName("使用镜像网站").addToggle((input) => input.setValue(!!this.p.state.settings.bgmMirror).onChange(async (value) => { this.p.state.settings.bgmMirror = value; await this.p.persistMobile(); }));
-    new Setting(this.containerEl).setName("同步收藏与进度").addButton((control) => control.setButtonText("同步").onClick(() => this.p.syncMobile()));
+    }
+    for (const label of el.querySelectorAll(".al-episode-tile span"))
+      if (["未下载", "文件缺失", "下载中"].includes(label.textContent)) label.textContent = "未看";
+    if (!show.progressAt && !show.mobileLoading && this.p.state.settings.bgmToken) {
+      show.mobileLoading = true;
+      this.p.background("读取分集 " + show.id, async () => {
+        try { await this.p.loadMobileEpisodes(show); await this.p.persist(); }
+        finally { delete show.mobileLoading; }
+        if (this.selected === show.id) this.renderDetail(el, show);
+      });
+    }
   }
 }

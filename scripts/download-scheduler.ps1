@@ -24,30 +24,30 @@ try {
     @{ mode=$mode; running=($running.Count -gt 0); wakeMinutes=$wake; idleMinutes=$idle; startup=(Test-Path -LiteralPath "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\AniLink-downloads.lnk") } | ConvertTo-Json -Compress
     break
    }
-    if ($ManageRunning -and $running.Count -and -not $owned) { $owned = $true; $startedAt = Get-Date; $idleSince = $null }
+    if ($ManageRunning -and $running.Count -and -not $owned) { $owned = $true; $startedAt = Get-Date; $idleSince = $null; $refreshed = $false }
     if (-not $running.Count -and (Get-Date) -ge $nextStart) {
     $args = @('--no-splash', '--minimized')
     if ($config.profile) { $args = @("--profile=$($config.profile)") + $args }
     Start-Process -FilePath $config.exe -ArgumentList $args -WindowStyle Hidden
-    $owned = $true; $startedAt = Get-Date; $idleSince = $null
+    $owned = $true; $startedAt = Get-Date; $idleSince = $null; $refreshed = $false
    }
    if ($owned) {
     $root = $settings.qbUrl.TrimEnd('/')
     $uri = [uri]$root
     if ($uri.Host -notin @('127.0.0.1', 'localhost', '::1')) { throw 'Local scheduler requires loopback qBittorrent.' }
-    Invoke-WebRequest -Uri "$root/api/v2/auth/login" -Method Post -Body @{username=$settings.qbUser; password=$settings.qbPassword} -SessionVariable qbSession -UseBasicParsing | Out-Null
+    Invoke-WebRequest -Uri "$root/api/v2/auth/login" -Method Post -Body @{username=$settings.qbUser; password=$settings.qbPassword} -SessionVariable qbSession -TimeoutSec 20 -UseBasicParsing | Out-Null
      if (-not $refreshed) {
-      $feeds = @(Invoke-RestMethod -Uri "$root/api/v2/rss/items" -WebSession $qbSession)
-      foreach ($feed in $feeds.PSObject.Properties) { if ($feed.Name -like 'AniLink*') { Invoke-WebRequest -Uri "$root/api/v2/rss/refreshItem" -Method Post -Body @{itemPath=$feed.Name} -WebSession $qbSession -UseBasicParsing | Out-Null } }
+      $feeds = @(Invoke-RestMethod -Uri "$root/api/v2/rss/items" -WebSession $qbSession -TimeoutSec 20)
+      foreach ($feed in $feeds.PSObject.Properties) { if ($feed.Name -like 'AniLink*') { Invoke-WebRequest -Uri "$root/api/v2/rss/refreshItem" -Method Post -Body @{itemPath=$feed.Name} -WebSession $qbSession -TimeoutSec 20 -UseBasicParsing | Out-Null } }
       $refreshed = $true
      }
-    $tasks = @(Invoke-RestMethod -Uri "$root/api/v2/torrents/info" -WebSession $qbSession)
+    $tasks = @(Invoke-RestMethod -Uri "$root/api/v2/torrents/info" -WebSession $qbSession -TimeoutSec 20)
      $other = @($tasks | Where-Object { $_.category -notlike 'AniLink*' -and ($_.progress -lt 1 -or $_.state -match 'checking|moving|allocating|error|missing') })
     $pending = @($tasks | Where-Object { $_.progress -lt 1 -or $_.state -match 'checking|moving|allocating|error|missing' })
     if ($other.Count -or $pending.Count) { $idleSince = $null }
     elseif (-not $idleSince) { $idleSince = Get-Date }
     if (($mode -eq 'once' -or $mode -eq 'cycle') -and $idleSince -and ((Get-Date)-$idleSince).TotalMinutes -ge $idle -and ((Get-Date)-$startedAt).TotalMinutes -ge $idle) {
-     Invoke-WebRequest -Uri "$root/api/v2/app/shutdown" -Method Post -WebSession $qbSession -UseBasicParsing | Out-Null
+     Invoke-WebRequest -Uri "$root/api/v2/app/shutdown" -Method Post -WebSession $qbSession -TimeoutSec 20 -UseBasicParsing | Out-Null
      $owned = $false; $idleSince = $null
      if ($mode -eq 'once') { break }
      $nextStart = (Get-Date).AddMinutes($wake)

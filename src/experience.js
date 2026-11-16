@@ -113,7 +113,13 @@ Dashboard.prototype.renderDetail = function (el, s) {
   const mark = button(
     actions,
     e.watched ? "已看到这里" : "看到这里",
-    () => p.run(() => p.markThrough(s, e)),
+    () => {
+      mark.disabled = true;
+      mark.textContent = "标记中…";
+      p.run(() => p.markThrough(s, e)).finally(() => {
+        if (mark.isConnected) { mark.disabled = !!e.watched; mark.textContent = e.watched ? "已看到这里" : "看到这里"; }
+      });
+    },
   );
   mark.disabled =
     !!future ||

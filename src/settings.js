@@ -80,7 +80,7 @@ Connections.prototype.display = function () {
   heading("页面设置");
   choice("默认季度", "shelfQuarterDefault", { all: "全部季度", current: "当前季度", last: "上次设置" }, "all");
   choice("默认排序", "shelfSort", { ready: "最近更新", title: "名称", progress: "观看进度", added: "最近加入" }, "ready");
-  choice("书架列数", "shelfColumns", { auto: "自动", 1: "单列", 2: "双列" }, "auto");
+  if (Platform.isDesktop) choice("书架列数", "shelfColumns", { auto: "自动", 1: "单列", 2: "双列" }, "auto");
   toggle("显示标题原文", "showOriginalName", true);
   for (const status of [1, 3])
     new Setting(el).setName("搜索界面按钮展示 · " + C.STATUS[status]).addToggle((control) => control.setValue((s.searchStatuses || [3]).includes(status)).onChange((enabled) => p.run(async () => { const selected = new Set(s.searchStatuses || [3]); if (enabled) selected.add(status); else selected.delete(status); s.searchStatuses = [...selected]; await p.persist(); })));
@@ -95,6 +95,7 @@ Connections.prototype.display = function () {
   text("自动同步间隔（分钟）", "bgmSyncMinutes", "0 为关闭定时同步。");
   toggle("启动时自动同步", "bgmSyncStartup", true);
   toggle("退出时自动同步", "bgmSyncExit", true);
+  toggle("看到最后一集自动标记看过", "bgmAutoComplete", true);
   choice("冲突处理", "bgmConflictPolicy", { ask: "询问", remote: "以远端为准", local: "以本地为准" }, "ask");
   new Setting(el).setName("同步操作").setClass("al-sync-actions")
     .addButton((b) => b.setButtonText("推送").onClick(() => p.run(() => p.sync())))
@@ -104,6 +105,7 @@ Connections.prototype.display = function () {
       .addButton((b) => b.setButtonText("采用远端").onClick(() => p.run(() => p.resolveConflict(show, true))))
       .addButton((b) => b.setButtonText("保留本地").onClick(() => p.run(() => p.resolveConflict(show, false))));
 
+  if (Platform.isDesktop) {
   heading("qBittorrent");
   text("WebUI 地址", "qbUrl");
   text("用户名", "qbUser");
@@ -141,8 +143,10 @@ Connections.prototype.display = function () {
   heading("本地管理");
   const library = text("番剧库路径", "libraryRoot", "留空时默认使用 qBittorrent 下载目录。");
   picker(library.row, library.input, true);
-  choice("自动清理", "cleanupMode", { none: "不清理", current: "清理当前文件", watched: "清理已看文件" }, s.cleanupAfterWatch === false ? "none" : "watched").settingEl.addClass("al-cleanup-setting");
+  choice("点击看到这里", "cleanupMode", { none: "不清理", current: "清理当前文件", watched: "清理已看文件" }, s.cleanupAfterWatch === false ? "none" : "watched").settingEl.addClass("al-cleanup-setting");
   toggle("删除文件时同步删除种子", "deleteTorrentWithFiles", true);
+
+  }
 
   heading("远程服务");
   const remoteToggle = new Setting(el).setName("启用远程服务").setDesc("开启后使用远程服务管理媒体库。关闭时采用本地目录。");
@@ -160,6 +164,11 @@ Connections.prototype.display = function () {
     for (const node of nodes) remoteControls.appendChild(node);
   };
   remoteSetting(() => choice("服务类型", "remoteProtocol", { webdav: "WebDAV", sftp: "SFTP", ftp: "FTP", ftps: "FTPS", smb: "SMB" }, "webdav"));
+  if (Platform.isMobile) {
+    remoteToggle.setDesc("开启后通过 WebDAV 管理远程媒体库。");
+    const protocols = remoteControls.querySelector("select");
+    for (const option of protocols.options) option.disabled = option.value !== "webdav";
+  }
   remoteSetting(() => text("服务地址", "remoteAddress"));
   remoteSetting(() => text("用户名", "remoteUser"));
   let remotePassword;
@@ -168,9 +177,10 @@ Connections.prototype.display = function () {
   let remoteDir;
   remoteSetting(() => { remoteDir = text("远程目录", "remoteDirectory"); });
   sideAction(remoteDir.row, "选择路径", () => p.chooseRemoteDirectory(p.state.settings, remoteDir.input()));
-  remoteSetting(() => new Setting(el).setName("远程组件 rclone").setDesc("用于访问远程媒体库。").addButton((b) => b.setButtonText("安装组件").onClick(() => p.run(() => p.installRclone()))));
+  if (Platform.isDesktop) remoteSetting(() => new Setting(el).setName("远程组件 rclone").setDesc("用于访问远程媒体库。").addButton((b) => b.setButtonText("安装组件").onClick(() => p.run(() => p.installRclone()))));
   remoteControls.hidden = !(s.remoteEnabled ?? false);
 
+  if (Platform.isDesktop) {
   heading("播放器与弹幕");
   el.createEl("p", { text: "推荐使用弹弹play；PotPlayer、mpv、VLC等视频播放器，需要安装对应弹幕扩展。", cls: "setting-item-description" });
   const player = text("播放器路径", "playerExe");
@@ -255,15 +265,18 @@ Connections.prototype.display = function () {
   void renderUploaders();
 
 
+  }
+
+  const openExternal = (url) => Platform.isMobile ? p.openWebsite(url) : shell.openExternal(url);
   const communityStart = el.children.length;
   for (const [kind, name, text, icon] of [["sponsor", "赞助与支持", "打开赞助面板", "heart"], ["feedback", "问题反馈", "打开反馈面板", "message-square-warning"]]) {
     new Setting(el).setName(name).addButton((b) => b.setButtonText(text).setIcon(icon).onClick(() =>
       new Panel(p, name, (body) => {
         body.parentElement.addClass("al-community-modal");
         body.createEl("img", { attr: { src: communityImages[kind], alt: name }, cls: "al-community-image" });
-        new Setting(body).setName("作者GitHub主页").addButton((link) => link.setButtonText("打开GitHub").setIcon("github").onClick(() => shell.openExternal("https://github.com/beimohai")));
-        new Setting(body).setName("作者B站主页").addButton((link) => link.setButtonText("打开B站").setIcon("external-link").onClick(() => shell.openExternal("https://space.bilibili.com/1065768987")));
-        if (kind === "feedback") new Setting(body).setName("问题反馈").addButton((link) => link.setButtonText("打开 GitHub Issues").setIcon("message-square-warning").onClick(() => shell.openExternal("https://github.com/beimohai/AniLink-Obsidian/issues")));
+        new Setting(body).setName("作者GitHub主页").addButton((link) => link.setButtonText("打开GitHub").setIcon("github").onClick(() => openExternal("https://github.com/beimohai")));
+        new Setting(body).setName("作者B站主页").addButton((link) => link.setButtonText("打开B站").setIcon("external-link").onClick(() => openExternal("https://space.bilibili.com/1065768987")));
+        if (kind === "feedback") new Setting(body).setName("问题反馈").addButton((link) => link.setButtonText("打开 GitHub Issues").setIcon("message-square-warning").onClick(() => openExternal("https://github.com/beimohai/AniLink-Obsidian/issues")));
       }).open(),
     ));
   }
@@ -276,19 +289,20 @@ Connections.prototype.display = function () {
   for (const row of el.querySelectorAll(".setting-item")) {
     row.classList.toggle("al-setting-no-description", !row.querySelector(".setting-item-description"));
     row.classList.toggle("al-toggle-setting", !!row.querySelector(".checkbox-container"));
+    row.classList.toggle("al-input-setting", !!row.querySelector('input[type="text"], input[type="password"], input[type="number"]'));
     row.classList.toggle("al-browser-setting", !!row.querySelector('option[value="obsidian"]'));
   }
   const footer = el.createDiv("al-plugin-footer");
   const logo = new DOMParser().parseFromString(ANI_ICON, "image/svg+xml").documentElement;
   footer.createEl("a", { cls: "al-plugin-footer-logo", attr: { href: "https://github.com/beimohai/AniLink-Obsidian", target: "_blank" } }).appendChild(document.importNode(logo, true));
   const details = footer.createDiv("al-plugin-footer-details");
-  for (const [label, url] of [["AniLink", "https://github.com/beimohai/AniLink-Obsidian"], ["作者：北漠海", "https://space.bilibili.com/1065768987"], ["版本号：" + p.manifest.version, "https://github.com/beimohai/AniLink-Obsidian/releases"], ["更新日期：2026-11-15", "https://github.com/beimohai/AniLink-Obsidian/releases"]]) details.createEl("a", { text: label, attr: { href: url, target: "_blank" } });
+  for (const [label, url] of [["AniLink", "https://github.com/beimohai/AniLink-Obsidian"], ["作者：北漠海", "https://space.bilibili.com/1065768987"], ["版本号：" + p.manifest.version, "https://github.com/beimohai/AniLink-Obsidian/releases"], ["更新日期：2026-11-16", "https://github.com/beimohai/AniLink-Obsidian/releases"]]) details.createEl("a", { text: label, attr: { href: url, target: "_blank" } });
   footer.createDiv({ text: "本项目基于 MIT License 开源", cls: "al-plugin-footer-license" });
   const authorLinks = el.createDiv("al-author-links");
   for (const [name, label, icon, url] of [
     ["作者GitHub主页", "打开GitHub", "github", "https://github.com/beimohai"],
     ["作者B站主页", "打开B站", "external-link", "https://space.bilibili.com/1065768987"],
-  ]) new Setting(authorLinks).setName(name).addButton((control) => control.setButtonText(label).setIcon(icon).onClick(() => shell.openExternal(url)));
+  ]) new Setting(authorLinks).setName(name).addButton((control) => control.setButtonText(label).setIcon(icon).onClick(() => openExternal(url)));
   el.insertBefore(authorLinks, footer);
 };
 

@@ -46,6 +46,7 @@ const defaults = () => ({
     bgmSyncMinutes: 0,
     bgmSyncStartup: true,
     bgmSyncExit: true,
+    bgmAutoComplete: true,
     bgmConflictPolicy: "ask",
     qbExe: "",
     autoRefresh: false,

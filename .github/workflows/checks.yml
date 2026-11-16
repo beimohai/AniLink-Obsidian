@@ -15,6 +15,11 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: python -m pip install numpy==2.2.6
+      - run: python tests/test_audio_alignment.py
       - run: npm ci
       - run: npm run build
       - run: npm run lint
