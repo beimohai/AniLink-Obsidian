@@ -1,7 +1,7 @@
 {
   "id": "anilink",
   "name": "AniLink",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "minAppVersion": "1.15.0",
   "description": "番剧检索、RSS 订阅下载、媒体播放与弹幕，支持 Bangumi 收藏、观看进度和评价同步.",
   "author": "北漠海",

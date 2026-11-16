@@ -1,7 +1,7 @@
 "use strict";
 const fs = require("fs");
 const core = fs.readFileSync("core.js", "utf8").replace(/\r\n?/g, "\n");
-const icon = fs.readFileSync("assets/branding/anilink-icon-white.svg", "utf8").replace(/#fff/g, "currentColor");
+const icon = fs.readFileSync("assets/branding/anilink-icon-white.svg", "utf8").replace(/\r\n?/g, "\n").replace(/#fff/g, "currentColor");
 const iconBody = '<g transform="scale(0.09765625)">' + icon.replace(/<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '') + '</g>';
 const source = ("\"use strict\";\nconst ANI_ICON = " + JSON.stringify(icon) + ";\nconst ANI_ICON_BODY = " + JSON.stringify(iconBody) + ";\n") + fs
   .readFileSync("src/main.js", "utf8")
@@ -50,7 +50,7 @@ console.log("Built main.js (no external runtime dependencies)");
 
 const audio = fs.readFileSync("scripts/align-audio.py", "utf8").replace(/\r\n?/g, "\n");
 fs.appendFileSync("main.js", "\nAniLink.prototype.bundledAudioScript = " + JSON.stringify(audio) + ";\n");
-fs.appendFileSync("main.js", "\nAniLink.prototype.bundledFocusScript = " + JSON.stringify(fs.readFileSync("scripts/focus-player.ps1", "utf8")) + ";\n");
+fs.appendFileSync("main.js", "\nAniLink.prototype.bundledFocusScript = " + JSON.stringify(fs.readFileSync("scripts/focus-player.ps1", "utf8").replace(/\r\n?/g, "\n")) + ";\n");
 
 const schedulerScripts = Object.fromEntries(
   ["download-scheduler.ps1", "install-scheduler.ps1"].map((name) => [

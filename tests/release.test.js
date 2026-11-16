@@ -48,3 +48,28 @@ test('standard release embeds both maintained Windows scheduler scripts', () => 
    assert.equal(content, fs.readFileSync('scripts/' + name, 'utf8').replace(/\r\n?/g, '\n'));
  assert.equal(Object.keys(sandbox.AniLink.prototype.bundledSchedulerScripts).length, 2);
 });
+
+test('build output is identical with LF and CRLF source inputs', (t) => {
+ const os = require('node:os');
+ const path = require('node:path');
+ const root = fs.mkdtempSync(path.join(os.tmpdir(), 'anilink-repro-'));
+ t.after(() => {
+  assert.ok(path.resolve(root).startsWith(path.resolve(os.tmpdir()) + path.sep + 'anilink-repro-'));
+  fs.rmSync(root, { recursive: true, force: true });
+ });
+ for (const name of ['src', 'scripts', 'assets/branding']) fs.cpSync(name, path.join(root, name), { recursive: true });
+ for (const name of ['build.js', 'core.js']) fs.copyFileSync(name, path.join(root, name));
+ for (const name of ['assets/branding/anilink-icon-white.svg', 'scripts/focus-player.ps1']) {
+  const file = path.join(root, name);
+  fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace(/\r\n?/g, '\n'));
+ }
+ cp.execFileSync(process.execPath, ['build.js'], { cwd: root });
+ const lf = fs.readFileSync(path.join(root, 'main.js'));
+ for (const name of ['assets/branding/anilink-icon-white.svg', 'scripts/focus-player.ps1']) {
+  const file = path.join(root, name);
+  fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace(/\n/g, '\r\n'));
+ }
+ cp.execFileSync(process.execPath, ['build.js'], { cwd: root });
+ assert.deepEqual(fs.readFileSync(path.join(root, 'main.js')), lf);
+ assert.deepEqual(fs.readFileSync('main.js'), lf);
+});
