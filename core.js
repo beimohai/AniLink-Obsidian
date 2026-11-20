@@ -1,5 +1,7 @@
 "use strict";
-const path = /** @type {typeof import("node:path")} */ (require("path"));
+// Standalone Node tests have no window; the Obsidian bundle uses its SDK Platform.
+const { Platform } = typeof window === "undefined" ? { Platform: { isDesktop: true } } : /** @type {typeof import('obsidian')} */ (require("obsidian"));
+const path = Platform.isDesktop ? /** @type {typeof import("node:path")} */ (require("path")) : null;
 const VIDEO = /\.(mkv|mp4|avi|webm|mov|m4v|ts)$/i;
 const STATUS = {
   0: "未收藏（本地）",
@@ -9,6 +11,7 @@ const STATUS = {
   4: "搁置",
   5: "弃番",
 };
+/** @returns {AniLinkData.State} */
 const defaults = () => ({
   version: 1,
   settings: {
@@ -76,8 +79,10 @@ const defaults = () => ({
   queue: [],
   events: [],
 });
+/** @param {unknown} s */
 const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // A single directory component valid on Windows, macOS and Linux.
+/** @param {string} title @param {number | string} id */
 function folderName(title, id) {
   const original = String(title || "");
   let name = "";
@@ -97,21 +102,26 @@ function folderName(title, id) {
   // Stable ids prevent collisions when punctuation is removed or a name is truncated.
   return name !== original && /^\d+$/.test(String(id)) ? `${name} [${id}]` : name;
 }
+/** @param {string} value */
 function utf8Length(value) { return Array.from(value).reduce((n, char) => n + (char.codePointAt(0) > 65535 ? 4 : char.charCodeAt(0) > 2047 ? 3 : char.charCodeAt(0) > 127 ? 2 : 1), 0); }
+/** @param {unknown} value @param {typeof import('node:path')} paths */
 function isLocalPath(value, paths = path) {
-  return typeof value === "string" && paths.isAbsolute(value) &&
+  return typeof value === "string" && !!paths && paths.isAbsolute(value) &&
     (paths.sep !== "\\" || /^(?:[A-Za-z]:[\\/]|[\\/]{2})/.test(value));
 }
+/** @param {Error | string} error */
 function qbConnectionMessage(error) {
   const detail = String(error?.message || error || "");
   return /(?:connection[_ ]refused|econnrefused|err_connection_refused)/i.test(detail)
     ? "qBittorrent 未启动，请启动后重试。"
     : "qBittorrent 连接失败：" + detail;
 }
+/** @param {AniLinkData.Settings} settings @param {Partial<AniLinkData.Subscription>} subscription */
 function revisionPolicy(settings, subscription = {}) {
   if (subscription.customized && subscription.revisionPolicy) return subscription.revisionPolicy;
   return settings.rssUpgradeUnwatched ? "upgrade" : "standard";
 }
+/** @param {string} value */
 function feedUrl(value) {
   const u = new URL(value);
   if (
@@ -123,6 +133,7 @@ function feedUrl(value) {
     throw Error("RSS 必须为 HTTP(S) 地址");
   return value;
 }
+/** @param {string} value */
 function baseUrl(value) {
   const u = new URL(value);
   if (
@@ -135,9 +146,9 @@ function baseUrl(value) {
     throw Error("服务地址必须为不含凭据和查询参数的 HTTP(S) 地址");
   return value.replace(/\/+$/, "");
 }
+/** @param {string} name */
 function parseEpisode(name) {
-  const n = path
-    .basename(String(name))
+  const n = (path ? path.basename(String(name)) : String(name).replace(/\/+$/, "").split("/").pop())
     .replace(VIDEO, "")
     .replace(/\b(?:Season|S)\s*\d{1,2}(?=\s+-\s+\d)/gi, "Season");
   if (
@@ -158,9 +169,11 @@ function parseEpisode(name) {
   }
   return null;
 }
+/** @param {Pick<AniLinkData.Show, 'id'>} show */
 function feedPath(show) {
   return `AniLink-${show.id}`;
 }
+/** @param {number[]} values */
 function episodeRanges(values) {
   const numbers = [...new Set(values)].sort((a,b) => a-b);
   const ranges = [];
@@ -172,9 +185,11 @@ function episodeRanges(values) {
   }
   return ranges.join("、");
 }
+/** @param {Pick<AniLinkData.Show, 'id'>} show */
 function ruleName(show) {
   return `AniLink-${show.id}`;
 }
+/** @param {AniLinkData.Show} show @param {AniLinkData.Subscription} sub */
 function buildRule(show, sub = show.subscription) {
   if (!sub?.feed) throw Error("请先填写 RSS 地址");
   feedUrl(sub.feed);
@@ -268,6 +283,7 @@ function buildRule(show, sub = show.subscription) {
     ignoreDays: Math.max(0, Number(sub.ignoreDays) || 0),
   };
 }
+/** @param {string} title @param {AniLinkData.Subscription} sub */
 function previewMatch(title, sub) {
   return (
     new RegExp(
@@ -283,6 +299,7 @@ function previewMatch(title, sub) {
     parseEpisode(title) <= Number(sub.end || 999)
   );
 }
+/** @param {string} file @param {AniLinkData.Settings} settings */
 function localPath(file, settings) {
   if (!file) return "";
   // A NAS share or a WebDAV sync/mount is still accessed by Electron as a
@@ -301,6 +318,7 @@ function localPath(file, settings) {
   }
   return file;
 }
+/** @param {AniLinkData.Show} show */
 function biliNames(show) {
   // Verified alternate translation used by the configured uploader for this
   // Bangumi subject. Keep it scoped to the stable ID to avoid fuzzy matches.
@@ -311,6 +329,7 @@ function biliNames(show) {
   if (Number(show.id) === 513878) official.push("赛博朋克 边缘行者 第二季");
   return [...new Set([show.title, show.name, ...(show.biliAliases || []), ...verified, ...official].filter(Boolean))];
 }
+/** @param {AniLinkData.Show} show @param {string} title */
 function biliTitleMatches(show, title) {
   const seasonPattern = /第\s*([0-9一二三四五六七八九十]+)\s*(?:部分|クール|季|期)|(?:season|part)\s*(\d+)/i;
   const season = (text) => {
@@ -330,6 +349,7 @@ function biliTitleMatches(show, title) {
     return base.length >= 3 && normalize(title).includes(base);
   });
 }
+/** @param {{part?: string, page?: number}} page @param {string} title */
 function biliPageEpisode(page, title) {
   const explicit = parseEpisode(page.part);
   if (explicit !== null) return explicit;
@@ -337,6 +357,7 @@ function biliPageEpisode(page, title) {
   if (leading > 0 && leading === Number(page.page)) return leading;
   return parseEpisode(title);
 }
+/** @param {AniLinkData.State} state @param {AniLinkData.Job} job */
 function queueJob(state, job) {
   const found = state.queue.find((x) => x.key === job.key);
   if (found) {
@@ -356,6 +377,7 @@ function queueJob(state, job) {
   state.queue.push(item);
   return item;
 }
+/** @param {AniLinkData.State} state @param {string} message */
 function record(state, message) {
   message = String(message);
   if (state.settings.logScope === "errors" && !/失败|错误|异常|拒绝|超时|未找到|error|fail|ERR_/i.test(message)) return;
@@ -374,6 +396,7 @@ function record(state, message) {
   state.events.unshift({ at: Date.now(), message });
   state.events = state.events.slice(0, 100);
 }
+/** @param {AniLinkData.BangumiSubject} subject @param {AniLinkData.BangumiEpisode[]} episodes @returns {AniLinkData.Show} */
 function newShow(subject, episodes = []) {
   return {
     id: Number(subject.id),
@@ -418,10 +441,12 @@ function newShow(subject, episodes = []) {
   };
 }
 class Http {
+  /** @param {AniLinkData.Transport} transport @param {number} timeoutMs */
   constructor(transport, timeoutMs = 20000) {
     this.timeoutMs = timeoutMs;
     this.transport = this.withTimeout(transport);
   }
+  /** @param {AniLinkData.Transport} transport @returns {AniLinkData.Transport} */
   withTimeout(transport) {
     return async (request) => {
       if (!this.timeoutMs || (!["GET", "HEAD", "PROPFIND"].includes(request.method || "GET") && !request.url.includes("/search/subjects")))
@@ -432,11 +457,12 @@ class Http {
       try {
         return await Promise.race([
           transport(request),
-          new Promise((_, reject) => { timer = schedule(() => reject(Error("读取超时，可重试")), this.timeoutMs); }),
+          /** @type {Promise<never>} */ (new Promise((_, reject) => { timer = schedule(() => reject(Error("读取超时，可重试")), this.timeoutMs); })),
         ]);
       } finally { cancel(timer); }
     };
   }
+  /** @param {string} url @param {string} method @param {string | ArrayBuffer} body @param {Record<string, string>} headers */
   async request(url, method = "GET", body, headers = {}) {
     const r = await this.transport({
       url,
@@ -449,6 +475,7 @@ class Http {
       throw Error(`请求失败 HTTP ${r.status}`);
     return r;
   }
+  /** @param {string} url @param {string} method @param {unknown} body @param {Record<string, string>} headers */
   async json(url, method = "GET", body, headers = {}) {
     const r = await this.request(
       url,
@@ -460,17 +487,20 @@ class Http {
   }
 }
 class Bangumi {
+  /** @param {Http} http @param {string} token @param {string} baseUrl */
   constructor(http, token, baseUrl = "https://api.bgm.tv") {
     this.http = http;
     this.token = token;
     this.baseUrl = baseUrl;
   }
+  /** @param {string} endpoint @param {string} method @param {unknown} body */
   async call(endpoint, method = "GET", body) {
     return this.http.json(this.baseUrl + endpoint, method, body, {
       "User-Agent": "AniLink/0.1.0 (Obsidian desktop integration)",
       ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
     });
   }
+  /** @param {string} keyword @param {number} offset @param {string} sort */
   search(keyword, offset = 0, sort = "match") {
     return this.call(`/v0/search/subjects?limit=20&offset=${offset}`, "POST", {
       keyword,
@@ -478,6 +508,7 @@ class Bangumi {
       filter: { type: [2] },
     });
   }
+  /** @param {string} endpoint */
   async pages(endpoint) {
     let out = [];
     for (let offset = 0; offset < 10000; offset += 100) {
@@ -491,12 +522,15 @@ class Bangumi {
     }
     throw Error("分页数量异常，请缩小范围");
   }
+  /** @param {number} id */
   episodes(id) {
     return this.pages(`/v0/episodes?subject_id=${id}`);
   }
+  /** @param {number} id */
   collection(id) {
     return this.call(`/v0/users/-/collections/${id}`, "POST", {});
   }
+  /** @param {AniLinkData.Job} job */
   async send(job) {
     if (!this.token) throw Error("请在连接设置中填写 Bangumi Access Token");
     if (job.kind === "collection")
@@ -515,6 +549,7 @@ class Bangumi {
   }
 }
 class QBittorrent {
+  /** @param {Http} http @param {AniLinkData.Settings} settings */
   constructor(http, settings) {
     this.http = http;
     this.settings = { qbUrl: settings.qbUrl, qbUser: settings.qbUser, qbPassword: settings.qbPassword };
@@ -544,6 +579,7 @@ class QBittorrent {
       .map((v) => String(v).split(";")[0])
       .join("; ");
   }
+  /** @param {string} endpoint @param {Record<string, string>} params @param {boolean} again */
   async call(endpoint, params, again = true) {
     if (!this.cookie) await this.login();
     const headers = {
@@ -570,6 +606,7 @@ class QBittorrent {
       return r.text;
     }
   }
+  /** @param {AniLinkData.Show} show @param {AniLinkData.Subscription} sub */
   async feed(show, sub = show.subscription) {
     feedUrl(sub.feed);
     const items = await this.call("rss/items");
@@ -584,6 +621,7 @@ class QBittorrent {
     await this.call("rss/refreshItem", { itemPath: key });
     return key;
   }
+  /** @param {AniLinkData.Show} show @param {AniLinkData.Subscription} sub */
   async install(show, sub = show.subscription) {
     const rule = buildRule(show, sub);
     await this.feed(show, sub);
@@ -603,12 +641,14 @@ class QBittorrent {
       ruleDef: JSON.stringify(rule),
     });
   }
+  /** @param {AniLinkData.Show} show @param {AniLinkData.Subscription} sub */
   async setRule(show, sub = show.subscription) {
     await this.call("rss/setRule", {
       ruleName: ruleName(show),
       ruleDef: JSON.stringify(buildRule(show, sub)),
     });
   }
+  /** @param {AniLinkData.Show} show */
   async removeSubscription(show) {
     const rules = await this.call("rss/rules");
     if (rules[ruleName(show)])
@@ -617,23 +657,28 @@ class QBittorrent {
     if (items[feedPath(show)])
       await this.call("rss/removeItem", { path: feedPath(show) });
   }
+  /** @param {AniLinkData.Show} show @param {AniLinkData.Subscription} sub */
   async articles(show, sub) {
     await this.feed(show, sub);
     const data = await this.call("rss/items?withData=true");
     return data[feedPath(show)]?.articles || [];
   }
+  /** @param {AniLinkData.Show} show */
   torrents(show) {
     return this.call(
       "torrents/info?category=" + encodeURIComponent(feedPath(show)),
     );
   }
+  /** @param {string} hash */
   files(hash) {
     return this.call("torrents/files?hash=" + encodeURIComponent(hash));
   }
+  /** @param {string} hash */
   delete(hash) {
     return this.call("torrents/delete", { hashes: hash, deleteFiles: "true" });
   }
 }
+/** @param {AniLinkData.Show} show @param {string} title */
 function resolveEpisode(show, title) {
   const number = parseEpisode(title);
   if (number === null) return null;
@@ -676,6 +721,7 @@ function resolveEpisode(show, title) {
   if (absolute && local && absolute.id !== local.id) return null;
   return absolute || local || null;
 }
+/** @param {AniLinkData.Show} show @param {string} query */
 function sourceQueries(show, query) {
   const titles = [query, show.name, show.title, show.name_cn].filter(Boolean);
   const bases = titles.map((title) =>
@@ -696,6 +742,7 @@ function sourceQueries(show, query) {
     ),
   ];
 }
+/** @param {string} title @returns {AniLinkData.ReleaseTags} */
 function releaseTags(title) {
   return {
     language: /简繁|簡繁|CH[ST][ _&+/-]*CH[ST]/i.test(title)
@@ -721,6 +768,7 @@ function releaseTags(title) {
           : "未标注",
   };
 }
+/** @param {AniLinkData.Article[]} articles */
 function releaseProfiles(articles) {
   const fields = ["language", "quality", "codec", "subtitle"];
   const known = (value) => value && value !== "未标注";
@@ -745,12 +793,14 @@ function releaseProfiles(articles) {
   }
   return profiles.filter((profile) => !merged.has(profile));
 }
+/** @param {AniLinkData.ReleaseTags} tags @param {AniLinkData.SourceSearch} search */
 function matchesSourceSearch(tags, search) {
   return ["language", "quality", "codec", "subtitle"].every((field) => {
     const selected = Array.isArray(search[field]) ? search[field] : [search[field]].filter(Boolean);
     return !selected.length || selected.some((value) => field === "quality" ? tags[field].includes(value) : tags[field] === (value === "多语" ? "双语" : value));
   });
 }
+/** @param {AniLinkData.Show} show @param {AniLinkData.Torrent[]} torrents @param {AniLinkData.TorrentFile[][]} fileLists @param {AniLinkData.Settings} settings */
 function mergeFiles(show, torrents, fileLists, settings) {
   const old = new Map(
     [

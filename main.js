@@ -12,10 +12,27 @@ const {
   PluginSettingTab,
   Platform,
   addIcon,
+  setIcon,
 } = /** @type {typeof import("obsidian")} */ (require("obsidian"));
-let shell, fs, path, execFile, fsSync, os, crypto;
+/** @type {AniLinkDesktop.Electron} */
+let desktop;
+/** @type {AniLinkDesktop.Electron['shell']} */
+let shell;
+/** @type {typeof import('node:fs/promises')} */
+let fs;
+/** @type {typeof import('node:path')} */
+let path;
+/** @type {typeof import('node:child_process').execFile} */
+let execFile;
+/** @type {typeof import('node:fs')} */
+let fsSync;
+/** @type {typeof import('node:os')} */
+let os;
+/** @type {typeof import('node:crypto')} */
+let crypto;
 if (Platform.isDesktop) {
-  ({ shell } = require("electron"));
+  desktop = /** @type {AniLinkDesktop.Electron} */ (require("electron"));
+  ({ shell } = desktop);
   fs = /** @type {typeof import("node:fs/promises")} */ (require("fs/promises"));
   path = /** @type {typeof import("node:path")} */ (require("path"));
   ({ execFile } = /** @type {typeof import("node:child_process")} */ (require("child_process")));
@@ -24,7 +41,7 @@ if (Platform.isDesktop) {
   crypto = /** @type {typeof import("node:crypto")} */ (require("crypto"));
 }
 const C = /** @type {typeof import("./core")} */ ((()=>{const module={exports:{}};
-
+// Standalone Node tests have no window; the Obsidian bundle uses its SDK Platform.
 const VIDEO = /\.(mkv|mp4|avi|webm|mov|m4v|ts)$/i;
 const STATUS = {
   0: "未收藏（本地）",
@@ -34,6 +51,7 @@ const STATUS = {
   4: "搁置",
   5: "弃番",
 };
+/** @returns {AniLinkData.State} */
 const defaults = () => ({
   version: 1,
   settings: {
@@ -101,8 +119,10 @@ const defaults = () => ({
   queue: [],
   events: [],
 });
+/** @param {unknown} s */
 const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // A single directory component valid on Windows, macOS and Linux.
+/** @param {string} title @param {number | string} id */
 function folderName(title, id) {
   const original = String(title || "");
   let name = "";
@@ -122,21 +142,26 @@ function folderName(title, id) {
   // Stable ids prevent collisions when punctuation is removed or a name is truncated.
   return name !== original && /^\d+$/.test(String(id)) ? `${name} [${id}]` : name;
 }
+/** @param {string} value */
 function utf8Length(value) { return Array.from(value).reduce((n, char) => n + (char.codePointAt(0) > 65535 ? 4 : char.charCodeAt(0) > 2047 ? 3 : char.charCodeAt(0) > 127 ? 2 : 1), 0); }
+/** @param {unknown} value @param {typeof import('node:path')} paths */
 function isLocalPath(value, paths = path) {
-  return typeof value === "string" && paths.isAbsolute(value) &&
+  return typeof value === "string" && !!paths && paths.isAbsolute(value) &&
     (paths.sep !== "\\" || /^(?:[A-Za-z]:[\\/]|[\\/]{2})/.test(value));
 }
+/** @param {Error | string} error */
 function qbConnectionMessage(error) {
   const detail = String(error?.message || error || "");
   return /(?:connection[_ ]refused|econnrefused|err_connection_refused)/i.test(detail)
     ? "qBittorrent 未启动，请启动后重试。"
     : "qBittorrent 连接失败：" + detail;
 }
+/** @param {AniLinkData.Settings} settings @param {Partial<AniLinkData.Subscription>} subscription */
 function revisionPolicy(settings, subscription = {}) {
   if (subscription.customized && subscription.revisionPolicy) return subscription.revisionPolicy;
   return settings.rssUpgradeUnwatched ? "upgrade" : "standard";
 }
+/** @param {string} value */
 function feedUrl(value) {
   const u = new URL(value);
   if (
@@ -148,6 +173,7 @@ function feedUrl(value) {
     throw Error("RSS 必须为 HTTP(S) 地址");
   return value;
 }
+/** @param {string} value */
 function baseUrl(value) {
   const u = new URL(value);
   if (
@@ -160,9 +186,9 @@ function baseUrl(value) {
     throw Error("服务地址必须为不含凭据和查询参数的 HTTP(S) 地址");
   return value.replace(/\/+$/, "");
 }
+/** @param {string} name */
 function parseEpisode(name) {
-  const n = path
-    .basename(String(name))
+  const n = (path ? path.basename(String(name)) : String(name).replace(/\/+$/, "").split("/").pop())
     .replace(VIDEO, "")
     .replace(/\b(?:Season|S)\s*\d{1,2}(?=\s+-\s+\d)/gi, "Season");
   if (
@@ -183,9 +209,11 @@ function parseEpisode(name) {
   }
   return null;
 }
+/** @param {Pick<AniLinkData.Show, 'id'>} show */
 function feedPath(show) {
   return `AniLink-${show.id}`;
 }
+/** @param {number[]} values */
 function episodeRanges(values) {
   const numbers = [...new Set(values)].sort((a,b) => a-b);
   const ranges = [];
@@ -197,9 +225,11 @@ function episodeRanges(values) {
   }
   return ranges.join("、");
 }
+/** @param {Pick<AniLinkData.Show, 'id'>} show */
 function ruleName(show) {
   return `AniLink-${show.id}`;
 }
+/** @param {AniLinkData.Show} show @param {AniLinkData.Subscription} sub */
 function buildRule(show, sub = show.subscription) {
   if (!sub?.feed) throw Error("请先填写 RSS 地址");
   feedUrl(sub.feed);
@@ -293,6 +323,7 @@ function buildRule(show, sub = show.subscription) {
     ignoreDays: Math.max(0, Number(sub.ignoreDays) || 0),
   };
 }
+/** @param {string} title @param {AniLinkData.Subscription} sub */
 function previewMatch(title, sub) {
   return (
     new RegExp(
@@ -308,6 +339,7 @@ function previewMatch(title, sub) {
     parseEpisode(title) <= Number(sub.end || 999)
   );
 }
+/** @param {string} file @param {AniLinkData.Settings} settings */
 function localPath(file, settings) {
   if (!file) return "";
   // A NAS share or a WebDAV sync/mount is still accessed by Electron as a
@@ -326,6 +358,7 @@ function localPath(file, settings) {
   }
   return file;
 }
+/** @param {AniLinkData.Show} show */
 function biliNames(show) {
   // Verified alternate translation used by the configured uploader for this
   // Bangumi subject. Keep it scoped to the stable ID to avoid fuzzy matches.
@@ -336,6 +369,7 @@ function biliNames(show) {
   if (Number(show.id) === 513878) official.push("赛博朋克 边缘行者 第二季");
   return [...new Set([show.title, show.name, ...(show.biliAliases || []), ...verified, ...official].filter(Boolean))];
 }
+/** @param {AniLinkData.Show} show @param {string} title */
 function biliTitleMatches(show, title) {
   const seasonPattern = /第\s*([0-9一二三四五六七八九十]+)\s*(?:部分|クール|季|期)|(?:season|part)\s*(\d+)/i;
   const season = (text) => {
@@ -355,6 +389,7 @@ function biliTitleMatches(show, title) {
     return base.length >= 3 && normalize(title).includes(base);
   });
 }
+/** @param {{part?: string, page?: number}} page @param {string} title */
 function biliPageEpisode(page, title) {
   const explicit = parseEpisode(page.part);
   if (explicit !== null) return explicit;
@@ -362,6 +397,7 @@ function biliPageEpisode(page, title) {
   if (leading > 0 && leading === Number(page.page)) return leading;
   return parseEpisode(title);
 }
+/** @param {AniLinkData.State} state @param {AniLinkData.Job} job */
 function queueJob(state, job) {
   const found = state.queue.find((x) => x.key === job.key);
   if (found) {
@@ -381,6 +417,7 @@ function queueJob(state, job) {
   state.queue.push(item);
   return item;
 }
+/** @param {AniLinkData.State} state @param {string} message */
 function record(state, message) {
   message = String(message);
   if (state.settings.logScope === "errors" && !/失败|错误|异常|拒绝|超时|未找到|error|fail|ERR_/i.test(message)) return;
@@ -399,6 +436,7 @@ function record(state, message) {
   state.events.unshift({ at: Date.now(), message });
   state.events = state.events.slice(0, 100);
 }
+/** @param {AniLinkData.BangumiSubject} subject @param {AniLinkData.BangumiEpisode[]} episodes @returns {AniLinkData.Show} */
 function newShow(subject, episodes = []) {
   return {
     id: Number(subject.id),
@@ -443,10 +481,12 @@ function newShow(subject, episodes = []) {
   };
 }
 class Http {
+  /** @param {AniLinkData.Transport} transport @param {number} timeoutMs */
   constructor(transport, timeoutMs = 20000) {
     this.timeoutMs = timeoutMs;
     this.transport = this.withTimeout(transport);
   }
+  /** @param {AniLinkData.Transport} transport @returns {AniLinkData.Transport} */
   withTimeout(transport) {
     return async (request) => {
       if (!this.timeoutMs || (!["GET", "HEAD", "PROPFIND"].includes(request.method || "GET") && !request.url.includes("/search/subjects")))
@@ -457,11 +497,12 @@ class Http {
       try {
         return await Promise.race([
           transport(request),
-          new Promise((_, reject) => { timer = schedule(() => reject(Error("读取超时，可重试")), this.timeoutMs); }),
+          /** @type {Promise<never>} */ (new Promise((_, reject) => { timer = schedule(() => reject(Error("读取超时，可重试")), this.timeoutMs); })),
         ]);
       } finally { cancel(timer); }
     };
   }
+  /** @param {string} url @param {string} method @param {string | ArrayBuffer} body @param {Record<string, string>} headers */
   async request(url, method = "GET", body, headers = {}) {
     const r = await this.transport({
       url,
@@ -474,6 +515,7 @@ class Http {
       throw Error(`请求失败 HTTP ${r.status}`);
     return r;
   }
+  /** @param {string} url @param {string} method @param {unknown} body @param {Record<string, string>} headers */
   async json(url, method = "GET", body, headers = {}) {
     const r = await this.request(
       url,
@@ -485,17 +527,20 @@ class Http {
   }
 }
 class Bangumi {
+  /** @param {Http} http @param {string} token @param {string} baseUrl */
   constructor(http, token, baseUrl = "https://api.bgm.tv") {
     this.http = http;
     this.token = token;
     this.baseUrl = baseUrl;
   }
+  /** @param {string} endpoint @param {string} method @param {unknown} body */
   async call(endpoint, method = "GET", body) {
     return this.http.json(this.baseUrl + endpoint, method, body, {
       "User-Agent": "AniLink/0.1.0 (Obsidian desktop integration)",
       ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
     });
   }
+  /** @param {string} keyword @param {number} offset @param {string} sort */
   search(keyword, offset = 0, sort = "match") {
     return this.call(`/v0/search/subjects?limit=20&offset=${offset}`, "POST", {
       keyword,
@@ -503,6 +548,7 @@ class Bangumi {
       filter: { type: [2] },
     });
   }
+  /** @param {string} endpoint */
   async pages(endpoint) {
     let out = [];
     for (let offset = 0; offset < 10000; offset += 100) {
@@ -516,12 +562,15 @@ class Bangumi {
     }
     throw Error("分页数量异常，请缩小范围");
   }
+  /** @param {number} id */
   episodes(id) {
     return this.pages(`/v0/episodes?subject_id=${id}`);
   }
+  /** @param {number} id */
   collection(id) {
     return this.call(`/v0/users/-/collections/${id}`, "POST", {});
   }
+  /** @param {AniLinkData.Job} job */
   async send(job) {
     if (!this.token) throw Error("请在连接设置中填写 Bangumi Access Token");
     if (job.kind === "collection")
@@ -540,6 +589,7 @@ class Bangumi {
   }
 }
 class QBittorrent {
+  /** @param {Http} http @param {AniLinkData.Settings} settings */
   constructor(http, settings) {
     this.http = http;
     this.settings = { qbUrl: settings.qbUrl, qbUser: settings.qbUser, qbPassword: settings.qbPassword };
@@ -569,6 +619,7 @@ class QBittorrent {
       .map((v) => String(v).split(";")[0])
       .join("; ");
   }
+  /** @param {string} endpoint @param {Record<string, string>} params @param {boolean} again */
   async call(endpoint, params, again = true) {
     if (!this.cookie) await this.login();
     const headers = {
@@ -595,6 +646,7 @@ class QBittorrent {
       return r.text;
     }
   }
+  /** @param {AniLinkData.Show} show @param {AniLinkData.Subscription} sub */
   async feed(show, sub = show.subscription) {
     feedUrl(sub.feed);
     const items = await this.call("rss/items");
@@ -609,6 +661,7 @@ class QBittorrent {
     await this.call("rss/refreshItem", { itemPath: key });
     return key;
   }
+  /** @param {AniLinkData.Show} show @param {AniLinkData.Subscription} sub */
   async install(show, sub = show.subscription) {
     const rule = buildRule(show, sub);
     await this.feed(show, sub);
@@ -628,12 +681,14 @@ class QBittorrent {
       ruleDef: JSON.stringify(rule),
     });
   }
+  /** @param {AniLinkData.Show} show @param {AniLinkData.Subscription} sub */
   async setRule(show, sub = show.subscription) {
     await this.call("rss/setRule", {
       ruleName: ruleName(show),
       ruleDef: JSON.stringify(buildRule(show, sub)),
     });
   }
+  /** @param {AniLinkData.Show} show */
   async removeSubscription(show) {
     const rules = await this.call("rss/rules");
     if (rules[ruleName(show)])
@@ -642,23 +697,28 @@ class QBittorrent {
     if (items[feedPath(show)])
       await this.call("rss/removeItem", { path: feedPath(show) });
   }
+  /** @param {AniLinkData.Show} show @param {AniLinkData.Subscription} sub */
   async articles(show, sub) {
     await this.feed(show, sub);
     const data = await this.call("rss/items?withData=true");
     return data[feedPath(show)]?.articles || [];
   }
+  /** @param {AniLinkData.Show} show */
   torrents(show) {
     return this.call(
       "torrents/info?category=" + encodeURIComponent(feedPath(show)),
     );
   }
+  /** @param {string} hash */
   files(hash) {
     return this.call("torrents/files?hash=" + encodeURIComponent(hash));
   }
+  /** @param {string} hash */
   delete(hash) {
     return this.call("torrents/delete", { hashes: hash, deleteFiles: "true" });
   }
 }
+/** @param {AniLinkData.Show} show @param {string} title */
 function resolveEpisode(show, title) {
   const number = parseEpisode(title);
   if (number === null) return null;
@@ -701,6 +761,7 @@ function resolveEpisode(show, title) {
   if (absolute && local && absolute.id !== local.id) return null;
   return absolute || local || null;
 }
+/** @param {AniLinkData.Show} show @param {string} query */
 function sourceQueries(show, query) {
   const titles = [query, show.name, show.title, show.name_cn].filter(Boolean);
   const bases = titles.map((title) =>
@@ -721,6 +782,7 @@ function sourceQueries(show, query) {
     ),
   ];
 }
+/** @param {string} title @returns {AniLinkData.ReleaseTags} */
 function releaseTags(title) {
   return {
     language: /简繁|簡繁|CH[ST][ _&+/-]*CH[ST]/i.test(title)
@@ -746,6 +808,7 @@ function releaseTags(title) {
           : "未标注",
   };
 }
+/** @param {AniLinkData.Article[]} articles */
 function releaseProfiles(articles) {
   const fields = ["language", "quality", "codec", "subtitle"];
   const known = (value) => value && value !== "未标注";
@@ -770,12 +833,14 @@ function releaseProfiles(articles) {
   }
   return profiles.filter((profile) => !merged.has(profile));
 }
+/** @param {AniLinkData.ReleaseTags} tags @param {AniLinkData.SourceSearch} search */
 function matchesSourceSearch(tags, search) {
   return ["language", "quality", "codec", "subtitle"].every((field) => {
     const selected = Array.isArray(search[field]) ? search[field] : [search[field]].filter(Boolean);
     return !selected.length || selected.some((value) => field === "quality" ? tags[field].includes(value) : tags[field] === (value === "多语" ? "双语" : value));
   });
 }
+/** @param {AniLinkData.Show} show @param {AniLinkData.Torrent[]} torrents @param {AniLinkData.TorrentFile[][]} fileLists @param {AniLinkData.Settings} settings */
 function mergeFiles(show, torrents, fileLists, settings) {
   const old = new Map(
     [
@@ -863,16 +928,19 @@ module.exports = {
 return module.exports;})());
 const VIEW = "anilink-dashboard";
 let fieldCounter = 0;
+/** @param {unknown} message */
 function isConnectionFailure(message) {
   return /connection_error|err_connection|err_connection_refused|econnrefused|connection refused|net::err_/i.test(
     String(message || ""),
   );
 }
+/** @param {HTMLElement} el @param {string} text @param {() => unknown} fn @param {string} cls */
 function button(el, text, fn, cls = "") {
   const b = el.createEl("button", { text, cls });
   b.onclick = () => fn();
   return b;
 }
+/** @param {HTMLElement} el @param {string} label @param {unknown} value @param {string} type */
 function field(el, label, value = "", type = "text") {
   const wrap = el.createDiv("al-field"),
     id = "al-field-" + ++fieldCounter;
@@ -885,6 +953,7 @@ function field(el, label, value = "", type = "text") {
   input.value = String(value ?? "");
   return input;
 }
+/** @param {HTMLElement} el @param {string} label @param {unknown} value @param {Record<string, string>} options */
 function select(el, label, value, options) {
   const wrap = el.createDiv("al-field"),
     id = "al-field-" + ++fieldCounter;
@@ -895,6 +964,7 @@ function select(el, label, value, options) {
   s.value = String(value);
   return s;
 }
+/** @param {HTMLElement} el @param {string} text @param {string} url */
 function link(el, text, url) {
   button(
     el,
@@ -911,9 +981,11 @@ function link(el, text, url) {
     "al-link",
   );
 }
+/** @param {number | string | Date} t */
 function time(t) {
   return t ? new Date(t).toLocaleString("zh-CN") : "尚未同步";
 }
+/** @param {AniLinkData.Show} show */
 function allFiles(show) {
   return [
     ...show.episodes.flatMap((e) => e.files || []),
@@ -921,7 +993,7 @@ function allFiles(show) {
   ];
 }
 class Panel extends Modal {
-  /** @param {AniLink} p */
+  /** @param {AniLink} p @param {string} title @param {(el: HTMLElement, panel: Panel) => unknown} render */
   constructor(p, title, render) {
     super(p.app);
     this.p = p;
@@ -1132,6 +1204,7 @@ class Dashboard extends ItemView {
       if (s.demo) meta.createEl("span", { text: " 演练", cls: "al-muted" });
     }
   }
+  /** @param {HTMLElement} el @param {AniLinkData.Show} s */
   renderDetail(el, s) {
     const p = this.p;
     const head = el.createDiv("al-detail-head");
@@ -1310,7 +1383,8 @@ class Dashboard extends ItemView {
 }
 class AniLink extends Plugin {
   async onload() {
-    const saved = await this.loadData();
+    const saved = /** @type {Partial<AniLinkData.State> | null} */ (await this.loadData());
+    /** @type {AniLinkData.State} */
     this.state = {
       ...C.defaults(),
       ...saved,
@@ -4906,192 +4980,6 @@ AniLink.prototype.addSearchStatus = async function (subject, status) {
   );
   return show;
 };
-AniLink.prototype.settingsModal = function () {
-  new Panel(this, "连接设置", (el, modal) => {
-    modal.modalEl.addClass("al-settings-modal");
-    const tabs = el.createDiv("al-actions al-settings-tabs"),
-      body = el.createDiv("al-settings-body"),
-      footer = el.createDiv("al-actions al-settings-footer"),
-      inputs = {},
-      settings = this.state.settings;
-    const panes = {};
-    const section = (id, name) => {
-      const pane = body.createDiv("al-settings-pane");
-      panes[id] = pane;
-      const tab = button(tabs, name, () => {
-        for (const [key, p] of Object.entries(panes)) p.hidden = key !== id;
-        for (const b of tabs.querySelectorAll("button"))
-          b.classList.toggle("mod-cta", b === tab);
-      });
-      pane.hidden = Object.keys(panes).length !== 1;
-      if (!pane.hidden) tab.addClass("mod-cta");
-      return pane;
-    };
-    const input = (pane, key, label, type) =>
-      (inputs[key] = field(pane, label, settings[key], type));
-    const bgm = section("bangumi", "Bangumi");
-    input(bgm, "bgmToken", "Access Token", "password");
-    button(bgm, "获取 Token", () =>
-      this.openWebsite("https://next.bgm.tv/demo/access-token"),
-    );
-    const qb = section("download", "下载器");
-    input(qb, "qbUrl", "Web UI 地址");
-    input(qb, "qbUser", "用户名");
-    input(qb, "qbPassword", "密码", "password");
-    input(qb, "downloadRoot", "下载目录");
-    button(qb, "打开 Web UI", () => this.openWebsite(inputs.qbUrl.value));
-    const proxy = select(qb, "一键配置时的 RSS 网络", "0", {
-      0: "保留现有代理",
-      1: "沿用 Windows 本机代理",
-    });
-    const output = qb.createDiv("al-connection-output");
-    button(
-      qb,
-      "一键配置",
-      () =>
-        this.run(async () => {
-          await save();
-          const health = await this.autoConfigure(proxy.value === "1");
-          output.empty();
-          for (const [name, value] of Object.entries(health))
-            output.createEl("p", { text: `${name}：${value.text}` });
-        }),
-      "mod-cta",
-    );
-    button(qb, "恢复代理", () =>
-      this.run(async () => {
-        const old = settings.previousQbProxy;
-        if (!old) throw Error("没有需要恢复的代理配置");
-        await this.qb().call("app/setPreferences", {
-          json: JSON.stringify(old),
-        });
-        delete settings.previousQbProxy;
-        await this.persist();
-        new Notice("代理已恢复");
-      }),
-    );
-    qb.createEl("p", {
-      text: "首次需在 qBittorrent 设置中开启 Web UI；账号密码由你设置。一键配置负责检测现有安装并开启 RSS。",
-      cls: "al-muted",
-    });
-    const player = section("player", "播放器");
-    input(player, "playerExe", "弹弹play路径");
-    button(player, "打开弹弹play", () =>
-      this.run(async () => {
-        await fs.access(this.state.settings.playerExe);
-        execFile(
-          this.state.settings.playerExe,
-          [],
-          { windowsHide: true },
-          (e) => {
-            if (e) new Notice(e.message);
-          },
-        );
-      }),
-    );
-    input(player, "remoteRoot", "下载器路径前缀（可选）");
-    input(player, "localRoot", "本机路径前缀（可选）");
-    const display = section("display", "检索与网页");
-    inputs.browserMode = select(
-      display,
-      "网页打开方式",
-      settings.browserMode || "external",
-      { external: "默认浏览器", obsidian: "Obsidian 标签页（Web viewer）" },
-    );
-    inputs.informationPage = select(
-      display,
-      "默认番剧信息",
-      settings.informationPage || "fanku",
-      { fanku: "番库", bangumi: "Bangumi", trend: "评分趋势" },
-    );
-
-    button(display, "Web viewer 设置", () => {
-      this.app.setting.open();
-      this.app.setting.openTabById("core-plugins");
-    });
-    const checks = {};
-    display.createEl("p", {
-      text: "搜索卡片状态按钮",
-      cls: "al-setting-label",
-    });
-    for (const status of [1, 3, 2, 4, 5]) {
-      const label = display.createEl("label", { cls: "al-check-option" });
-      checks[status] = label.createEl("input", { type: "checkbox" });
-      checks[status].checked = (settings.searchStatuses || [1, 3]).includes(
-        status,
-      );
-      label.createSpan({ text: C.STATUS[status] });
-    }
-    const sync = section("sync", "跨设备");
-    button(sync, "打开数据目录", () =>
-      shell.openPath(path.dirname(this.deviceFile)),
-    );
-    inputs.deviceSync = select(
-      sync,
-      "追番资料同步",
-      String(settings.deviceSync === true),
-      { false: "关闭", true: "开启（同一 Bangumi 账号）" },
-    );
-    input(sync, "syncGroup", "同步分组（各设备相同）");
-    sync.createEl("p", {
-      text: "同步书架、逐集进度、评价和弹幕映射。使用你现有的同步工具同步库内 AniLink-sync 文件夹。此交换文件不含 Token、密码、路径与下载记录；完整配置仍保存在插件目录 data.json。",
-      cls: "al-muted",
-    });
-    button(sync, "立即合并", () =>
-      this.run(async () => {
-        await save();
-        await this.exchangeDevices();
-        this.redraw();
-        new Notice("跨设备资料已合并");
-      }),
-    );
-    const save = async () => {
-      const next = {};
-      for (const [key, node] of Object.entries(inputs))
-        next[key] = node.value.trim();
-      C.baseUrl(next.qbUrl);
-      if (
-        next.deviceSync === "true" &&
-        !/^[a-zA-Z0-9_-]{1,48}$/.test(next.syncGroup)
-      )
-        throw Error("同步分组请使用 1–48 位字母、数字、下划线或短横线");
-      next.deviceSync = next.deviceSync === "true";
-      next.searchStatuses = Object.entries(checks)
-        .filter(([, n]) => n.checked)
-        .map(([id]) => Number(id));
-      if (!next.searchStatuses.length)
-        throw Error("请至少保留一个搜索状态按钮");
-      Object.assign(settings, next);
-      await this.persist();
-    };
-    button(
-      footer,
-      "保存",
-      () =>
-        this.run(async () => {
-          await save();
-          modal.close();
-          new Notice("设置已保存");
-        }),
-      "mod-cta",
-    );
-    button(footer, "检查连接", () =>
-      this.background("连接检查", async () => {
-        await save();
-        await this.checkConnections();
-        new Notice(
-          Object.values(this.health)
-            .map((v) => v.text)
-            .join("\n"),
-        );
-      }),
-    );
-    button(footer, "更多偏好", () => {
-      modal.close();
-      this.preferencesModal();
-    });
-  }).open();
-};
 AniLink.prototype.subscriptionsManager = function () {
   new Panel(this, "RSS 订阅", (el, m) => {
     m.modalEl.addClass("al-source-modal");
@@ -5787,7 +5675,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
         text: "加载中…",
       });
       page.guest = viewport.createEl(Platform.isMobile ? "iframe" : "webview", {
-        attr: { partition: "anilink-preview-v2", allowpopups: "true", useragent: navigator.userAgent.replace(/\s(?:obsidian|Electron)\/[^\s]+/gi, "") },
+        attr: { partition: "anilink-preview-v2", allowpopups: "true", useragent: desktop.remote.getCurrentWebContents().getUserAgent().replace(/\s(?:obsidian|Electron)\/[^\s]+/gi, "") },
       });
       page.guest.addClass("al-trend-frame");
       this.trendGuest = page.guest;
@@ -6164,7 +6052,7 @@ AniLink.prototype.onload = async function () {
   await browserSessionOnload.call(this);
   const original = this.http.transport;
   const browserFetch = this.http.withTimeout(async (options) => {
-    const session = require("electron").remote.session.defaultSession;
+    const session = desktop.remote.session.defaultSession;
     const response = await session.fetch(options.url, {
       method: options.method,
       headers: options.headers,
@@ -6572,10 +6460,10 @@ AniLink.prototype.settingsModal = function () {
     const inputWrap = token.parentElement.createDiv("al-token-input");
     inputWrap.appendChild(token);
     const paste = button(inputWrap, "", () => {
-      token.value = require("electron").remote.clipboard.readText().trim();
+      token.value = desktop.remote.clipboard.readText().trim();
     });
     paste.setAttribute("aria-label", "粘贴 Token");
-    require("obsidian").setIcon(paste, "clipboard-paste");
+    setIcon(paste, "clipboard-paste");
     button(tokenRow, "获取 Token", () =>
       this.openWebsite("https://next.bgm.tv/demo/access-token"),
     );
@@ -6684,7 +6572,7 @@ AniLink.prototype.pathPicker = function (input, directory) {
   row.appendChild(input);
   button(row, "选择路径", () =>
     this.run(async () => {
-      const result = await require("electron").remote.dialog.showOpenDialog({
+      const result = await desktop.remote.dialog.showOpenDialog({
         properties: [directory ? "openDirectory" : "openFile"],
         filters: directory
           ? undefined
@@ -6750,7 +6638,7 @@ AniLink.prototype.biliAccountPanel = function (el) {
   button(actions, "测试登录状态", () => this.run(refresh));
   button(actions, "退出登录", () =>
     this.run(async () => {
-      const session = require("electron").remote.session.defaultSession;
+      const session = desktop.remote.session.defaultSession;
       const cookies = await session.cookies.get({ domain: ".bilibili.com" });
       for (const cookie of cookies)
         await session.cookies.remove(
@@ -6844,7 +6732,7 @@ AniLink.prototype.settingsModal = function () {
     const row = input.parentElement;
     const eye = button(row, "", () => {
       input.type = input.type === "password" ? "text" : "password";
-      require("obsidian").setIcon(
+      setIcon(
         eye,
         input.type === "password" ? "eye-off" : "eye",
       );
@@ -6855,7 +6743,7 @@ AniLink.prototype.settingsModal = function () {
     });
     eye.addClass("al-password-eye");
     eye.setAttribute("aria-label", "显示密码");
-    require("obsidian").setIcon(eye, "eye-off");
+    setIcon(eye, "eye-off");
   }
   for (const button of [...modal.contentEl.querySelectorAll("button")]) {
     if (button.textContent === "自动检测") button.remove();
@@ -7119,7 +7007,7 @@ Connections.prototype.display = function () {
   const picker = (row, getInput, directory) =>
     sideAction(row, "选择路径", () =>
       p.run(async () => {
-        const result = await require("electron").remote.dialog.showOpenDialog({
+        const result = await desktop.remote.dialog.showOpenDialog({
           properties: [directory ? "openDirectory" : "openFile"],
           filters: directory || process.platform !== "win32" ? undefined : [{ name: "程序", extensions: ["exe"] }],
         });
@@ -7426,7 +7314,8 @@ Dashboard.prototype.render = function () {
 };
 
 const DeviceModel = (()=>{const module={exports:{}};
-const clone = (v) => JSON.parse(JSON.stringify(v));
+/** @template T @param {T} v @returns {T} */
+const clone = (v) => /** @type {T} */ (JSON.parse(JSON.stringify(v)));
 const deviceSettingKeys = [
   "qbUrl", "qbUser", "qbPassword", "qbExe", "qbProfile", "previousQbProxy",
   "downloadRoot", "libraryRoot", "extraLibraryRoots", "multiLibraryEnabled",
@@ -7436,9 +7325,11 @@ const deviceSettingKeys = [
   "networkPlayer", "networkPlayerUrl", "networkPlayerToken", "networkPlayerSession", "networkPlayerRoot",
   "bgmMirror", "bgmMirrorApi", "bgmMirrorWeb", "bgmMirrorData",
 ];
+/** @param {Partial<AniLinkData.Settings>} settings @returns {Partial<AniLinkData.Settings>} */
 function localSettings(settings = {}) {
   return clone(Object.fromEntries(deviceSettingKeys.filter((key) => settings[key] !== undefined).map((key) => [key, settings[key]])));
 }
+/** @param {AniLinkData.State} state @returns {Record<string, unknown>} */
 function project(state) {
   const out = {};
   for (const s of state.shows) {
@@ -7471,6 +7362,7 @@ function project(state) {
   for (const id of state.hiddenShows || []) out[`h:${id}`] = true;
   return clone(out);
 }
+/** @param {string} key @param {unknown} value */
 function valid(key, value) {
   if (/^h:\d+$/.test(key) || /^e:\d+:\d+:watched$/.test(key))
     return typeof value === "boolean";
@@ -8534,7 +8426,7 @@ AniLink.prototype.localLibraryModal = function () {
     const query = field(el, "Bangumi 条目 ID 或番剧名称");
     const directory = field(el, "本地番剧目录");
     button(el, "选择目录", () => this.run(async () => {
-      const result = await require("electron").remote.dialog.showOpenDialog({ properties: ["openDirectory"] });
+      const result = await desktop.remote.dialog.showOpenDialog({ properties: ["openDirectory"] });
       if (!result.canceled) directory.value = result.filePaths[0] || "";
     }));
     const status = select(el, "未收藏时加入", "3", { 1: "想看", 3: "在看", 2: "看过" });
@@ -8619,7 +8511,7 @@ AniLink.prototype.loadCoverImage = function (address) {
     try {
       const response = Platform.isDesktop
         ? await Promise.race([
-          require("electron").remote.session.fromPartition("persist:anilink-images").fetch(url.href, { headers: { Referer: url.hostname.includes("fanku") ? "https://fankuhub.com/" : "https://bgm.tv/" } }),
+          desktop.remote.session.fromPartition("persist:anilink-images").fetch(url.href, { headers: { Referer: url.hostname.includes("fanku") ? "https://fankuhub.com/" : "https://bgm.tv/" } }),
           new Promise((_, reject) => { timer = window.setTimeout(() => reject(Error("封面读取超时")), 12000); }),
         ])
         : await requestUrl({ url: url.href, throw: false });

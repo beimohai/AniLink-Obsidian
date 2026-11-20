@@ -4,6 +4,22 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 const C = require("../core");
 
+test("shared episode helpers work on mobile without importing Node path", () => {
+  const sandbox = {
+    module: { exports: {} }, window: {}, URL,
+    require(id) {
+      assert.equal(id, "obsidian", "Mobile core attempted to import a Node module");
+      return { Platform: { isDesktop: false, isMobile: true } };
+    },
+  };
+  vm.runInNewContext(fs.readFileSync(require.resolve("../core.js"), "utf8"), sandbox);
+  const mobileCore = sandbox.module.exports;
+  const show = mobileCore.newShow({ id: 1, name: "Fixture" }, [{ id: 2, sort: 1, type: 0 }]);
+  assert.equal(mobileCore.parseEpisode("Fixture/Fixture - 01 [1080p].mkv"), 1);
+  assert.equal(mobileCore.resolveEpisode(show, "Fixture - 01 [1080p].mkv").id, 2);
+  assert.equal(mobileCore.isLocalPath("C:\\Anime"), false);
+});
+
 test("mobile loads and saves Bangumi edits without Node or Electron imports", async () => {
   const storage = new Map([["anilink-mobile-device", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"]]);
   let saved;

@@ -20,7 +20,7 @@ test('isolated cover requests are shared and reject non-image responses',async()
  class AniLink{};class Dashboard{};Dashboard.prototype.renderCards=()=>{};Dashboard.prototype.renderDetail=()=>{};AniLink.prototype.updateEpisodes=async()=>{};
  let calls=0;
  const transport=async()=>{calls++;return {status:200,headers:{get:()=> 'image/webp'},arrayBuffer:async()=>new Uint8Array([1,2,3]).buffer};};
- vm.runInNewContext(fs.readFileSync('src/display-metadata.js','utf8'),{AniLink,Dashboard,C:{},URL,Blob,Platform:{isDesktop:true},window:{setTimeout,clearTimeout},require:()=>({remote:{session:{fromPartition:()=>({fetch:transport})}}})});
+ vm.runInNewContext(fs.readFileSync('src/display-metadata.js','utf8'),{AniLink,Dashboard,C:{},URL,Blob,Platform:{isDesktop:true},window:{setTimeout,clearTimeout},desktop:{remote:{session:{fromPartition:()=>({fetch:transport})}}}});
  const p=new AniLink();p.register=()=>{};
  const url='https://assets.fankuhub.cn/i/anime/fixture/cover.webp';
  const first=p.loadCoverImage(url),second=p.loadCoverImage(url);

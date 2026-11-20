@@ -1,5 +1,6 @@
 "use strict";
-const clone = (v) => JSON.parse(JSON.stringify(v));
+/** @template T @param {T} v @returns {T} */
+const clone = (v) => /** @type {T} */ (JSON.parse(JSON.stringify(v)));
 const deviceSettingKeys = [
   "qbUrl", "qbUser", "qbPassword", "qbExe", "qbProfile", "previousQbProxy",
   "downloadRoot", "libraryRoot", "extraLibraryRoots", "multiLibraryEnabled",
@@ -9,9 +10,11 @@ const deviceSettingKeys = [
   "networkPlayer", "networkPlayerUrl", "networkPlayerToken", "networkPlayerSession", "networkPlayerRoot",
   "bgmMirror", "bgmMirrorApi", "bgmMirrorWeb", "bgmMirrorData",
 ];
+/** @param {Partial<AniLinkData.Settings>} settings @returns {Partial<AniLinkData.Settings>} */
 function localSettings(settings = {}) {
   return clone(Object.fromEntries(deviceSettingKeys.filter((key) => settings[key] !== undefined).map((key) => [key, settings[key]])));
 }
+/** @param {AniLinkData.State} state @returns {Record<string, unknown>} */
 function project(state) {
   const out = {};
   for (const s of state.shows) {
@@ -44,6 +47,7 @@ function project(state) {
   for (const id of state.hiddenShows || []) out[`h:${id}`] = true;
   return clone(out);
 }
+/** @param {string} key @param {unknown} value */
 function valid(key, value) {
   if (/^h:\d+$/.test(key) || /^e:\d+:\d+:watched$/.test(key))
     return typeof value === "boolean";

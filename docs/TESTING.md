@@ -2,7 +2,7 @@
 
 使用 Node.js 24 与锁文件执行 npm ci、npm run build、npm run lint、npm test、npm run check、npm run package。音频算法另外运行 python tests/test_audio_alignment.py，需要 NumPy。CI 同时运行 JavaScript 和 Python 回归测试。
 
-1.0.12 的 Checks 工作流使用 Windows、macOS 和 Linux 三个平台。平台专用调度器在 Windows 测试中运行，其他系统验证通用代码、构建及导入边界。
+Checks 工作流使用 Windows、macOS 和 Linux 三个平台。平台专用调度器在 Windows 测试中运行，其他系统验证通用代码、构建及导入边界。1.0.13 增加推荐警告统计以及不导入 Node 的移动分集匹配测试。
 
 ## 功能覆盖
 

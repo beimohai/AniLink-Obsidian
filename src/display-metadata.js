@@ -61,7 +61,7 @@ AniLink.prototype.loadCoverImage = function (address) {
     try {
       const response = Platform.isDesktop
         ? await Promise.race([
-          require("electron").remote.session.fromPartition("persist:anilink-images").fetch(url.href, { headers: { Referer: url.hostname.includes("fanku") ? "https://fankuhub.com/" : "https://bgm.tv/" } }),
+          desktop.remote.session.fromPartition("persist:anilink-images").fetch(url.href, { headers: { Referer: url.hostname.includes("fanku") ? "https://fankuhub.com/" : "https://bgm.tv/" } }),
           new Promise((_, reject) => { timer = window.setTimeout(() => reject(Error("封面读取超时")), 12000); }),
         ])
         : await requestUrl({ url: url.href, throw: false });

@@ -56,7 +56,7 @@ Connections.prototype.display = function () {
   const picker = (row, getInput, directory) =>
     sideAction(row, "选择路径", () =>
       p.run(async () => {
-        const result = await require("electron").remote.dialog.showOpenDialog({
+        const result = await desktop.remote.dialog.showOpenDialog({
           properties: [directory ? "openDirectory" : "openFile"],
           filters: directory || process.platform !== "win32" ? undefined : [{ name: "程序", extensions: ["exe"] }],
         });

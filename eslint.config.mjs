@@ -36,6 +36,7 @@ export default [
       "no-constant-binary-expression": "error",
       "no-dupe-class-members": "error",
       "obsidianmd/hardcoded-config-path": "error",
+      "obsidianmd/platform": "error",
       "obsidianmd/no-forbidden-elements": "error",
       "obsidianmd/no-global-this": "error",
       "obsidianmd/no-static-styles-assignment": "error",

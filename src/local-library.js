@@ -62,7 +62,7 @@ AniLink.prototype.localLibraryModal = function () {
     const query = field(el, "Bangumi 条目 ID 或番剧名称");
     const directory = field(el, "本地番剧目录");
     button(el, "选择目录", () => this.run(async () => {
-      const result = await require("electron").remote.dialog.showOpenDialog({ properties: ["openDirectory"] });
+      const result = await desktop.remote.dialog.showOpenDialog({ properties: ["openDirectory"] });
       if (!result.canceled) directory.value = result.filePaths[0] || "";
     }));
     const status = select(el, "未收藏时加入", "3", { 1: "想看", 3: "在看", 2: "看过" });

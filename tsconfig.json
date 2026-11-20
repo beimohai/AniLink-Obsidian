@@ -5,7 +5,9 @@
     "noEmit": true,
     "target": "ES2022",
     "module": "commonjs",
+    "types": ["node"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true
   },
-  "include": ["main.js", "core.js"]
+  "include": ["main.js", "core.js", "types/**/*.d.ts"]
 }

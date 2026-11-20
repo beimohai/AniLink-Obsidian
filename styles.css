@@ -940,13 +940,11 @@
 .al-specials .al-episode-grid {
   margin-top: 6px;
 }
-.al-search-modal,
-.al-settings-modal {
+.al-search-modal {
   height: min(840px, 88vh);
   overflow: hidden;
 }
-.al-search-modal .modal-content,
-.al-settings-modal .modal-content {
+.al-search-modal .modal-content {
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -954,15 +952,11 @@
   flex: 1;
 }
 .al-search-modal .modal-content > h2,
-.al-settings-modal .modal-content > h2,
 .al-search-header,
-.al-search-pager,
-.al-settings-tabs,
-.al-settings-footer {
+.al-search-pager {
   flex-shrink: 0;
 }
-.al-search-modal .al-results,
-.al-settings-body {
+.al-search-modal .al-results {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -990,29 +984,11 @@
   padding: 16px 0;
   border-bottom: 1px solid var(--background-modifier-border);
 }
-.al-settings-tabs {
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--background-modifier-border);
-}
-.al-settings-body {
-  padding: 4px 8px 16px 0;
-}
-.al-settings-footer {
-  padding-top: 12px;
-  border-top: 1px solid var(--background-modifier-border);
-}
-.al-settings-pane[hidden] {
-  display: none;
-}
 .al-check-option {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   margin: 6px 16px 6px 0;
-}
-.al-setting-label {
-  color: var(--text-muted);
-  font-size: var(--font-ui-small);
 }
 @media (max-width: 520px) {
   .al-search-header {
@@ -2555,7 +2531,6 @@
 .al-token-input input {
   width: 100%;
   padding-right: 36px;
-  letter-spacing: normal !important;
 }
 .al-token-input > button {
   position: absolute;
@@ -2572,11 +2547,6 @@
   height: 34px;
   box-sizing: border-box;
   margin: 0;
-}
-.al-token-input input[type="password"] {
-  font-family: Arial, sans-serif !important;
-  font-size: 12px !important;
-  letter-spacing: -1px !important;
 }
 .al-token-input > button {
   top: 50%;
@@ -2608,13 +2578,11 @@
   border-radius: 50%;
 }
 .al-sync-toolbar {
-  display: flex !important;
   flex-direction: column;
   align-items: center;
   gap: 8px;
 }
 .al-sync-toolbar button {
-  width: 180px !important;
   max-width: 100%;
 }
 .al-refined-connections input[type="password"] {

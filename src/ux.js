@@ -80,192 +80,6 @@ AniLink.prototype.addSearchStatus = async function (subject, status) {
   );
   return show;
 };
-AniLink.prototype.settingsModal = function () {
-  new Panel(this, "连接设置", (el, modal) => {
-    modal.modalEl.addClass("al-settings-modal");
-    const tabs = el.createDiv("al-actions al-settings-tabs"),
-      body = el.createDiv("al-settings-body"),
-      footer = el.createDiv("al-actions al-settings-footer"),
-      inputs = {},
-      settings = this.state.settings;
-    const panes = {};
-    const section = (id, name) => {
-      const pane = body.createDiv("al-settings-pane");
-      panes[id] = pane;
-      const tab = button(tabs, name, () => {
-        for (const [key, p] of Object.entries(panes)) p.hidden = key !== id;
-        for (const b of tabs.querySelectorAll("button"))
-          b.classList.toggle("mod-cta", b === tab);
-      });
-      pane.hidden = Object.keys(panes).length !== 1;
-      if (!pane.hidden) tab.addClass("mod-cta");
-      return pane;
-    };
-    const input = (pane, key, label, type) =>
-      (inputs[key] = field(pane, label, settings[key], type));
-    const bgm = section("bangumi", "Bangumi");
-    input(bgm, "bgmToken", "Access Token", "password");
-    button(bgm, "获取 Token", () =>
-      this.openWebsite("https://next.bgm.tv/demo/access-token"),
-    );
-    const qb = section("download", "下载器");
-    input(qb, "qbUrl", "Web UI 地址");
-    input(qb, "qbUser", "用户名");
-    input(qb, "qbPassword", "密码", "password");
-    input(qb, "downloadRoot", "下载目录");
-    button(qb, "打开 Web UI", () => this.openWebsite(inputs.qbUrl.value));
-    const proxy = select(qb, "一键配置时的 RSS 网络", "0", {
-      0: "保留现有代理",
-      1: "沿用 Windows 本机代理",
-    });
-    const output = qb.createDiv("al-connection-output");
-    button(
-      qb,
-      "一键配置",
-      () =>
-        this.run(async () => {
-          await save();
-          const health = await this.autoConfigure(proxy.value === "1");
-          output.empty();
-          for (const [name, value] of Object.entries(health))
-            output.createEl("p", { text: `${name}：${value.text}` });
-        }),
-      "mod-cta",
-    );
-    button(qb, "恢复代理", () =>
-      this.run(async () => {
-        const old = settings.previousQbProxy;
-        if (!old) throw Error("没有需要恢复的代理配置");
-        await this.qb().call("app/setPreferences", {
-          json: JSON.stringify(old),
-        });
-        delete settings.previousQbProxy;
-        await this.persist();
-        new Notice("代理已恢复");
-      }),
-    );
-    qb.createEl("p", {
-      text: "首次需在 qBittorrent 设置中开启 Web UI；账号密码由你设置。一键配置负责检测现有安装并开启 RSS。",
-      cls: "al-muted",
-    });
-    const player = section("player", "播放器");
-    input(player, "playerExe", "弹弹play路径");
-    button(player, "打开弹弹play", () =>
-      this.run(async () => {
-        await fs.access(this.state.settings.playerExe);
-        execFile(
-          this.state.settings.playerExe,
-          [],
-          { windowsHide: true },
-          (e) => {
-            if (e) new Notice(e.message);
-          },
-        );
-      }),
-    );
-    input(player, "remoteRoot", "下载器路径前缀（可选）");
-    input(player, "localRoot", "本机路径前缀（可选）");
-    const display = section("display", "检索与网页");
-    inputs.browserMode = select(
-      display,
-      "网页打开方式",
-      settings.browserMode || "external",
-      { external: "默认浏览器", obsidian: "Obsidian 标签页（Web viewer）" },
-    );
-    inputs.informationPage = select(
-      display,
-      "默认番剧信息",
-      settings.informationPage || "fanku",
-      { fanku: "番库", bangumi: "Bangumi", trend: "评分趋势" },
-    );
-
-    button(display, "Web viewer 设置", () => {
-      this.app.setting.open();
-      this.app.setting.openTabById("core-plugins");
-    });
-    const checks = {};
-    display.createEl("p", {
-      text: "搜索卡片状态按钮",
-      cls: "al-setting-label",
-    });
-    for (const status of [1, 3, 2, 4, 5]) {
-      const label = display.createEl("label", { cls: "al-check-option" });
-      checks[status] = label.createEl("input", { type: "checkbox" });
-      checks[status].checked = (settings.searchStatuses || [1, 3]).includes(
-        status,
-      );
-      label.createSpan({ text: C.STATUS[status] });
-    }
-    const sync = section("sync", "跨设备");
-    button(sync, "打开数据目录", () =>
-      shell.openPath(path.dirname(this.deviceFile)),
-    );
-    inputs.deviceSync = select(
-      sync,
-      "追番资料同步",
-      String(settings.deviceSync === true),
-      { false: "关闭", true: "开启（同一 Bangumi 账号）" },
-    );
-    input(sync, "syncGroup", "同步分组（各设备相同）");
-    sync.createEl("p", {
-      text: "同步书架、逐集进度、评价和弹幕映射。使用你现有的同步工具同步库内 AniLink-sync 文件夹。此交换文件不含 Token、密码、路径与下载记录；完整配置仍保存在插件目录 data.json。",
-      cls: "al-muted",
-    });
-    button(sync, "立即合并", () =>
-      this.run(async () => {
-        await save();
-        await this.exchangeDevices();
-        this.redraw();
-        new Notice("跨设备资料已合并");
-      }),
-    );
-    const save = async () => {
-      const next = {};
-      for (const [key, node] of Object.entries(inputs))
-        next[key] = node.value.trim();
-      C.baseUrl(next.qbUrl);
-      if (
-        next.deviceSync === "true" &&
-        !/^[a-zA-Z0-9_-]{1,48}$/.test(next.syncGroup)
-      )
-        throw Error("同步分组请使用 1–48 位字母、数字、下划线或短横线");
-      next.deviceSync = next.deviceSync === "true";
-      next.searchStatuses = Object.entries(checks)
-        .filter(([, n]) => n.checked)
-        .map(([id]) => Number(id));
-      if (!next.searchStatuses.length)
-        throw Error("请至少保留一个搜索状态按钮");
-      Object.assign(settings, next);
-      await this.persist();
-    };
-    button(
-      footer,
-      "保存",
-      () =>
-        this.run(async () => {
-          await save();
-          modal.close();
-          new Notice("设置已保存");
-        }),
-      "mod-cta",
-    );
-    button(footer, "检查连接", () =>
-      this.background("连接检查", async () => {
-        await save();
-        await this.checkConnections();
-        new Notice(
-          Object.values(this.health)
-            .map((v) => v.text)
-            .join("\n"),
-        );
-      }),
-    );
-    button(footer, "更多偏好", () => {
-      modal.close();
-      this.preferencesModal();
-    });
-  }).open();
-};
 AniLink.prototype.subscriptionsManager = function () {
   new Panel(this, "RSS 订阅", (el, m) => {
     m.modalEl.addClass("al-source-modal");
@@ -961,7 +775,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
         text: "加载中…",
       });
       page.guest = viewport.createEl(Platform.isMobile ? "iframe" : "webview", {
-        attr: { partition: "anilink-preview-v2", allowpopups: "true", useragent: navigator.userAgent.replace(/\s(?:obsidian|Electron)\/[^\s]+/gi, "") },
+        attr: { partition: "anilink-preview-v2", allowpopups: "true", useragent: desktop.remote.getCurrentWebContents().getUserAgent().replace(/\s(?:obsidian|Electron)\/[^\s]+/gi, "") },
       });
       page.guest.addClass("al-trend-frame");
       this.trendGuest = page.guest;
@@ -1338,7 +1152,7 @@ AniLink.prototype.onload = async function () {
   await browserSessionOnload.call(this);
   const original = this.http.transport;
   const browserFetch = this.http.withTimeout(async (options) => {
-    const session = require("electron").remote.session.defaultSession;
+    const session = desktop.remote.session.defaultSession;
     const response = await session.fetch(options.url, {
       method: options.method,
       headers: options.headers,
@@ -1746,10 +1560,10 @@ AniLink.prototype.settingsModal = function () {
     const inputWrap = token.parentElement.createDiv("al-token-input");
     inputWrap.appendChild(token);
     const paste = button(inputWrap, "", () => {
-      token.value = require("electron").remote.clipboard.readText().trim();
+      token.value = desktop.remote.clipboard.readText().trim();
     });
     paste.setAttribute("aria-label", "粘贴 Token");
-    require("obsidian").setIcon(paste, "clipboard-paste");
+    setIcon(paste, "clipboard-paste");
     button(tokenRow, "获取 Token", () =>
       this.openWebsite("https://next.bgm.tv/demo/access-token"),
     );
@@ -1858,7 +1672,7 @@ AniLink.prototype.pathPicker = function (input, directory) {
   row.appendChild(input);
   button(row, "选择路径", () =>
     this.run(async () => {
-      const result = await require("electron").remote.dialog.showOpenDialog({
+      const result = await desktop.remote.dialog.showOpenDialog({
         properties: [directory ? "openDirectory" : "openFile"],
         filters: directory
           ? undefined
@@ -1924,7 +1738,7 @@ AniLink.prototype.biliAccountPanel = function (el) {
   button(actions, "测试登录状态", () => this.run(refresh));
   button(actions, "退出登录", () =>
     this.run(async () => {
-      const session = require("electron").remote.session.defaultSession;
+      const session = desktop.remote.session.defaultSession;
       const cookies = await session.cookies.get({ domain: ".bilibili.com" });
       for (const cookie of cookies)
         await session.cookies.remove(
@@ -2018,7 +1832,7 @@ AniLink.prototype.settingsModal = function () {
     const row = input.parentElement;
     const eye = button(row, "", () => {
       input.type = input.type === "password" ? "text" : "password";
-      require("obsidian").setIcon(
+      setIcon(
         eye,
         input.type === "password" ? "eye-off" : "eye",
       );
@@ -2029,7 +1843,7 @@ AniLink.prototype.settingsModal = function () {
     });
     eye.addClass("al-password-eye");
     eye.setAttribute("aria-label", "显示密码");
-    require("obsidian").setIcon(eye, "eye-off");
+    setIcon(eye, "eye-off");
   }
   for (const button of [...modal.contentEl.querySelectorAll("button")]) {
     if (button.textContent === "自动检测") button.remove();

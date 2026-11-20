@@ -9,10 +9,27 @@ const {
   PluginSettingTab,
   Platform,
   addIcon,
+  setIcon,
 } = /** @type {typeof import("obsidian")} */ (require("obsidian"));
-let shell, fs, path, execFile, fsSync, os, crypto;
+/** @type {AniLinkDesktop.Electron} */
+let desktop;
+/** @type {AniLinkDesktop.Electron['shell']} */
+let shell;
+/** @type {typeof import('node:fs/promises')} */
+let fs;
+/** @type {typeof import('node:path')} */
+let path;
+/** @type {typeof import('node:child_process').execFile} */
+let execFile;
+/** @type {typeof import('node:fs')} */
+let fsSync;
+/** @type {typeof import('node:os')} */
+let os;
+/** @type {typeof import('node:crypto')} */
+let crypto;
 if (Platform.isDesktop) {
-  ({ shell } = require("electron"));
+  desktop = /** @type {AniLinkDesktop.Electron} */ (require("electron"));
+  ({ shell } = desktop);
   fs = /** @type {typeof import("node:fs/promises")} */ (require("fs/promises"));
   path = /** @type {typeof import("node:path")} */ (require("path"));
   ({ execFile } = /** @type {typeof import("node:child_process")} */ (require("child_process")));
@@ -23,16 +40,19 @@ if (Platform.isDesktop) {
 const C = /** @type {typeof import("./core")} */ (require("./core"));
 const VIEW = "anilink-dashboard";
 let fieldCounter = 0;
+/** @param {unknown} message */
 function isConnectionFailure(message) {
   return /connection_error|err_connection|err_connection_refused|econnrefused|connection refused|net::err_/i.test(
     String(message || ""),
   );
 }
+/** @param {HTMLElement} el @param {string} text @param {() => unknown} fn @param {string} cls */
 function button(el, text, fn, cls = "") {
   const b = el.createEl("button", { text, cls });
   b.onclick = () => fn();
   return b;
 }
+/** @param {HTMLElement} el @param {string} label @param {unknown} value @param {string} type */
 function field(el, label, value = "", type = "text") {
   const wrap = el.createDiv("al-field"),
     id = "al-field-" + ++fieldCounter;
@@ -45,6 +65,7 @@ function field(el, label, value = "", type = "text") {
   input.value = String(value ?? "");
   return input;
 }
+/** @param {HTMLElement} el @param {string} label @param {unknown} value @param {Record<string, string>} options */
 function select(el, label, value, options) {
   const wrap = el.createDiv("al-field"),
     id = "al-field-" + ++fieldCounter;
@@ -55,6 +76,7 @@ function select(el, label, value, options) {
   s.value = String(value);
   return s;
 }
+/** @param {HTMLElement} el @param {string} text @param {string} url */
 function link(el, text, url) {
   button(
     el,
@@ -71,9 +93,11 @@ function link(el, text, url) {
     "al-link",
   );
 }
+/** @param {number | string | Date} t */
 function time(t) {
   return t ? new Date(t).toLocaleString("zh-CN") : "尚未同步";
 }
+/** @param {AniLinkData.Show} show */
 function allFiles(show) {
   return [
     ...show.episodes.flatMap((e) => e.files || []),
@@ -81,7 +105,7 @@ function allFiles(show) {
   ];
 }
 class Panel extends Modal {
-  /** @param {AniLink} p */
+  /** @param {AniLink} p @param {string} title @param {(el: HTMLElement, panel: Panel) => unknown} render */
   constructor(p, title, render) {
     super(p.app);
     this.p = p;
@@ -292,6 +316,7 @@ class Dashboard extends ItemView {
       if (s.demo) meta.createEl("span", { text: " 演练", cls: "al-muted" });
     }
   }
+  /** @param {HTMLElement} el @param {AniLinkData.Show} s */
   renderDetail(el, s) {
     const p = this.p;
     const head = el.createDiv("al-detail-head");
@@ -470,7 +495,8 @@ class Dashboard extends ItemView {
 }
 class AniLink extends Plugin {
   async onload() {
-    const saved = await this.loadData();
+    const saved = /** @type {Partial<AniLinkData.State> | null} */ (await this.loadData());
+    /** @type {AniLinkData.State} */
     this.state = {
       ...C.defaults(),
       ...saved,
