@@ -2531,6 +2531,7 @@
 .al-token-input input {
   width: 100%;
   padding-right: 36px;
+  letter-spacing: normal !important;
 }
 .al-token-input > button {
   position: absolute;

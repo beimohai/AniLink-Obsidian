@@ -1,6 +1,6 @@
 {
   "name": "obsidian-anilink",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "private": true,
   "scripts": {
     "build": "node build.js",
@@ -28,5 +28,5 @@
     "minimatch": "11.0.5",
     "moment": "2.31.0"
   },
-  "releaseDate": "2026-11-20"
+  "releaseDate": "2026-11-21"
 }
