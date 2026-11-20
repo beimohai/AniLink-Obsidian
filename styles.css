@@ -2383,9 +2383,7 @@
   inset: auto;
   z-index: 3;
 }
-.al-root .al-web-pending {
-  visibility: hidden;
-}
+
 .al-root .al-card progress {
   background: var(--background-primary);
   height: 5px;
@@ -3072,7 +3070,7 @@
 .al-plugin-footer-details > :first-child { font-weight: var(--font-semibold); color: var(--text-normal); }
 .al-plugin-footer-license { grid-column: 1/-1; text-align: center; font-size: var(--font-ui-smaller); color: var(--text-faint); }
 .al-plugin-footer-logo, .al-plugin-footer-logo svg { width: 160px; height: 160px; }
-.al-root .al-web-pending { visibility: visible; }
+
 .al-root .al-web-loading { pointer-events: none; }
 .al-footer { min-height: 26px; padding-top: 3px; }
 .al-root .al-watch-section,
@@ -3211,4 +3209,138 @@ body.is-mobile .al-mobile-dashboard .al-header-status { grid-column: 1; grid-row
 .mod-settings .al-plugin-settings.al-settings-v2 .setting-item > .setting-item-control > :is(button, select, input, .checkbox-container) {
   align-self: center;
   margin-block: 0;
+}
+
+/* One bounded touch scroller owns both mobile pages. */
+body.is-mobile .al-root.al-mobile-dashboard {
+  display: block;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+body.is-mobile .al-mobile-dashboard .al-layout,
+body.is-mobile .al-mobile-dashboard .al-shelf,
+body.is-mobile .al-mobile-dashboard .al-detail,
+body.is-mobile .al-mobile-dashboard .al-flat-workspace { flex-shrink: 0; touch-action: pan-y; }
+
+.al-root .al-card > div:not(.al-cover-placeholder) { grid-column: 2; min-width: 0; width: auto; }
+.al-root .al-card > .al-cover-placeholder { grid-column: 1; grid-row: 1; }
+
+.al-root .al-section-trend { position: relative; }
+.al-root .al-section-trend > .al-web-loading {
+  position: absolute;
+  inset: calc(var(--al-preview-toolbar-height, 40px) + 16px) 16px 16px;
+  width: auto;
+  height: auto;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  z-index: 2;
+}
+.al-root .al-section-trend > iframe.al-trend-frame { border: 0; background: var(--background-primary); }
+
+.al-root .al-section-trend > .al-web-loading[hidden] { display: none; }
+
+.al-root .al-preview-viewport {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--background-secondary);
+}
+.al-root .al-preview-viewport > .al-trend-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100% !important;
+  min-height: 0;
+  margin: 0;
+  border: 0;
+  background: var(--background-secondary);
+}
+.al-root .al-preview-viewport > .al-preview-unavailable { visibility: hidden; }
+.al-root .al-preview-viewport > .al-web-loading,
+.al-root .al-preview-viewport > .al-information-empty {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  display: grid;
+  place-content: center;
+  background: var(--background-secondary);
+  text-align: center;
+  z-index: 2;
+}
+.al-root .al-preview-viewport > [hidden] { display: none !important; }
+
+/* Mobile uses one scroll surface and leaves room for the native bottom bar. */
+body.is-mobile .al-root.al-mobile-dashboard {
+  box-sizing: border-box;
+  height: 100%;
+  padding: 12px 12px calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+}
+body.is-mobile .al-mobile-dashboard .al-top { margin: 0 0 12px; padding: 0; }
+body.is-mobile .al-mobile-dashboard .al-top > :first-child:not(.al-actions) { display: none; }
+body.is-mobile .al-mobile-dashboard .al-top > .al-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+  gap: 6px;
+  padding: 0;
+}
+body.is-mobile .al-mobile-dashboard .al-top > .al-actions > button { min-width: 0; min-height: 42px; margin: 0; padding: 6px 4px; font-size: 13px; }
+body.is-mobile .al-mobile-dashboard .al-layout { display: flex !important; flex-direction: column; flex: 0 0 auto; height: auto; min-height: 0; overflow: visible; gap: 10px; }
+body.is-mobile .al-mobile-dashboard .al-nav { display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; padding: 0 0 2px; scrollbar-width: none; }
+body.is-mobile .al-mobile-dashboard .al-nav > button { flex: 0 0 auto; min-height: 38px; padding: 6px 10px; font-size: 13px; }
+body.is-mobile .al-mobile-dashboard .al-shelf { overflow: visible; }
+body.is-mobile .al-mobile-dashboard .al-shelf-tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+body.is-mobile .al-mobile-dashboard .al-shelf-tools > input { grid-column: 1 / -1; }
+body.is-mobile .al-mobile-dashboard .al-shelf-tools > select[aria-label="季度"] { display: block !important; }
+body.is-mobile .al-mobile-dashboard .al-shelf-tools > :is(input, select) { width: 100%; min-width: 0; min-height: 42px; margin: 0; padding: 8px 12px; font-size: 13px; border-radius: 8px; }
+body.is-mobile .al-mobile-dashboard .al-cards { display: grid; grid-template-columns: minmax(0, 1fr) !important; gap: 10px; overflow: visible; padding: 0; }
+body.is-mobile .al-mobile-dashboard .al-card { grid-template-columns: 64px minmax(0, 1fr); gap: 10px; padding: 10px; }
+body.is-mobile .al-mobile-dashboard .al-card > img,
+body.is-mobile .al-mobile-dashboard .al-card > .al-cover-placeholder { width: 64px !important; max-width: 64px; height: 94px !important; }
+body.is-mobile .al-mobile-dashboard .al-card > div:not(.al-cover-placeholder) { height: auto; min-height: 94px; gap: 5px; }
+body.is-mobile .al-mobile-dashboard .al-card > div > strong { font-size: 15px; line-height: 1.4; }
+body.is-mobile .al-mobile-dashboard .al-card > div > p { margin: 0; font-size: 12px; line-height: 1.4; }
+body.is-mobile .al-mobile-dashboard .al-card .al-original-name { font-size: 11px; }
+body.is-mobile .al-mobile-dashboard .al-card progress { height: 4px; min-height: 4px; margin-top: auto; border-radius: 4px; }
+body.is-mobile .al-mobile-dashboard .al-detail { display: none !important; flex: 0 0 auto; height: auto; min-height: 0; max-height: none; border: 0; background: transparent; padding: 0; overflow: visible; }
+body.is-mobile .al-mobile-dashboard.al-mobile-detail .al-detail { display: block !important; width: 100%; }
+body.is-mobile .al-mobile-dashboard.al-mobile-detail :is(.al-nav, .al-shelf) { display: none !important; }
+body.is-mobile .al-mobile-dashboard .al-detail-head { gap: 10px; margin: 0 0 12px; padding: 0 !important; }
+body.is-mobile .al-mobile-dashboard .al-mobile-back { min-height: 42px; margin: 0; padding: 6px 0; font-size: 13px; }
+body.is-mobile .al-mobile-dashboard .al-title-block h2 { font-size: 22px; line-height: 1.35; margin: 0 0 5px; }
+body.is-mobile .al-mobile-dashboard .al-title-block p { font-size: 12px; }
+body.is-mobile .al-mobile-dashboard .al-detail-head > .al-header-status { display: flex; flex-direction: column; align-items: stretch; gap: 8px; width: 100%; }
+body.is-mobile .al-mobile-dashboard .al-detail-head .al-status-buttons { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); width: 100%; }
+body.is-mobile .al-mobile-dashboard .al-detail-head .al-status-buttons > button { min-width: 0; min-height: 40px; padding: 6px 0; font-size: 13px; }
+body.is-mobile .al-mobile-dashboard .al-detail-head .al-header-status > button { align-self: flex-end; min-height: 38px; padding: 6px 0; font-size: 12px; order: 1; }
+body.is-mobile .al-mobile-dashboard .al-flat-workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; height: auto; min-height: 0; max-height: none; overflow: visible; padding: 0; }
+body.is-mobile .al-mobile-dashboard .al-work-section { padding: 12px; }
+body.is-mobile .al-mobile-dashboard .al-work-section > h3 { font-size: 15px; }
+body.is-mobile .al-mobile-dashboard .al-episode-summary { font-size: 12px; line-height: 1.5; }
+body.is-mobile .al-mobile-dashboard .al-episode-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+body.is-mobile .al-mobile-dashboard .al-episode-tile { min-width: 0; min-height: 56px; padding: 6px 2px; gap: 3px; }
+body.is-mobile .al-mobile-dashboard .al-episode-tile strong { font-size: 15px; }
+body.is-mobile .al-mobile-dashboard .al-episode-tile span { font-size: 11px; }
+body.is-mobile .al-mobile-dashboard .al-episode-focus > h3 { font-size: 14px; line-height: 1.5; }
+body.is-mobile .al-mobile-dashboard .al-review-options { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+body.is-mobile .al-mobile-dashboard .al-footer { position: static; flex: 0 0 auto; flex-wrap: wrap; gap: 6px 12px; padding: 10px 0; font-size: 11px; }
+body.is-mobile .al-mobile-video { display: block; width: 100%; max-height: 65vh; }
+body.is-mobile .al-plugin-settings.al-settings-v2 .al-plugin-footer { grid-template-columns: 72px minmax(0, 1fr); gap: 10px; padding-inline: 0; }
+body.is-mobile .al-plugin-settings.al-settings-v2 .al-plugin-footer-logo,
+body.is-mobile .al-plugin-settings.al-settings-v2 .al-plugin-footer-logo svg { width: 72px; height: 72px; }
+body.is-mobile .al-plugin-settings.al-settings-v2 .al-plugin-footer-details { font-size: 12px; overflow-wrap: anywhere; }
+body.is-mobile .al-mobile-dashboard .al-section-trend.al-mobile-information { height: 150px !important; min-height: 0; max-height: none; }
+body.is-mobile .al-mobile-dashboard .al-section-trend > .al-actions { flex-wrap: wrap; gap: 8px; flex-basis: auto; }
+body.is-mobile .al-mobile-dashboard .al-section-trend .al-status-buttons > button { min-height: 36px; padding-inline: 8px; font-size: 12px; }
+@container anilink-dashboard (max-width: 620px) {
+  .al-root .al-mobile-back { display: inline-flex; grid-column: 1; grid-row: 1; order: -1; justify-self: start; padding-inline: 0; background: transparent; box-shadow: none; color: var(--text-muted); }
 }

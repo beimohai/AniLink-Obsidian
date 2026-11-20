@@ -193,7 +193,7 @@ class Dashboard extends ItemView {
     const detail =
       layout.querySelector(":scope > .al-detail") ||
       layout.createDiv("al-detail");
-    const show = p.state.shows.find((s) => s.id === this.selected);
+    const show = p.state.shows.find((s) => s.id === this.selected && !(p.state.hiddenShows || []).includes(s.id));
     if (show) this.renderDetail(detail, show);
     else {
       detail.empty();
@@ -255,7 +255,18 @@ class Dashboard extends ItemView {
             referrerpolicy: "no-referrer",
           },
         });
-        img.onerror = () => img.remove();
+        img.onerror = async () => {
+          img.onerror = null;
+          try {
+            const cached = await this.p.loadCoverImage(s.cover);
+            if (img.isConnected) img.src = cached;
+          } catch (error) {
+            if (!img.isConnected) return;
+            const placeholder = card.createDiv({ text: "番", cls: "al-cover-placeholder" });
+            img.replaceWith(placeholder);
+            C.record(this.p.state, `${s.title} · 封面加载失败：${error.message}`);
+          }
+        };
       } else card.createDiv({ text: "番", cls: "al-cover-placeholder" });
       const meta = card.createDiv();
       meta.createEl("strong", { text: s.title });
@@ -591,10 +602,16 @@ class AniLink extends Plugin {
     }
   }
   qb() {
-    return new C.QBittorrent(this.http, this.state.settings);
+    const settings = this.state.settings;
+    const identity = JSON.stringify([settings.qbUrl, settings.qbUser, settings.qbPassword]);
+    if (!this.qbClient || this.qbIdentity !== identity) {
+      this.qbClient = new C.QBittorrent(this.http, settings);
+      this.qbIdentity = identity;
+    }
+    return this.qbClient;
   }
   bgm() {
-    return new C.Bangumi(this.http, this.state.settings.bgmToken, this.state.settings.bgmMirror ? "https://api.bangumi.lat" : "https://api.bgm.tv");
+    return new C.Bangumi(this.http, this.state.settings.bgmToken, this.state.settings.bgmMirror && this.state.settings.bgmMirrorApi !== false ? "https://api.bangumi.lat" : "https://api.bgm.tv");
   }
   confirm(title, text, fn) {
     new Panel(this, title, (el, m) => {
@@ -668,7 +685,7 @@ class AniLink extends Plugin {
       this.health.qb = { ok: null, text: "未在刷新时检查下载器" };
     await this.sync();
     await this.persist();
-    if (manual) new Notice("AniLink 刷新完成");
+    if (manual) this.notify("refresh", "AniLink 刷新完成");
   }
   async markWatched(s, e, value) {
     s.localRevision = (s.localRevision || 0) + 1;
@@ -819,7 +836,7 @@ class AniLink extends Plugin {
     });
     C.record(this.state, `已交给弹弹play：${s.title} 第 ${e.sort} 集`);
     await this.persist();
-    new Notice("已打开弹弹play");
+    this.notify("playback", "已打开弹弹play");
   }
   filesModal(s, e) {
     new Panel(this, `第 ${e.sort} 集 · 文件管理`, (el, m) => {

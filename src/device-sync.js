@@ -22,18 +22,28 @@ AniLink.prototype.onload = async function () {
     try { identity = JSON.parse(await fs.readFile(this.deviceIdentityFile, "utf8")); }
     catch (error) { if (error.code !== "ENOENT") throw Error("AniLink 设备标识读取失败"); }
     this.deviceId = identity?.deviceId || local?.deviceId || crypto.randomBytes(16).toString("hex");
+    this.deviceLocalSettings = identity?.settings;
+    this.deviceLocalSettingsJSON = JSON.stringify(this.deviceLocalSettings);
     await fs.mkdir(localFolder, { recursive: true });
-    await fs.writeFile(this.deviceIdentityFile, JSON.stringify({ deviceId: this.deviceId }), "utf8");
+    await fs.writeFile(this.deviceIdentityFile, JSON.stringify({ deviceId: this.deviceId, settings: this.deviceLocalSettings }), "utf8");
     if (saved?.storage === "vault" && (!saved.state || !Array.isArray(saved.state.shows)))
       throw Error("AniLink 库内数据格式无效，已停止加载以免覆盖数据");
     const document = saved?.storage === "vault" ? saved : local;
     this.records = DeviceModel.merge(document?.records);
     const state = document?.state || (saved?.deviceStorage === 1 ? C.defaults() : saved) || C.defaults();
+    state.settings ||= {};
+    Object.assign(state.settings, DeviceModel.localSettings(this.deviceLocalSettings));
     this.deviceBaseline = DeviceModel.project(state);
     if (saved?.deviceStorage === 1 && !local) state.needsDeviceSetup = true;
     return state;
   };
   this.saveData = async (data) => {
+    const settings = DeviceModel.localSettings(data.settings);
+    const settingsJSON = JSON.stringify(settings);
+    if (settingsJSON !== this.deviceLocalSettingsJSON) {
+      await fs.writeFile(this.deviceIdentityFile, JSON.stringify({ deviceId: this.deviceId, settings }), "utf8");
+      this.deviceLocalSettingsJSON = settingsJSON;
+    }
     const after = DeviceModel.project(data);
     this.records = DeviceModel.capture(this.records, Object.keys(this.records).length ? this.deviceBaseline : {}, after, this.deviceId);
     await this.rawSaveData({ version: 3, storage: "vault", records: this.records, state: data });

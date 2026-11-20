@@ -30,7 +30,7 @@ function mobileFixture(settings = {}) {
       return { Plugin, ItemView: class {}, Modal: class {}, PluginSettingTab: class {}, Setting: class {}, Notice: class {}, Platform: { isMobile: true, isDesktop: false }, requestUrl() { throw Error('Unexpected network'); } };
     },
   };
-  vm.runInNewContext(fs.readFileSync(require.resolve('../main.js'), 'utf8') + '\nmodule.exports.sharedSettings = Connections;module.exports.sharedDashboard = Dashboard;', sandbox);
+  vm.runInNewContext(fs.readFileSync(require.resolve('../main.js'), 'utf8') + '\nmodule.exports.sharedSettings = Connections;module.exports.sharedDashboard = Dashboard;module.exports.mobileDashboard = MobileDashboard;', sandbox);
   return { plugin: new sandbox.module.exports(), initial, intervals, exported: sandbox.module.exports };
 }
 
@@ -82,6 +82,122 @@ test('mobile episode pull preserves pending offline watched edits', async () => 
   await plugin.loadMobileEpisodes(show);
   assert.equal(show.episodes[0].watched, true);
   assert.equal(show.episodes[1].watched, true);
+});
+
+test('mobile refuses a damaged vault document without saving over it', async () => {
+  const { plugin } = mobileFixture();
+  plugin.loadData = async () => ({ storage: 'vault', state: { shows: {} } });
+  await assert.rejects(plugin.onload(), /数据格式无效/);
+  assert.equal(plugin.saved, undefined);
+});
+
+test('mobile WebDAV configuration survives a desktop snapshot while shared account settings update', async () => {
+  const { plugin } = mobileFixture({ remoteEnabled: true, remoteAddress: 'https://phone.example/dav', remotePassword: 'phone' });
+  await plugin.onload();
+  await plugin.persist();
+  const next = new plugin.constructor();
+  const incoming = C.defaults();
+  Object.assign(incoming.settings, { remoteEnabled: false, remoteAddress: 'https://desktop.example/dav', bgmToken: 'shared' });
+  next.loadData = async () => ({ storage: 'vault', state: incoming });
+  next.background = () => {};
+  await next.onload();
+  assert.equal(next.state.settings.remoteEnabled, true);
+  assert.equal(next.state.settings.remoteAddress, 'https://phone.example/dav');
+  assert.equal(next.state.settings.remotePassword, 'phone');
+  assert.equal(next.state.settings.bgmToken, 'shared');
+});
+
+test('mobile remote refresh remains available without a Bangumi token', async () => {
+  const { plugin } = mobileFixture({ remoteEnabled: true });
+  await plugin.onload();
+  let scans = 0;
+  plugin.syncMobile = async () => { throw Error('unexpected Bangumi sync'); };
+  plugin.scanRemoteVideos = async () => { scans++; };
+  plugin.redraw = () => {};
+  await plugin.refresh();
+  assert.equal(scans, 1);
+});
+
+test('mobile rendering ignores desktop files and restores metadata even after a rendering error', async () => {
+  const { plugin, exported } = mobileFixture({ remoteEnabled: true });
+  await plugin.onload();
+  const files = [{ path: 'D:/desktop.mkv', progress: 1 }, { remotePath: '/remote.mp4', progress: 1 }, { remotePath: '/gone.mp4', localExists: false, progress: 1 }];
+  const episode = { files };
+  const view = Object.create(exported.mobileDashboard.prototype);
+  view.p = plugin;
+  assert.throws(() => view.withMobileFiles([{ episodes: [episode] }], () => {
+    assert.equal(episode.files.length, 1);
+    assert.equal(episode.files[0], files[1]);
+    throw Error('render error');
+  }), /render error/);
+  assert.equal(episode.files, files);
+});
+
+test('mobile scan marks vanished remote files missing and retains desktop file status', async () => {
+  const { plugin } = mobileFixture({ remoteEnabled: true });
+  await plugin.onload();
+  const show = C.newShow({ id: 253, name: 'Test' });
+  const desktop = { path: 'D:/desktop.mkv', localExists: true, progress: 1 };
+  const remote = { remotePath: '/gone.mp4', localExists: true, progress: 1 };
+  show.episodes = [{ id: 1, type: 0, sort: 1, files: [desktop, remote] }];
+  plugin.state.shows.push(show);
+  plugin.mobileRemoteList = async () => [];
+  await plugin.scanRemoteVideos();
+  assert.equal(remote.localExists, false);
+  assert.equal(desktop.localExists, true);
+  remote.localExists = true;
+  plugin.mobileRemoteList = async () => { throw Error('offline'); };
+  await assert.rejects(plugin.scanRemoteVideos(), /offline/);
+  assert.equal(remote.localExists, true);
+});
+
+test('mobile progress reads cannot revert an edit already drained from the push queue', async () => {
+  const { plugin } = mobileFixture();
+  await plugin.onload();
+  const show = C.newShow({ id: 253, name: 'Test' });
+  show.episodes = [{ id: 1, watched: false }];
+  plugin.updateEpisodes = async () => {};
+  plugin.bgm = () => ({ pages: async () => {
+    show.episodes[0].watched = true;
+    show.localRevision = 1;
+    plugin.state.queue = [];
+    return [{ episode: { id: 1 }, type: 0 }];
+  } });
+  await plugin.loadMobileEpisodes(show);
+  assert.equal(show.episodes[0].watched, true);
+});
+
+test('mobile account progress loading uses at most four concurrent subjects', async () => {
+  const { plugin } = mobileFixture({ bgmToken: 'test' });
+  plugin.background = () => {};
+  await plugin.onload();
+  plugin.state.shows = Array.from({ length: 9 }, (_, i) => ({ id: i + 1, status: 3, episodes: [] }));
+  plugin.sync = async () => {};
+  plugin.bgm = () => ({ call: async () => ({ username: 'test' }), pages: async () => [] });
+  let active = 0, maximum = 0, loaded = 0;
+  plugin.loadMobileEpisodes = async () => {
+    maximum = Math.max(maximum, ++active);
+    await new Promise((resolve) => setImmediate(resolve));
+    active--; loaded++;
+  };
+  await plugin.pullAccount();
+  assert.equal(maximum, 4);
+  assert.equal(loaded, 9);
+});
+
+test('mobile unload closes owned panels and pushes saved jobs without pulling every subject', async () => {
+  const { plugin } = mobileFixture({ bgmToken: 'test' });
+  plugin.background = () => {};
+  await plugin.onload();
+  let closed = 0, pushed = 0;
+  plugin.panels = [{ close: () => { closed++; } }];
+  plugin.syncMobile = async () => { throw Error('unexpected full pull'); };
+  plugin.sync = async () => { assert.equal(plugin.disposed, true); assert.equal(plugin.exitSyncRunning, true); pushed++; };
+  await plugin.onunload();
+  assert.equal(closed, 1);
+  assert.equal(pushed, 1);
+  assert.equal(plugin.exitSyncRunning, false);
+  assert.ok(plugin.saved);
 });
 
 test('mobile identities and captured records are accepted by the merge model', async () => {

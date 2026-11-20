@@ -250,7 +250,7 @@ AniLink.prototype.searchModal = function () {
                     b.classList.toggle("al-active", chosen);
                     b.textContent = b.textContent.replace("✓ ", "");
                   }
-                  new Notice(`已设为${C.STATUS[status]}`);
+                  this.notify("progress", `已设为${C.STATUS[status]}`);
                 }),
               "al-search-status",
             );
@@ -312,13 +312,16 @@ AniLink.prototype.findSources = async function (s, query) {
     ),
   ].slice(0, 16);
   const matches = [];
+  let failure;
   for (const id of ids) {
     let page;
     try {
       page = await this.mikanDocument("https://mikanani.me/Home/Bangumi/" + id);
     } catch (error) {
       if (/HTTP 404/.test(error.message)) continue;
-      throw error;
+      failure = error;
+      C.record(this.state, `蜜柑候选条目 ${id} 读取失败：${error.message}`);
+      continue;
     }
     const verified = [...page.querySelectorAll("a[href]")].some((a) => {
       try {
@@ -346,16 +349,9 @@ AniLink.prototype.findSources = async function (s, query) {
     }
     matches.push({ id, groups });
   }
+  if (!matches.some((match) => match.groups.length) && failure)
+    throw Error("蜜柑条目核验失败：" + failure.message);
   return matches;
-};
-AniLink.prototype.readFeed = async function (url) {
-  const r = await this.http.request(url);
-  const doc = new DOMParser().parseFromString(r.text, "application/xml");
-  if (doc.querySelector("parsererror")) throw Error("RSS 数据格式错误");
-  return [...doc.querySelectorAll("item")].map((item) => ({
-    title: item.querySelector("title")?.textContent || "",
-    date: item.querySelector("pubDate")?.textContent || "",
-  }));
 };
 AniLink.prototype.subscriptionModal = function (s) {
   if (s.demo) {
@@ -606,9 +602,10 @@ AniLink.prototype.autoConfigure = async function (useSystemProxy = false) {
   // Respect the configured executable and the downloader's existing profile.
   await this.ensureDownloader({ allowStart: true });
   const preferences = await this.qb().call("app/preferences");
-  if (!settings.downloadRoot)
+  const local = ["127.0.0.1", "localhost", "::1", "[::1]"].includes(new URL(settings.qbUrl || "http://127.0.0.1").hostname);
+  if (!settings.downloadRoot || (local && !C.isLocalPath(settings.downloadRoot)))
     settings.downloadRoot = preferences.save_path || path.join(os.homedir(), "Videos", "Anime");
-  if (path.isAbsolute(settings.downloadRoot)) await fs.mkdir(settings.downloadRoot, { recursive: true });
+  if (C.isLocalPath(settings.downloadRoot)) await fs.mkdir(settings.downloadRoot, { recursive: true });
   await this.qb().call("app/setPreferences", {
     json: JSON.stringify({
       rss_processing_enabled: true,
@@ -654,11 +651,11 @@ AniLink.prototype.autoConfigure = async function (useSystemProxy = false) {
             proxy_rss: true,
             proxy_bittorrent: false,
             proxy_peer_connections: false,
-            proxy_misc: false,
+            proxy_misc: true,
             proxy_hostname_lookup: true,
           }),
         });
-        C.record(this.state, "下载器 RSS 已使用 Windows 当前本机代理");
+        C.record(this.state, "下载器 RSS 与种子文件请求已使用 Windows 当前本机代理");
       }
     } else
       C.record(this.state, "未检测到启用的本机 HTTP 代理，保留下载器网络设置");

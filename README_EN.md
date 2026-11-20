@@ -17,7 +17,17 @@ AniLink is an anime management plugin for [Obsidian](https://obsidian.md/). It b
 - Update watched progress manually, save ratings and reviews, and push changes through the Bangumi task queue.
 - Preview Bangumi, Fanku and rating trends, or open their websites.
 
-Current release **1.0.11**, updated **2026-11-16**.
+Current release **1.0.12**, updated **2026-11-20**.
+
+### Changes in 1.0.12
+
+- Compact mobile controls, cards and detail panels, a single scroll surface, retained shelf position and room for the native bottom toolbar.
+- Device-local connection and path overrides keep desktop and mobile configurations from replacing one another. Mobile availability counts only confirmed remote files.
+- Fixed startup RSS refresh, torrent-file proxy routing and preview recovery. Opening the downloader refreshes subscriptions after its Web UI becomes ready.
+- Added multiple library roots, explicit folder association, notification controls and optional completed-task cleanup that retains media files.
+- Reused downloader sessions, bounded mobile metadata reads to four concurrent subjects and added Windows, macOS and Linux CI runners.
+
+Mobile WebDAV playback depends on supported device formats. Authenticated media opens in a browser for login and playback. Mobile information tabs open websites directly because sites such as Fanku restrict iframe embedding. Physical iOS and Android testing remains necessary.
 
 Desktop builds support Windows, macOS and Linux service connections, local players and platform-specific rclone installation. Startup scheduling and idle shutdown management currently use Windows scripts. Mobile uses the same cards and panels in a single-column shelf and vertically stacked detail view. General, page, Bangumi synchronization and WebDAV settings are available. Desktop downloader and audio-tool controls are hidden. The mobile entry point is tested without Node.js or Electron imports. Physical mobile devices, macOS and Linux still require end-to-end verification.
 
@@ -77,7 +87,7 @@ Cleanup deletes actual files. Configure a dedicated directory and review cleanup
 
 Complete plugin data lives in `.obsidian/plugins/anilink/data.json` inside the vault. It includes shelf entries, progress, reviews, subscriptions, connection settings, credentials and queued tasks. Copy this file with the plugin folder to move your setup. Configure your synchronization tool to include community plugin settings or this file explicitly.
 
-Older per-vault files under `%LOCALAPPDATA%/AniLink/` migrate automatically on upgrade and remain available for recovery. A small local device identity stays outside the vault so separate computers can identify their edits.
+Older per-vault files under `%LOCALAPPDATA%/AniLink/` migrate automatically on upgrade and remain available for recovery. Local device identity and connection overrides stay outside the vault. Existing devices prefer their saved downloader, player, media-path and remote-service settings; new devices initially use the complete snapshot. Bangumi account settings remain in the shared data file.
 
 Credentials in `data.json` are unencrypted. Use private synchronization storage and keep this file out of public repositories. Media files remain in the configured download directory. Website cookies are stored by Electron and can require another login on a different machine. Check executable and media paths after moving devices.
 

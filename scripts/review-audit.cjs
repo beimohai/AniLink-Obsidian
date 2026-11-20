@@ -8,10 +8,18 @@ const manifest = JSON.parse(fs.readFileSync("manifest.json")),
 assert.equal(manifest.id, "anilink");
 assert.equal(manifest.version, pkg.version);
 assert.equal(versions[manifest.version], manifest.minAppVersion);
+assert.match(pkg.releaseDate, /^\d{4}-\d{2}-\d{2}$/);
 assert.equal(manifest.isDesktopOnly, false);
 assert.match(manifest.description, /[.。]$/);
 assert.ok(manifest.description.length <= 250);
 const source = fs.readFileSync("main.js", "utf8");
+assert.ok(source.includes("const ANI_RELEASE_DATE = " + JSON.stringify(pkg.releaseDate)));
+for (const name of ["README.md", "README_EN.md"]) {
+  const text = fs.readFileSync(name, "utf8");
+  assert.ok(text.includes("**" + manifest.version + "**"), "Missing current version in " + name);
+  assert.ok(text.includes("**" + pkg.releaseDate + "**"), "Missing release date in " + name);
+}
+assert.ok(fs.readFileSync("CHANGELOG.md", "utf8").includes("## " + manifest.version + " — " + pkg.releaseDate));
 new vm.Script(source);
 new vm.Script(fs.readFileSync("core.js", "utf8"));
 for (const pattern of [

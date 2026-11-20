@@ -109,6 +109,27 @@ test("copied plugin data wins over stale machine data and keeps a separate devic
   assert.equal(f.get().state.shows.length, 1);
   assert.equal(reopened.deviceId, f.p.deviceId);
 });
+
+test("desktop connection settings survive another device's complete snapshot", async (t) => {
+  const initial = state();
+  initial.settings.qbExe = 'D:/device-one/qbittorrent.exe';
+  initial.settings.qbPassword = 'device-one';
+  const f = await fixture(t, { storage: 'vault', state: initial });
+  await f.p.onload();
+  const incoming = state();
+  incoming.settings.qbExe = '/Applications/device-two.app';
+  incoming.settings.qbPassword = 'device-two';
+  incoming.settings.bgmToken = 'shared-new-token';
+  f.set({ storage: 'vault', state: incoming });
+  const next = new f.p.constructor();
+  next.app = f.p.app;
+  next.manifest = f.p.manifest;
+  await next.onload();
+  assert.equal(next.state.settings.qbExe, initial.settings.qbExe);
+  assert.equal(next.state.settings.qbPassword, initial.settings.qbPassword);
+  assert.equal(next.state.settings.bgmToken, incoming.settings.bgmToken);
+  assert.ok(!Object.values(f.get().records).some((record) => JSON.stringify(record.value).includes('device-one')));
+});
 test("invalid vault data stops loading and preserves the original document", async (t) => {
   const f = await fixture(t, { storage: "vault", state: { shows: "invalid" } });
   await assert.rejects(f.p.onload(), /格式无效/);

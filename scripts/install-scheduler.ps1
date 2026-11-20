@@ -3,6 +3,7 @@ param(
  [string]$InstallRoot = (Join-Path $env:LOCALAPPDATA 'AniLink\services'),
  [string]$QbExe,
  [string]$QbProfile = '',
+ [string]$DeviceSettingsPath = '',
  [switch]$Uninstall
 )
 $ErrorActionPreference = 'Stop'
@@ -16,11 +17,12 @@ if (-not $PluginDataPath -or -not (Test-Path -LiteralPath $PluginDataPath -PathT
 $dataDocument = Get-Content -LiteralPath $PluginDataPath -Raw -Encoding UTF8 | ConvertFrom-Json
 if (-not $dataDocument.state.settings -and -not $dataDocument.settings) { throw 'The selected data document has no AniLink settings.' }
 if (-not (Test-Path -LiteralPath $QbExe -PathType Leaf)) { throw 'qBittorrent executable does not exist.' }
+if ($DeviceSettingsPath -and -not (Test-Path -LiteralPath $DeviceSettingsPath -PathType Leaf)) { throw 'AniLink device settings file does not exist.' }
 New-Item -ItemType Directory -Path $InstallRoot -Force | Out-Null
 $target = Join-Path $InstallRoot 'download-scheduler.ps1'
 if ([IO.Path]::GetFullPath($target) -ne [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'download-scheduler.ps1'))) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'download-scheduler.ps1') -Destination $target -Force }
 if ($QbProfile -and -not (Test-Path -LiteralPath $QbProfile -PathType Container)) { throw 'qBittorrent profile directory does not exist.' }
-@{dataFile=[IO.Path]::GetFullPath($PluginDataPath);exe=[IO.Path]::GetFullPath($QbExe);profile=if($QbProfile){[IO.Path]::GetFullPath($QbProfile)}else{''}} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $InstallRoot 'scheduler.json') -Encoding UTF8
+@{dataFile=[IO.Path]::GetFullPath($PluginDataPath);deviceSettingsFile=if($DeviceSettingsPath){[IO.Path]::GetFullPath($DeviceSettingsPath)}else{''};exe=[IO.Path]::GetFullPath($QbExe);profile=if($QbProfile){[IO.Path]::GetFullPath($QbProfile)}else{''}} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $InstallRoot 'scheduler.json') -Encoding UTF8
 $shell = New-Object -ComObject WScript.Shell
 $shortcut = $shell.CreateShortcut($startup)
 $shortcut.TargetPath = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'

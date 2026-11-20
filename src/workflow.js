@@ -135,7 +135,7 @@ AniLink.prototype.markThrough = async function (s, target) {
     if (next) leaf.view.episodeFocus = next.id;
     leaf.view.render();
   }
-  new Notice(`已看到第 ${target.ep || target.sort} 集`);
+  this.notify("progress", `已看到第 ${target.ep || target.sort} 集`);
   await this.persist();
   this.background("Bangumi 推送", () => this.sync());
   const cleanupMode = this.state.settings.cleanupMode ||
@@ -247,8 +247,13 @@ AniLink.prototype.cleanupWatched = async function (s, episodes) {
       if (/HTTP 404/.test(e.message)) {
         const remaining = await this.qb().call("torrents/info", { hashes: hash });
         if (Array.isArray(remaining) && remaining.length === 0) {
-          const root = path.resolve(this.state.settings.libraryRoot || this.state.settings.downloadRoot);
+          const roots = this.libraryRoots();
           for (const media of group) {
+            const root = roots.find((candidate) => {
+              const relative = path.relative(candidate, path.resolve(media.path));
+              return relative && !relative.startsWith("..") && !path.isAbsolute(relative);
+            });
+            if (!root) throw Error("自动清理文件不在已启用番剧库目录内");
             const relative = path.relative(root, path.resolve(media.path));
             if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) throw Error("自动清理文件不在番剧库目录内");
             const owner = s.episodes.find((episode) => episode.id === media.episodeId);

@@ -1,5 +1,17 @@
 "use strict";
 const clone = (v) => JSON.parse(JSON.stringify(v));
+const deviceSettingKeys = [
+  "qbUrl", "qbUser", "qbPassword", "qbExe", "qbProfile", "previousQbProxy",
+  "downloadRoot", "libraryRoot", "extraLibraryRoots", "multiLibraryEnabled",
+  "downloadMode", "idleMinutes", "wakeMinutes", "downloaderOnStartup", "clearCompletedTasks",
+  "playerExe", "playerUrl", "playerToken", "rcloneExe", "remoteRoot", "localRoot",
+  "remoteEnabled", "remoteProtocol", "remoteAddress", "remoteUser", "remotePassword", "remoteDirectory",
+  "networkPlayer", "networkPlayerUrl", "networkPlayerToken", "networkPlayerSession", "networkPlayerRoot",
+  "bgmMirror", "bgmMirrorApi", "bgmMirrorWeb", "bgmMirrorData",
+];
+function localSettings(settings = {}) {
+  return clone(Object.fromEntries(deviceSettingKeys.filter((key) => settings[key] !== undefined).map((key) => [key, settings[key]])));
+}
 function project(state) {
   const out = {};
   for (const s of state.shows) {
@@ -138,4 +150,4 @@ function apply(state, records, makeShow) {
     if (e) e[p[3]] = clone(r.value);
   }
 }
-module.exports = { project, merge, capture, apply };
+module.exports = { project, merge, capture, apply, localSettings };

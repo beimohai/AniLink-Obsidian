@@ -79,19 +79,26 @@ AniLink.prototype.scanRemoteVideos = async function () {
   if (!settings.remoteEnabled) return;
   const rows = JSON.parse(await this.remoteCommand(settings, ["lsjson", this.remoteTarget(settings.remoteDirectory), "--recursive", "--max-depth", "3", "--files-only"]));
   const normalize = (text) => String(text).normalize("NFKC").replace(/[\s\p{P}\p{S}]/gu, "").toLowerCase();
+  const names = this.state.shows.map((show) => ({ show, names: [show.title, show.name].filter(Boolean).map(normalize) }));
+  const found = new Set();
   for (const row of rows.filter((item) => C.VIDEO.test(item.Name))) {
-    const subjects = this.state.shows.filter((show) => [show.title, show.name].filter(Boolean).some((name) => normalize(row.Path).includes(normalize(name))));
+    const remotePath = path.posix.join(settings.remoteDirectory || "/", row.Path);
+    found.add(remotePath);
+    const filename = normalize(row.Path);
+    const subjects = names.filter((entry) => entry.names.some((name) => filename.includes(name))).map((entry) => entry.show);
     if (subjects.length !== 1) continue;
     const show = subjects[0];
     const episode = C.resolveEpisode(show, row.Name);
     if (!episode) continue;
-    const remotePath = path.posix.join(settings.remoteDirectory || "/", row.Path);
-    const cache = path.join(this.app.vault.adapter.basePath, this.manifest.dir, "media-cache", String(show.id), path.basename(row.Name));
+    const cache = path.join(this.app.vault.adapter.getBasePath(), this.manifest.dir, "media-cache", String(show.id), path.basename(row.Name));
+    episode.files ||= [];
     const existing = episode.files.find((file) => file.remotePath === remotePath);
     const file = { name: row.Name, path: cache, remotePath, progress: 1, localExists: true, episodeId: episode.id };
     if (existing) Object.assign(existing, file);
     else episode.files.push(file);
   }
+  for (const show of this.state.shows) for (const episode of show.episodes)
+    for (const file of episode.files || []) if (file.remotePath) file.localExists = found.has(file.remotePath);
 };
 AniLink.prototype.cacheRemoteVideo = async function (file) {
   if (!file.remotePath) return;

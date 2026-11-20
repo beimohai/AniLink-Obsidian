@@ -1,6 +1,7 @@
 import importlib.util
 from pathlib import Path
 import unittest
+import json
 import numpy as np
 
 spec = importlib.util.spec_from_file_location('align_audio', Path(__file__).parents[1] / 'scripts' / 'align-audio.py')
@@ -19,6 +20,9 @@ class OpeningAlignmentTests(unittest.TestCase):
             np.concatenate([opening, rng.normal(size=120 * rate)]),
             np.concatenate([target, rng.normal(size=90 * rate)]),
         )
+        json.dumps(first)
+        json.dumps(extended)
+        self.assertIsInstance(first['retried'], bool)
         self.assertAlmostEqual(first['offsetSeconds'], 1.0, places=2)
         self.assertEqual(first, extended)
         self.assertTrue(all(anchor['source'] + 8 <= 180 and anchor['target'] + 8 <= 180 for anchor in extended['anchors']))

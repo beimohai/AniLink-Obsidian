@@ -13,9 +13,58 @@ test("RSS auto refresh refreshes only active AniLink feeds", async () => {
   const p = new AniLink();
   p.state = { shows: [{ id: 1, subscription: { enabled: true, feed: "https://example.test/feed" } }, { id: 2, subscription: { enabled: false, feed: "https://example.test/paused" } }] };
   const calls = [];
-  p.qb = () => ({ call: async (endpoint, params) => calls.push([endpoint, params.itemPath]) });
+  p.qb = () => ({ call: async (endpoint, params) => calls.push([endpoint, params.itemPath]), setRule: async (show) => calls.push(["setRule", show.id]) });
   await p.refreshRssSubscriptions();
-  assert.deepEqual(calls, [["rss/refreshItem", "AniLink-1"]]);
+  assert.deepEqual(calls, [["rss/refreshItem", "AniLink-1"], ["setRule", 1]]);
+});
+
+test("opening the downloader waits for Web UI and refreshes subscriptions even with polling disabled", async () => {
+  class AniLink {}
+  const source = fs.readFileSync(require.resolve("../src/ux.js"), "utf8");
+  const start = source.indexOf("AniLink.prototype.openDownloader =");
+  const end = source.indexOf("AniLink.prototype.prepareSchedulerScripts =", start);
+  let spawned = false, probes = 0;
+  const events = [];
+  vm.runInNewContext(source.slice(start, end), {
+    AniLink, fs: { access: async () => {} }, process: { platform: "win32" },
+    window: { setTimeout: (callback) => queueMicrotask(callback) },
+    execFile: () => {
+      const child = new (require("node:events").EventEmitter)();
+      queueMicrotask(() => { spawned = true; child.emit("spawn"); });
+      return child;
+    },
+  });
+  const p = new AniLink();
+  p.state = { settings: { qbExe: "qBittorrent.exe", autoRefresh: false } };
+  p.qb = () => ({ call: async () => {
+    probes++;
+    if (!spawned || probes < 3) throw Error("ECONNREFUSED");
+    return "v5.3.0";
+  } });
+  p.refreshRssSubscriptions = async () => {
+    assert.ok(spawned && probes >= 3);
+    events.push("refresh");
+  };
+  p.armIdleShutdown = async () => events.push("idle");
+  await p.openDownloader();
+  assert.deepEqual(events, ["refresh", "idle"]);
+  assert.equal(p.downloaderStartedByAniLink, true);
+});
+
+test("enabled Obsidian startup refreshes RSS after downloader readiness with polling disabled", async () => {
+  class AniLink { async onload() {} }
+  const source = fs.readFileSync(require.resolve("../src/preferences-runtime.js"), "utf8");
+  vm.runInNewContext(source.slice(source.indexOf("const schedulerUpgradeOnload =")), { AniLink, process: { platform: "linux" } });
+  const p = new AniLink(), work = [], events = [];
+  p.state = { settings: { downloaderOnStartup: true, autoRefresh: false } };
+  p.notify = () => {};
+  p.background = (label, task) => work.push(task());
+  p.ensureDownloader = async () => events.push("ready");
+  p.refreshRssSubscriptions = async () => events.push("refresh");
+  p.armIdleShutdown = async () => events.push("idle");
+  await p.onload();
+  await Promise.all(work);
+  assert.deepEqual(events, ["ready", "refresh", "idle"]);
 });
 
 test("multi-select source filters use OR inside facets and AND across facets", () => {
@@ -167,15 +216,19 @@ test("existing library folders are reused and missing folders get portable names
   const source = fs.readFileSync(require.resolve("../src/preferences-runtime.js"), "utf8");
   let exists = true;
   vm.runInNewContext(source.slice(source.indexOf("AniLink.prototype.showFolder =")), {
-    AniLink, C, path, fs: { stat: async () => { if (!exists) throw Error("ENOENT"); return { isDirectory: () => true }; } },
+    AniLink, C, path, URL, os: require("node:os"), fs: { stat: async () => { if (!exists) throw Error("ENOENT"); return { isDirectory: () => true }; } },
   });
   const p = new AniLink();
   const show = { id: 42, title: "Show: Name", subscription: {} };
+  p.state = C.defaults();
   const root = path.resolve("library");
   assert.equal(await p.showFolder(show, root), path.join(root, "Show_ Name"));
   exists = false;
   assert.equal(await p.showFolder(show, root), path.join(root, "Show_ Name [42]"));
   show.subscription.savePath = path.resolve("custom");
+  assert.equal(await p.showFolder(show, root), show.subscription.savePath);
+  p.state.settings.qbUrl = "http://nas.example:8080";
+  show.subscription.savePath = "/downloads/server-folder";
   assert.equal(await p.showFolder(show, root), show.subscription.savePath);
 });
 
@@ -186,7 +239,7 @@ test("RSS auto configuration uses configured downloader and keeps its existing d
   const end = source.indexOf("const advancedSettings", start);
   const path = require("node:path");
   const created = [];
-  vm.runInNewContext(source.slice(start, end), { AniLink, C, path, process, require, fs: { mkdir: async (value) => created.push(value) } });
+  vm.runInNewContext(source.slice(start, end), { AniLink, C, path, URL, process, require, fs: { mkdir: async (value) => created.push(value) } });
   const p = new AniLink();
   const root = path.resolve("configured-downloads");
   p.state = { settings: {} };
@@ -200,6 +253,33 @@ test("RSS auto configuration uses configured downloader and keeps its existing d
   assert.deepEqual(created, [root]);
   assert.deepEqual(calls, ["app/preferences", "app/setPreferences"]);
   assert.equal(p.state.settings.playerExe, undefined);
+});
+
+test("system proxy configuration covers RSS and torrent file requests", async () => {
+  class AniLink {}
+  const source = fs.readFileSync(require.resolve("../src/integration.js"), "utf8");
+  const start = source.indexOf("AniLink.prototype.autoConfigure =");
+  const end = source.indexOf("const advancedSettings", start);
+  const path = require("node:path");
+  vm.runInNewContext(source.slice(start, end), {
+    AniLink, C, path, URL, process: { platform: "win32" }, fs: { mkdir: async () => {} },
+    execFile: (command, args, options, callback) => callback(null, "ProxyEnable REG_DWORD 0x1\nProxyServer REG_SZ 127.0.0.1:7890\n"),
+  });
+  const p = new AniLink(), updates = [];
+  p.state = C.defaults();
+  p.ensureDownloader = async () => {};
+  p.persist = async () => {};
+  p.checkConnections = async () => {};
+  p.qb = () => ({ call: async (endpoint, params) => {
+    if (endpoint === "app/preferences") return { proxy_type: "None", save_path: path.resolve("configured-downloads") };
+    updates.push(JSON.parse(params.json));
+  } });
+  await p.autoConfigure(true);
+  const proxy = updates.find((update) => update.proxy_type === "HTTP");
+  assert.equal(proxy.proxy_rss, true);
+  assert.equal(proxy.proxy_misc, true);
+  assert.equal(proxy.proxy_peer_connections, false);
+  assert.equal(proxy.proxy_bittorrent, false);
 });
 
 

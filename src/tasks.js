@@ -119,28 +119,6 @@ const baseTaskOnload = AniLink.prototype.onload;
 AniLink.prototype.onload = async function () {
   await baseTaskOnload.call(this);
   this.disposed = false;
-  const transport = this.http.transport;
-  this.http.transport = async (request) => {
-    if (
-      (request.method || "GET") !== "GET" &&
-      !request.url.includes("/search/subjects")
-    )
-      return transport(request);
-    let timer;
-    try {
-      return await Promise.race([
-        transport(request),
-        new Promise((_, reject) => {
-          timer = window.setTimeout(
-            () => reject(Error("读取超时（20 秒），可重试")),
-            20000,
-          );
-        }),
-      ]);
-    } finally {
-      window.clearTimeout(timer);
-    }
-  };
 };
 AniLink.prototype.onunload = function () {
   this.disposed = true;

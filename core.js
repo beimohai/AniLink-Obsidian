@@ -21,6 +21,8 @@ const defaults = () => ({
     playerToken: "",
     downloadRoot: "",
     libraryRoot: "",
+    multiLibraryEnabled: false,
+    extraLibraryRoots: [],
     cleanupMode: "watched",
     downloadMode: "off",
     idleMinutes: 5,
@@ -50,7 +52,14 @@ const defaults = () => ({
     bgmConflictPolicy: "ask",
     qbExe: "",
     autoRefresh: false,
+    downloaderOnStartup: false,
     downloadNotifications: false,
+    clearCompletedTasks: false,
+    startupNotifications: true,
+    playbackNotifications: true,
+    progressNotifications: true,
+    refreshNotifications: true,
+    syncNotifications: true,
     rssUpgradeUnwatched: true,
     deleteTorrentWithFiles: true,
     remoteEnabled: false,
@@ -89,6 +98,10 @@ function folderName(title, id) {
   return name !== original && /^\d+$/.test(String(id)) ? `${name} [${id}]` : name;
 }
 function utf8Length(value) { return Array.from(value).reduce((n, char) => n + (char.codePointAt(0) > 65535 ? 4 : char.charCodeAt(0) > 2047 ? 3 : char.charCodeAt(0) > 127 ? 2 : 1), 0); }
+function isLocalPath(value, paths = path) {
+  return typeof value === "string" && paths.isAbsolute(value) &&
+    (paths.sep !== "\\" || /^(?:[A-Za-z]:[\\/]|[\\/]{2})/.test(value));
+}
 function qbConnectionMessage(error) {
   const detail = String(error?.message || error || "");
   return /(?:connection[_ ]refused|econnrefused|err_connection_refused)/i.test(detail)
@@ -128,7 +141,7 @@ function parseEpisode(name) {
     .replace(VIDEO, "")
     .replace(/\b(?:Season|S)\s*\d{1,2}(?=\s+-\s+\d)/gi, "Season");
   if (
-    /(?:\bcomplete\b|\bbatch\b|合集|全集|\d{1,3}\s*[-~～]\s*\d{1,3}(?!\d))/i.test(
+    /(?:\bcomplete\b|\bbatch\b|合集|全集|(?:^|[^\d])\d{1,3}\s*[-~～]\s*\d{1,3}(?!\d))/i.test(
       n,
     )
   )
@@ -405,8 +418,24 @@ function newShow(subject, episodes = []) {
   };
 }
 class Http {
-  constructor(transport) {
-    this.transport = transport;
+  constructor(transport, timeoutMs = 20000) {
+    this.timeoutMs = timeoutMs;
+    this.transport = this.withTimeout(transport);
+  }
+  withTimeout(transport) {
+    return async (request) => {
+      if (!this.timeoutMs || (!["GET", "HEAD", "PROPFIND"].includes(request.method || "GET") && !request.url.includes("/search/subjects")))
+        return transport(request);
+      const schedule = typeof setTimeout === "function" ? setTimeout : window.setTimeout.bind(window);
+      const cancel = typeof clearTimeout === "function" ? clearTimeout : window.clearTimeout.bind(window);
+      let timer;
+      try {
+        return await Promise.race([
+          transport(request),
+          new Promise((_, reject) => { timer = schedule(() => reject(Error("读取超时，可重试")), this.timeoutMs); }),
+        ]);
+      } finally { cancel(timer); }
+    };
   }
   async request(url, method = "GET", body, headers = {}) {
     const r = await this.transport({
@@ -488,7 +517,7 @@ class Bangumi {
 class QBittorrent {
   constructor(http, settings) {
     this.http = http;
-    this.settings = settings;
+    this.settings = { qbUrl: settings.qbUrl, qbUser: settings.qbUser, qbPassword: settings.qbPassword };
     this.cookie = "";
   }
   async login() {
@@ -777,6 +806,7 @@ module.exports = {
   VIDEO,
   defaults,
   folderName,
+  isLocalPath,
   qbConnectionMessage,
   revisionPolicy,
   esc,

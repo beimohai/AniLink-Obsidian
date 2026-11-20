@@ -12,6 +12,7 @@ Connections.prototype.display = function () {
   const save = async (key, value) => {
     s[key] = value;
     await p.persist();
+    if (["bgmMirror", "bgmMirrorWeb", "bgmMirrorApi", "bgmMirrorData"].includes(key)) p.background("更新番剧数据源", () => p.refreshDisplayMetadata());
     if (key === "rssDefaultQuality" || key === "rssDefaultLanguage" || key === "rssDefaultExclude") await p.applyRssDefaults();
   };
   const text = (name, key, description = "", password = false) => {
@@ -77,6 +78,13 @@ Connections.prototype.display = function () {
   choice("日志记录范围", "logScope", { all: "全量操作", errors: "错误信息" }, "all");
   choice("日志缓存时间", "logRetention", { session: "退出后清除", day: "一天", week: "七天", forever: "长期保留" }, "session");
 
+  toggle("启动通知", "startupNotifications", true);
+  toggle("播放准备通知", "playbackNotifications", true);
+  toggle("进度与状态通知", "progressNotifications", true);
+  toggle("下载完成通知", "downloadNotifications", false);
+  toggle("刷新完成通知", "refreshNotifications", true);
+  toggle("同步完成通知", "syncNotifications", true);
+
   heading("页面设置");
   choice("默认季度", "shelfQuarterDefault", { all: "全部季度", current: "当前季度", last: "上次设置" }, "all");
   choice("默认排序", "shelfSort", { ready: "最近更新", title: "名称", progress: "观看进度", added: "最近加入" }, "ready");
@@ -91,15 +99,21 @@ Connections.prototype.display = function () {
   heading("Bangumi");
   const token = text("访问令牌", "bgmToken", "用于同步收藏、进度与评价。", true);
   sideAction(token.row, "获取 Token", () => p.openWebsite("https://next.bgm.tv/demo/access-token"));
-  toggle("使用镜像网站", "bgmMirror", false, "网页和 API 使用 bangumi.lat 镜像。");
+  toggle("使用镜像网站", "bgmMirror", false, "使用 bangumi.lat 镜像。", (enabled) => { mirrorControls.hidden = !enabled; });
+  const mirrorControls = el.createDiv("al-settings-conditional");
+  mirrorControls.hidden = !s.bgmMirror;
+  for (const [name, key] of [["网页使用镜像网站", "bgmMirrorWeb"], ["API使用镜像网站", "bgmMirrorApi"], ["数据源使用镜像网站", "bgmMirrorData"]]) {
+    const control = toggle(name, key, true);
+    mirrorControls.appendChild(control.row.settingEl);
+  }
   text("自动同步间隔（分钟）", "bgmSyncMinutes", "0 为关闭定时同步。");
   toggle("启动时自动同步", "bgmSyncStartup", true);
   toggle("退出时自动同步", "bgmSyncExit", true);
   toggle("看到最后一集自动标记看过", "bgmAutoComplete", true);
   choice("冲突处理", "bgmConflictPolicy", { ask: "询问", remote: "以远端为准", local: "以本地为准" }, "ask");
   new Setting(el).setName("同步操作").setClass("al-sync-actions")
-    .addButton((b) => b.setButtonText("推送").onClick(() => p.run(() => p.sync())))
-    .addButton((b) => b.setButtonText("拉取").onClick(() => p.run(() => p.pullAccount())));
+    .addButton((b) => b.setButtonText("推送").onClick(() => p.run(async () => { await p.sync(); if (!p.state.syncError) p.notify("sync", "Bangumi 推送完成"); })))
+    .addButton((b) => b.setButtonText("拉取").onClick(() => p.run(async () => { await p.pullAccount(); p.notify("sync", "Bangumi 拉取完成"); })));
   for (const show of p.state.shows.filter((show) => show.remoteConflict))
     new Setting(el).setName(show.title).setDesc("本地与远端资料存在差异。")
       .addButton((b) => b.setButtonText("采用远端").onClick(() => p.run(() => p.resolveConflict(show, true))))
@@ -134,15 +148,49 @@ Connections.prototype.display = function () {
   );
 
   el.appendChild(startupSetting.settingEl);
-  toggle("下载完成通知", "downloadNotifications", true);
+  toggle("打开软件自动启动", "downloaderOnStartup", false);
   toggle("自动刷新 RSS 订阅", "autoRefresh", true, "", (value) => { polling.settingEl.hidden = !value; });
   const polling = text("自动刷新 RSS 订阅（分钟）", "rssRefreshMinutes").row;
   polling.settingEl.hidden = s.autoRefresh === false;
   toggle("有 v2 版本自动替换未看视频", "rssUpgradeUnwatched", false);
+  toggle("自动清除已完成的任务", "clearCompletedTasks", false, "自动移除下载器中已完成的任务，保留已下载文件。");
 
   heading("本地管理");
   const library = text("番剧库路径", "libraryRoot", "留空时默认使用 qBittorrent 下载目录。");
   picker(library.row, library.input, true);
+  toggle("多路径管理", "multiLibraryEnabled", false, "", (enabled) => { extraLibraries.hidden = !enabled; });
+  const extraLibraries = el.createDiv("al-settings-conditional");
+  extraLibraries.hidden = !s.multiLibraryEnabled;
+  const renderLibraries = () => {
+    extraLibraries.empty();
+    if (!Array.isArray(s.extraLibraryRoots)) s.extraLibraryRoots = [];
+    s.extraLibraryRoots.forEach((value, index) => {
+      const row = new Setting(extraLibraries).setName("附加番剧库路径");
+      row.settingEl.addClass("al-input-setting", "al-setting-has-side-action");
+      let input;
+      row.addText((control) => {
+        input = control.inputEl;
+        control.setValue(value).onChange((next) => p.run(async () => {
+          s.extraLibraryRoots[index] = next.trim();
+          await p.persist();
+        }));
+      });
+      picker(row, () => input, true);
+      row.addButton((control) => control.setButtonText("移除").onClick(() => p.run(async () => {
+        s.extraLibraryRoots.splice(index, 1);
+        await p.persist();
+        renderLibraries();
+      })));
+    });
+    new Setting(extraLibraries).setName("新增路径").addButton((control) => control.setButtonText("新增路径").onClick(() => p.run(async () => {
+      s.extraLibraryRoots.push("");
+      await p.persist();
+      renderLibraries();
+    })));
+  };
+  renderLibraries();
+
+  new Setting(el).setName("手动关联本地番剧").addButton((control) => control.setButtonText("关联 Bangumi 条目").onClick(() => p.localLibraryModal()));
   choice("点击看到这里", "cleanupMode", { none: "不清理", current: "清理当前文件", watched: "清理已看文件" }, s.cleanupAfterWatch === false ? "none" : "watched").settingEl.addClass("al-cleanup-setting");
   toggle("删除文件时同步删除种子", "deleteTorrentWithFiles", true);
 
@@ -201,7 +249,7 @@ Connections.prototype.display = function () {
   const dependencyStatus = new Setting(dependency).setName("依赖状态").setDesc("播放前校准弹幕所需的依赖。");
   const installers = dependency.createDiv("al-actions al-calibration-installers");
   const install = {
-    python: button(installers, "安装 Python", () => p.openWebsite("https://www.python.org/downloads/windows/")),
+    python: button(installers, "安装 Python", () => p.openWebsite(process.platform === "win32" ? "https://www.python.org/downloads/windows/" : "https://www.python.org/downloads/")),
     numpy: button(installers, "安装 NumPy", () => p.run(async () => {
       if (!(await p.calibrationDependencies()).python) throw Error("未找到 Python，请先安装 Python 后重新打开 Obsidian");
       await p.installCalibrationNumpy();
@@ -296,7 +344,7 @@ Connections.prototype.display = function () {
   const logo = new DOMParser().parseFromString(ANI_ICON, "image/svg+xml").documentElement;
   footer.createEl("a", { cls: "al-plugin-footer-logo", attr: { href: "https://github.com/beimohai/AniLink-Obsidian", target: "_blank" } }).appendChild(document.importNode(logo, true));
   const details = footer.createDiv("al-plugin-footer-details");
-  for (const [label, url] of [["AniLink", "https://github.com/beimohai/AniLink-Obsidian"], ["作者：北漠海", "https://space.bilibili.com/1065768987"], ["版本号：" + p.manifest.version, "https://github.com/beimohai/AniLink-Obsidian/releases"], ["更新日期：2026-11-16", "https://github.com/beimohai/AniLink-Obsidian/releases"]]) details.createEl("a", { text: label, attr: { href: url, target: "_blank" } });
+  for (const [label, url] of [["AniLink", "https://github.com/beimohai/AniLink-Obsidian"], ["作者：北漠海", "https://space.bilibili.com/1065768987"], ["版本号：" + p.manifest.version, "https://github.com/beimohai/AniLink-Obsidian/releases"], ["更新日期：" + ANI_RELEASE_DATE, "https://github.com/beimohai/AniLink-Obsidian/releases"]]) details.createEl("a", { text: label, attr: { href: url, target: "_blank" } });
   footer.createDiv({ text: "本项目基于 MIT License 开源", cls: "al-plugin-footer-license" });
   const authorLinks = el.createDiv("al-author-links");
   for (const [name, label, icon, url] of [

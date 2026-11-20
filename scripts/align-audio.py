@@ -41,7 +41,7 @@ def align_spectral(source, target, rate=2000):
         return max(clusters, key=lambda group: (len(group), sum(anchor['score'] for anchor in group)), default=[])
     matches = [match(fraction) for fraction in INITIAL_SAMPLE_FRACTIONS]
     accepted = consensus(matches)
-    retried = len(accepted) < 3 or np.median([anchor["score"] for anchor in accepted]) < .6
+    retried = bool(len(accepted) < 3 or np.median([anchor["score"] for anchor in accepted]) < .6)
     if retried:
         # One extra batch only. A failed result exits instead of scheduling another retry.
         matches.extend(match(fraction) for fraction in RETRY_SAMPLE_FRACTIONS)

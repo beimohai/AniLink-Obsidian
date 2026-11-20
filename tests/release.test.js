@@ -58,7 +58,7 @@ test('build output is identical with LF and CRLF source inputs', (t) => {
   fs.rmSync(root, { recursive: true, force: true });
  });
  for (const name of ['src', 'scripts', 'assets/branding']) fs.cpSync(name, path.join(root, name), { recursive: true });
- for (const name of ['build.js', 'core.js']) fs.copyFileSync(name, path.join(root, name));
+ for (const name of ['build.js', 'core.js', 'package.json']) fs.copyFileSync(name, path.join(root, name));
  for (const name of ['assets/branding/anilink-icon-white.svg', 'scripts/focus-player.ps1']) {
   const file = path.join(root, name);
   fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace(/\r\n?/g, '\n'));
@@ -72,4 +72,25 @@ test('build output is identical with LF and CRLF source inputs', (t) => {
  cp.execFileSync(process.execPath, ['build.js'], { cwd: root });
  assert.deepEqual(fs.readFileSync(path.join(root, 'main.js')), lf);
  assert.deepEqual(fs.readFileSync('main.js'), lf);
+});
+
+test('downloader launch remains visible and scheduler recovers abandoned ownership', () => {
+ const ux = fs.readFileSync('src/ux.js', 'utf8');
+ const open = ux.slice(ux.indexOf('AniLink.prototype.openDownloader ='), ux.indexOf('AniLink.prototype.prepareSchedulerScripts ='));
+ assert.match(open, /windowsHide: false/);
+ const scheduler = fs.readFileSync('scripts/download-scheduler.ps1', 'utf8');
+ assert.match(scheduler, /Start-Process -FilePath \$config.exe -ArgumentList \$args -WindowStyle Minimized/);
+ assert.match(scheduler, /AbandonedMutexException/);
+ const installer = fs.readFileSync('scripts/install-scheduler.ps1', 'utf8');
+ assert.match(installer, /-Once/);
+});
+
+test('release years before the episode separator are not episode ranges', () => {
+ const C = require('../core');
+ const filename = '[Nekomoe kissaten&LoliHouse] Ranma ½ 2024 - 31 [WebRip 1080p HEVC-10bit AAC ASSx2].mkv';
+ assert.equal(C.parseEpisode(filename), 31);
+ const show = { subscription: { numbering: 'absolute' }, episodes: [{ id: 7, type: 0, sort: 31, ep: 7 }] };
+ assert.equal(C.resolveEpisode(show, filename).id, 7);
+ assert.equal(C.parseEpisode('Ranma 2024 - 25-36 [1080p].mkv'), null);
+ assert.equal(C.parseEpisode('Anime [01-12] [1080p].mkv'), null);
 });

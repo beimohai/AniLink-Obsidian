@@ -21,7 +21,7 @@ AniLink.prototype.syncBiliFilters = async function () {
   this.state.settings.biliFilterRules = response.data.rule.filter((rule) => [0, 1, 2].includes(rule.type));
   this.state.settings.biliFilterRevision = (this.state.settings.biliFilterRevision || 0) + 1;
   await this.persist();
-  new Notice("已同步 " + this.state.settings.biliFilterRules.length + " 条屏蔽规则");
+  this.notify("sync", "已同步 " + this.state.settings.biliFilterRules.length + " 条屏蔽规则");
 };
 AniLink.prototype.filterDanmaku = function (document) {
   for (const node of document.querySelectorAll("d")) {
@@ -85,6 +85,8 @@ AniLink.prototype.refreshRssSubscriptions = async function () {
       await this.qb().call("rss/refreshItem", { itemPath: C.feedPath(show) });
       if (this.installSubscription && (show.subscription.appliedRevisionPolicy !== C.revisionPolicy(this.state.settings, show.subscription)))
         await this.installSubscription(show, show.subscription);
+      else if ((show.subscription.backend || this.state.settings?.defaultBackend || "native") === "native")
+        await this.qb().setRule(show);
     }
     catch (error) { C.record(this.state, `${show.title} · RSS 刷新失败：${error.message}`); }
   }
@@ -96,11 +98,11 @@ AniLink.prototype.focusLocalPlayer = async function () {
   await new Promise((resolve, reject) => execFile("powershell.exe", ["-NoProfile", "-WindowStyle", "Hidden", "-File", script, "-Executable", this.state.settings.playerExe], { windowsHide: true }, (error) => error ? reject(error) : resolve()));
 };
 AniLink.prototype.play = async function (show, episode, file) {
-  if (this.playPreparing) { new Notice("正在准备播放，请稍候"); return; }
+  if (this.playPreparing) { this.notify("playback", "正在准备播放，请稍候"); return; }
   this.playPreparing = true;
   const buttons = [...document.querySelectorAll(".al-root button")].filter((button) => button.textContent === "播放");
   for (const button of buttons) { button.disabled = true; button.textContent = "准备弹幕…"; }
-  const notice = new Notice("正在匹配来源、抓取并校准弹幕…", 0);
+  const notice = this.notify("playback", "正在匹配来源、抓取并校准弹幕…", 0);
   try {
   const settings = this.state.settings;
   if (settings.remoteEnabled && settings.networkPlayer && settings.networkPlayer !== "local") {
@@ -260,6 +262,7 @@ AniLink.prototype.refresh = async function (manual) {
       await this.persist();
     }
   }
+  if (!this.state.settings.autoRefresh) return result;
   if (Date.now() - (this.lastRevisionCheck || 0) < 600000) return result;
   this.lastRevisionCheck = Date.now();
   for (const show of this.state.shows.filter((show) => show.subscription.enabled && (["latest", "upgrade"].includes(C.revisionPolicy(this.state.settings, show.subscription)) || show.subscription.appliedRevisionPolicy !== C.revisionPolicy(this.state.settings, show.subscription)))) {
@@ -276,7 +279,7 @@ AniLink.prototype.refresh = async function (manual) {
 const settingsOpenWebsite = AniLink.prototype.openWebsite;
 AniLink.prototype.openWebsite = function (value) {
   const url = new URL(value);
-  if (this.state.settings.bgmMirror && ["bgm.tv", "www.bgm.tv"].includes(url.hostname))
+  if (this.state.settings.bgmMirror && this.state.settings.bgmMirrorWeb !== false && ["bgm.tv", "www.bgm.tv"].includes(url.hostname))
     url.hostname = "bangumi.lat";
   return settingsOpenWebsite.call(this, url.href);
 };
@@ -284,7 +287,7 @@ AniLink.prototype.openWebsite = function (value) {
 const settingsDetail = Dashboard.prototype.renderDetail;
 Dashboard.prototype.renderDetail = function (el, show) {
   settingsDetail.call(this, el, show);
-  if (this.p.state.settings.bgmMirror) {
+  if (this.p.state.settings.bgmMirror && this.p.state.settings.bgmMirrorWeb !== false) {
     for (const guest of el.querySelectorAll("webview")) {
       const src = guest.getAttribute("src");
       if (src?.startsWith("https://bgm.tv/")) guest.setAttribute("src", src.replace("https://bgm.tv/", "https://bangumi.lat/"));
@@ -348,7 +351,9 @@ Dashboard.prototype.renderCards = function (cards) {
 
 // Retain existing library folders without renaming or moving user files.
 AniLink.prototype.showFolder = async function (show, root) {
-  if (show.subscription.savePath) return show.subscription.savePath;
+  const local = ["127.0.0.1", "localhost", "::1", "[::1]"].includes(new URL(this.state.settings.qbUrl || "http://127.0.0.1").hostname);
+  if (show.subscription.savePath && (!local || C.isLocalPath(show.subscription.savePath))) return show.subscription.savePath;
+  if (local && !C.isLocalPath(root)) root = path.join(os.homedir(), "Videos", "Anime");
   const target = path.join(root, C.folderName(show.title, show.id));
   const oldName = show.title.replace(/[<>:"/\\|?*]/g, "_");
   const legacy = path.resolve(root, oldName);
@@ -357,4 +362,21 @@ AniLink.prototype.showFolder = async function (show, root) {
     try { if ((await fs.stat(legacy)).isDirectory()) return legacy; } catch { /* Create a portable folder for new downloads. */ }
   }
   return target;
+};
+
+// Keep the installed login helper in sync with the bundled fixes on upgrades.
+const schedulerUpgradeOnload = AniLink.prototype.onload;
+AniLink.prototype.onload = async function () {
+  await schedulerUpgradeOnload.call(this);
+  this.notify("startup", "AniLink 已加载");
+  if (this.state.settings.downloaderOnStartup)
+    this.background("启动下载器", async () => {
+      await this.ensureDownloader({ allowStart: true });
+      await this.refreshRssSubscriptions();
+      await this.armIdleShutdown();
+    });
+  if (process.platform !== "win32") return;
+  const shortcut = path.join(process.env.APPDATA || "", "Microsoft", "Windows", "Start Menu", "Programs", "Startup", "AniLink-downloads.lnk");
+  if (fsSync.existsSync(shortcut))
+    this.background("更新开机调度器", () => this.configureLoginScheduler(true, true));
 };

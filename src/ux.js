@@ -36,19 +36,24 @@ AniLink.prototype.openWebsite = async function (value) {
     }
     const leaf = this.app.workspace.getLeaf("tab");
     try {
-      await leaf.setViewState({
-        type: "webviewer",
-        state: { url: url.href },
-        active: true,
-      });
+      let timer;
+      try {
+        await Promise.race([
+          leaf.setViewState({ type: "webviewer", state: { url: url.href }, active: true }),
+          new Promise((_, reject) => { timer = window.setTimeout(() => reject(Error("Web viewer 打开超时")), 10000); }),
+        ]);
+      } finally { window.clearTimeout(timer); }
     } catch (e) {
       leaf.detach();
-      throw e;
+      C.record(this.state, "Web viewer 打开失败：" + e.message);
+      await this.persist();
+      new Notice("内置网页打开失败，已转到默认浏览器");
+      await shell.openExternal(url.href);
+      return;
     }
     await this.app.workspace.revealLeaf(leaf);
   } catch (e) {
-    if (!isConnectionFailure(e.message))
-      throw Error(`Obsidian Web viewer 未能打开页面：${String(e.message || "未知错误")}`);
+    throw Error(`网页未能打开：${String(e.message || "未知错误")}`);
   }
 };
 AniLink.prototype.openFanku = async function (subject) {
@@ -499,10 +504,10 @@ AniLink.prototype.scanLocalVideos = async function () {
     return;
   }
   for (const s of this.state.shows) {
+    if (s.status === 0) continue;
     for (const e of s.episodes)
       e.files = (e.files || []).filter((f) => f.localExists !== false);
-    const root = await this.showFolder(s, this.state.settings.libraryRoot || this.state.settings.downloadRoot || "");
-    if (!path.isAbsolute(root)) continue;
+    const directories = await this.libraryDirectories(s);
     const walk = async (dir, depth) => {
       let entries;
       try {
@@ -520,7 +525,7 @@ AniLink.prototype.scanLocalVideos = async function () {
         const e = C.resolveEpisode(s, item.name);
         if (
           !e ||
-          e.files?.some((f) => path.normalize(f.path) === path.normalize(full))
+          e.files?.some((f) => f.path && path.normalize(f.path) === path.normalize(full))
         )
           continue;
         const st = await fs.stat(full);
@@ -538,7 +543,7 @@ AniLink.prototype.scanLocalVideos = async function () {
         });
       }
     };
-    await walk(root, 0);
+    for (const directory of directories) await walk(directory, 0);
   }
 };
 const diskRefresh = AniLink.prototype.refresh;
@@ -598,17 +603,36 @@ AniLink.prototype.play = async function (s, e, f) {
   }
   return matchedPlay.call(this, s, e, f);
 };
-AniLink.prototype.openDownloader = async function () {
+AniLink.prototype.openDownloader = async function ({ refreshSubscriptions = true } = {}) {
   const exe = this.state.settings.qbExe;
   if(!exe) throw Error("请在连接配置中选择qBittorrent程序路径");
   await fs.access(exe);
+  const wasRunning = await this.qb().call("app/version").then(() => true, () => false);
   const args = this.state.settings.qbProfile ? ["--profile="+this.state.settings.qbProfile,"--no-splash"] : ["--no-splash"];
   await new Promise((resolve, reject) => {
     const macApplication = process.platform === "darwin" && exe.endsWith(".app");
-    const child = execFile(macApplication ? "open" : exe, macApplication ? ["-a", exe, "--args", ...args] : args, { windowsHide: true }, () => {});
+    const child = execFile(macApplication ? "open" : exe, macApplication ? ["-a", exe, "--args", ...args] : args, { windowsHide: false }, () => {});
     child.once("error", reject);
     child.once("spawn", resolve);
   });
+  if (!wasRunning) this.downloaderStartedByAniLink = true;
+  if (refreshSubscriptions) {
+    await this.waitForDownloader();
+    await this.refreshRssSubscriptions();
+    await this.armIdleShutdown();
+  }
+};
+AniLink.prototype.waitForDownloader = async function () {
+  for (let i = 0; i < 60; i++) {
+    try {
+      await this.qb().call("app/version");
+      return;
+    } catch (error) {
+      if (!/ERR_CONNECTION_REFUSED|ECONNREFUSED/.test(error.message)) throw error;
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 500));
+  }
+  throw Error("下载器启动超时，请检查 Web UI 地址");
 };
 AniLink.prototype.prepareSchedulerScripts = async function (root) {
   for (const [name, content] of Object.entries(this.bundledSchedulerScripts))
@@ -622,7 +646,7 @@ AniLink.prototype.runScheduler = async function (args = []) {
   if (!exe) throw Error("请先选择 qBittorrent 程序路径");
   await this.prepareSchedulerScripts(root);
   await fs.access(exe);
-  await fs.writeFile(config, JSON.stringify({ dataFile: this.deviceFile, exe, profile: this.state.settings.qbProfile || "" }), "utf8");
+  await fs.writeFile(config, JSON.stringify({ dataFile: this.deviceFile, deviceSettingsFile: this.deviceIdentityFile, exe, profile: this.state.settings.qbProfile || "" }), "utf8");
   const powerShell = path.join(process.env.SystemRoot || "C:/Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
   await new Promise((resolve, reject) => {
     const child = execFile(powerShell, ["-NoProfile", "-WindowStyle", "Hidden", "-File", script, ...args], { windowsHide: true }, () => {});
@@ -630,7 +654,7 @@ AniLink.prototype.runScheduler = async function (args = []) {
     child.once("spawn", resolve);
   });
 };
-AniLink.prototype.configureLoginScheduler = async function (enable) {
+AniLink.prototype.configureLoginScheduler = async function (enable, automatic = false) {
   const root = path.join(this.app.vault.adapter.getBasePath(), this.manifest.dir);
   const script = path.join(root, "install-scheduler.ps1");
   const exe = this.state.settings.qbExe;
@@ -643,10 +667,11 @@ AniLink.prototype.configureLoginScheduler = async function (enable) {
   const args = ["-NoProfile", "-WindowStyle", "Hidden", "-File", script];
   if (enable) {
     args.push("-PluginDataPath", this.deviceFile, "-QbExe", exe);
+    if (this.deviceIdentityFile) args.push("-DeviceSettingsPath", this.deviceIdentityFile);
     if (this.state.settings.qbProfile) args.push("-QbProfile", this.state.settings.qbProfile);
   } else args.push("-Uninstall");
   await new Promise((resolve, reject) => execFile(powerShell, args, { windowsHide: true }, (error) => error ? reject(error) : resolve()));
-  new Notice(enable ? "已启用 AniLink 登录检查" : "已停用 AniLink 登录检查");
+  if (!automatic) new Notice(enable ? "已启用 AniLink 登录检查" : "已停用 AniLink 登录检查");
 };
 AniLink.prototype.armIdleShutdown = async function () {
   if (typeof process !== "undefined" && process.platform !== "win32") return;
@@ -876,9 +901,10 @@ Dashboard.prototype.renderDetail = function (el, s) {
   const wrap = bar.createDiv("al-header-status");
   const tabs = wrap.createDiv("al-status-buttons");
   bar.insertBefore(wrap, opener);
+  const viewport = panel.createDiv("al-preview-viewport");
   const pages = {
     trend: { url: `https://netaba.re/subject/${s.id}` },
-    bangumi: { url: `https://${this.p.state.settings.bgmMirror ? "bangumi.lat" : "bgm.tv"}/subject/${s.id}` },
+    bangumi: { url: `https://${this.p.state.settings.bgmMirror && this.p.state.settings.bgmMirrorWeb !== false ? "bangumi.lat" : "bgm.tv"}/subject/${s.id}` },
     fanku: {
       url: s.fankuUrl || null,
     },
@@ -886,22 +912,32 @@ Dashboard.prototype.renderDetail = function (el, s) {
   let active =
     this.informationActive || this.p.state.settings.informationPage || "none";
   let navigation = 0;
-  for (const guest of panel.querySelectorAll("webview")) guest.hidden = true;
+  const updateTabs = () => {
+    for (const b of tabs.children) {
+      b.classList.toggle("al-active", b.dataset.page === active);
+      b.setAttribute("aria-pressed", String(b.dataset.page === active));
+    }
+  };
+  for (const guest of panel.querySelectorAll("webview, iframe")) guest.hidden = true;
   let activate = async (key) => {
     const revision = ++navigation;
     active = key;
     this.informationActive = key;
-    for (const guest of panel.querySelectorAll("webview")) guest.hidden = true;
+    for (const guest of panel.querySelectorAll("webview, iframe")) guest.hidden = true;
     for (const loading of panel.querySelectorAll(".al-web-loading"))
       loading.hidden = true;
     if (key === "none") {
-      for (const b of tabs.children) {
-        b.classList.toggle("al-active", b.dataset.page === key);
-        b.setAttribute("aria-pressed", String(b.dataset.page === key));
-      }
+      updateTabs();
       return;
     }
     const page = pages[key];
+    if (Platform.isMobile) {
+      panel.addClass("al-mobile-information");
+      page.loading ||= viewport.createDiv({ cls: "al-web-loading", text: "点击上方“打开网页”查看番剧信息。" });
+      page.loading.hidden = false;
+      updateTabs();
+      return;
+    }
     if (!page.url) {
       try {
         page.url = await this.p.resolveFanku(s);
@@ -911,67 +947,34 @@ Dashboard.prototype.renderDetail = function (el, s) {
       }
     }
     if (!panel.isConnected || revision !== navigation) return;
+    if (page.failed && page.guest) {
+      page.dispose?.();
+      page.guest.remove();
+      page.loading?.remove();
+      page.guest = null;
+      page.ready = false;
+      page.failed = false;
+    }
     if (!page.guest) {
-      page.loading = panel.createDiv({
+      page.loading = viewport.createDiv({
         cls: "al-web-loading",
         text: "加载中…",
       });
-      page.guest = panel.createEl(Platform.isMobile ? "iframe" : "webview", {
-        attr: { src: page.url, partition: "persist:anilink-preview", allowpopups: "true" },
+      page.guest = viewport.createEl(Platform.isMobile ? "iframe" : "webview", {
+        attr: { partition: "anilink-preview-v2", allowpopups: "true", useragent: navigator.userAgent.replace(/\s(?:obsidian|Electron)\/[^\s]+/gi, "") },
       });
       page.guest.addClass("al-trend-frame");
-      if (Platform.isMobile) {
-        page.guest.addEventListener("load", () => { page.ready = true; page.loading.hidden = true; });
-        page.guest.addEventListener("error", () => {
-          page.failed = true;
-          page.loading.textContent = "预览加载失败，请点击打开网页。";
-          page.loading.hidden = active !== key;
-        });
-      }
-      page.guest.addEventListener("did-start-loading", () => {
-        page.failed = false;
-        page.loading.textContent = "加载中…";
-        page.loading.hidden = active !== key || !!page.ready;
-      });
-      page.guest.addEventListener("did-stop-loading", () => {
-        if (page.failed) return;
-        page.ready = true;
-        page.loading.hidden = true;
-        page.guest.classList.remove("al-web-pending");
-      });
-      page.guest.addEventListener("dom-ready", () => {
-        if (page.failed) return;
-        page.ready = true;
-        page.loading.hidden = true;
-      });
-      const loadingTimeout = window.setTimeout(() => {
-        if (!page.guest.isConnected || page.ready || page.failed) return;
-        page.loading.textContent = "网页加载超时，可点击打开网页查看。";
-      }, 30000);
-      this.register(() => window.clearTimeout(loadingTimeout));
-      page.guest.addEventListener("did-fail-load", (event) => {
-        if (event.errorCode !== -3 && event.isMainFrame !== false) {
-          page.failed = true;
-          page.ready = false;
-          page.loading.hidden = active !== key;
-          page.loading.textContent = "加载失败 " + event.errorCode + " " + event.errorDescription + " · 点击打开网页查看";
-          C.record(
-            this.p.state,
-            "网页加载失败 " + page.url + " " + event.errorDescription,
-          );
-          this.p.persist();
-        }
-      });
+      this.trendGuest = page.guest;
+      this.trendSubject = s.id;
+      this.bindInformationPreview(page, () => active === key, () => activate(key));
+      page.guest.setAttribute("src", page.url);
     }
     active = key;
     for (const [k, value] of Object.entries(pages)) {
       if (value.guest) value.guest.hidden = k !== key;
-      if (value.loading && k !== key) value.loading.hidden = true;
+      if (value.loading) value.loading.hidden = k !== key || !!value.ready;
     }
-    for (const b of tabs.children) {
-      b.classList.toggle("al-active", b.dataset.page === key);
-      b.setAttribute("aria-pressed", String(b.dataset.page === key));
-    }
+    updateTabs();
   };
   for (const [key, label] of [
     ["bangumi", "Bangumi"],
@@ -982,8 +985,8 @@ Dashboard.prototype.renderDetail = function (el, s) {
       tabs,
       label,
       () => {
-        if (key === active && key !== "none") activate("none");
-        else activate(key);
+        const action = key === active && key !== "none" && !pages[key].failed ? "none" : key;
+        activate(action).catch((error) => new Notice(error.message));
       },
       key === active ? "al-active" : "",
     );
@@ -992,12 +995,11 @@ Dashboard.prototype.renderDetail = function (el, s) {
   opener.onclick = () => this.p.run(async () => {
     const page = pages[active === "none" ? "bangumi" : active];
     const url = page.url || await this.p.resolveFanku(s);
-    if (Platform.isMobile) await this.p.openWebsite(url);
-    else await shell.openExternal(url);
+    await this.p.openWebsite(url);
   });
   bar.insertBefore(opener, wrap);
   opener.addClass("al-link");
-  const empty = panel.createEl("p", {
+  const empty = viewport.createEl("p", {
     text: "未加载预览。",
     cls: "al-muted al-information-empty",
   });
@@ -1006,7 +1008,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
     empty.hidden = key !== "none";
     return activateInformation(key);
   };
-  activate(active);
+  activate(active).catch((error) => new Notice(error.message));
   for (const b of el.querySelectorAll(
     ".al-section-review > .al-actions button",
   ))
@@ -1281,58 +1283,6 @@ Dashboard.prototype.render = function () {
 };
 
 
-const loadingDetail = Dashboard.prototype.renderDetail;
-Dashboard.prototype.renderDetail = function (el, show) {
-  loadingDetail.call(this, el, show);
-  if (this.renderingSections) return;
-  const panel = el.querySelector(".al-section-trend");
-  for (const guest of panel?.querySelectorAll("webview") || []) {
-    if (guest.dataset.loadingBound) continue;
-    guest.dataset.loadingBound = "1";
-    const update = (loading) => {
-      guest.classList.toggle("al-web-pending", loading);
-    };
-    guest.addEventListener("did-start-loading", () => update(true));
-    guest.addEventListener("dom-ready", () => update(false));
-    guest.addEventListener("did-stop-loading", () => update(false));
-    guest.addEventListener("did-fail-load", () => update(false));
-    try {
-      update(guest.isLoading());
-    } catch {
-      update(true);
-    }
-  }
-};
-const diagnosedDetail = Dashboard.prototype.renderDetail;
-Dashboard.prototype.renderDetail = function (el, show) {
-  diagnosedDetail.call(this, el, show);
-  if (this.renderingSections) return;
-  for (const guest of el.querySelectorAll("webview")) {
-    if (guest.dataset.diagnosed) continue;
-    guest.dataset.diagnosed = "1";
-    const report = (message) => {
-      C.record(this.p.state, "网页 " + guest.src + " " + message);
-      this.p.persist();
-    };
-    guest.addEventListener("render-process-gone", (e) =>
-      report("进程退出 " + e.reason),
-    );
-    guest.addEventListener("did-fail-load", (e) => {
-      if (e.errorCode !== -3)
-        report("加载失败 " + e.errorCode + " " + e.errorDescription);
-    });
-    const timer = window.setTimeout(() => {
-      if (!guest.isConnected) return;
-      try {
-        if (!guest.getURL() || guest.isLoading()) report("加载超过30秒");
-      } catch (e) {
-        report(e.message);
-      }
-    }, 30000);
-    this.register(() => window.clearTimeout(timer));
-  }
-};
-
 const visibleLoadingDetail = Dashboard.prototype.renderDetail;
 Dashboard.prototype.renderDetail = function (el, show) {
   visibleLoadingDetail.call(this, el, show);
@@ -1341,26 +1291,8 @@ Dashboard.prototype.renderDetail = function (el, show) {
   panel.dataset.visibleLoading = "1";
   const update = () => {
     if (!panel.isConnected) return;
-    const guest = [...panel.querySelectorAll("webview")].find((g) => !g.hidden);
-    if (!guest) return;
-    const bounds = guest.getBoundingClientRect(),
-      viewport = el.querySelector(".al-flat-workspace").getBoundingClientRect();
-    const origin = panel.getBoundingClientRect();
-    const top = Math.max(
-        bounds.top,
-        viewport.top,
-        panel.querySelector(":scope > .al-actions").getBoundingClientRect()
-          .bottom,
-      ),
-      bottom = Math.min(bounds.bottom, viewport.bottom);
-    for (const overlay of panel.querySelectorAll(".al-web-loading")) {
-      Object.assign(overlay.style, {
-        left: bounds.left - origin.left + "px",
-        top: top - origin.top + "px",
-        width: bounds.width + "px",
-        height: Math.max(0, bottom - top) + "px",
-      });
-    }
+    const bar = panel.querySelector(":scope > .al-actions");
+    if (bar) panel.style.setProperty("--al-preview-toolbar-height", bar.offsetHeight + "px");
   };
   const body = el.querySelector(".al-flat-workspace");
   body.addEventListener("scroll", update, { passive: true });
@@ -1405,10 +1337,7 @@ const browserSessionOnload = AniLink.prototype.onload;
 AniLink.prototype.onload = async function () {
   await browserSessionOnload.call(this);
   const original = this.http.transport;
-  this.http.transport = async (options) => {
-    const host = new URL(options.url).hostname;
-    if (host !== "bilibili.com" && !host.endsWith(".bilibili.com"))
-      return original(options);
+  const browserFetch = this.http.withTimeout(async (options) => {
     const session = require("electron").remote.session.defaultSession;
     const response = await session.fetch(options.url, {
       method: options.method,
@@ -1421,6 +1350,10 @@ AniLink.prototype.onload = async function () {
       text: await response.text(),
       headers: {},
     };
+  });
+  this.http.transport = async (options) => {
+    const host = new URL(options.url).hostname;
+    return host === "bilibili.com" || host.endsWith(".bilibili.com") ? browserFetch(options) : original(options);
   };
 };
 
@@ -1462,7 +1395,7 @@ Dashboard.prototype.render = function () {
     panel.style.maxHeight = height + "px";
 
     panel.style.setProperty("height", height + "px");
-    for (const guest of panel.querySelectorAll("webview"))
+    for (const guest of panel.querySelectorAll("webview, iframe"))
       guest.style.setProperty("height", Math.max(120, height - 70) + "px");
   };
   if (!this.informationSizeObserver) {
@@ -1518,6 +1451,22 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
       }
     } catch (error) {
       C.record(this.state, `${show.title} 第${number}集 · 搜索词 ${name} · UP ${[...uploaders].join(",")}：B站检索失败 ${error.message}`);
+    }
+  }
+  const hasNamedCandidate = [...candidates.values()].some((candidate) =>
+    C.biliTitleMatches(show, new DOMParser().parseFromString(candidate.title, "text/html").body.textContent));
+  if (!hasNamedCandidate) {
+    for (const name of C.biliNames(show).slice(0, 3)) {
+      try {
+        const response = await this.http.json(
+          "https://api.bilibili.com/x/web-interface/search/type?search_type=video&keyword=" + encodeURIComponent(name) + "&page=1",
+          "GET", undefined, { Referer: "https://www.bilibili.com/" });
+        if (response.code !== 0) throw Error(response.message || String(response.code));
+        for (const candidate of response.data?.result || [])
+          if (uploaders.has(Number(candidate.mid))) candidates.set(candidate.bvid, candidate);
+      } catch (error) {
+        C.record(this.state, `${show.title} 第${number}集 · 备用搜索 ${name} 失败：${error.message}`);
+      }
     }
   }
   const sources = [],
@@ -1716,7 +1665,7 @@ Dashboard.prototype.renderDetail = function (el, show) {
   if (!panel) return;
   const bar = panel.querySelector(":scope>.al-actions");
   const height = panel.clientHeight - bar.offsetHeight - 32;
-  for (const guest of panel.querySelectorAll("webview"))
+  for (const guest of panel.querySelectorAll("webview, iframe"))
     guest.style.setProperty("height", Math.max(100, height) + "px");
 };
 AniLink.prototype.cleanupShow = async function (show) {
@@ -2116,7 +2065,7 @@ AniLink.prototype.settingsModal = function () {
     for (const [key, control] of Object.entries(installButtons)) control.hidden = result[key];
     return result;
   };
-  installButtons.python = button(installers, "安装 Python", () => this.openWebsite("https://www.python.org/downloads/windows/"));
+  installButtons.python = button(installers, "安装 Python", () => this.openWebsite(process.platform === "win32" ? "https://www.python.org/downloads/windows/" : "https://www.python.org/downloads/"));
   installButtons.numpy = button(installers, "安装 NumPy", () =>
     this.run(async () => {
       if (!(await this.calibrationDependencies()).python)
@@ -2130,37 +2079,48 @@ AniLink.prototype.settingsModal = function () {
   button(check, "检查依赖", () => this.run(inspect));
   inspect().catch(() => status.setText("无法检查依赖"));
 };
+AniLink.prototype.calibrationPython = async function () {
+  const candidates = process.platform === "win32" ? ["python", "python3"] : ["python3", "python"];
+  for (const program of candidates) {
+    const found = await new Promise((resolve) => execFile(program, ["--version"], { windowsHide: true, timeout: 10000 }, (error) => resolve(!error)));
+    if (found) return program;
+  }
+  throw Error("未找到 Python，请安装后重新检查依赖");
+};
 AniLink.prototype.calibrationDependencies = async function () {
   const probe = (program, args) =>
-    new Promise((resolve) => execFile(program, args, { windowsHide: true }, (error) => resolve(!error)));
-  const [python, numpy, ffmpeg] = await Promise.all([
-    probe("python", ["--version"]),
-    probe("python", ["-c", "import numpy"]),
+    new Promise((resolve) => execFile(program, args, { windowsHide: true, timeout: 10000 }, (error) => resolve(!error)));
+  const program = await this.calibrationPython().catch(() => null);
+  const [numpy, ffmpeg] = await Promise.all([
+    program ? probe(program, ["-c", "import numpy"]) : false,
     probe("ffmpeg", ["-version"]),
   ]);
-  return { python, numpy, ffmpeg };
+  return { python: !!program, numpy, ffmpeg };
 };
-AniLink.prototype.installCalibrationNumpy = () =>
-  new Promise((resolve, reject) =>
+AniLink.prototype.installCalibrationNumpy = async function () {
+  const program = await this.calibrationPython();
+  return new Promise((resolve, reject) =>
     execFile(
-      "python",
+      program,
       ["-m", "pip", "install", "--user", "numpy"],
       { windowsHide: true, timeout: 120000, maxBuffer: 1024 * 1024 },
       (error, _stdout, stderr) =>
         error ? reject(Error(String(stderr || "NumPy 安装失败"))) : resolve(),
     ),
   );
+};
 
 AniLink.prototype.alignSourceAudio = async function (source, target) {
+  const program = await this.calibrationPython();
   const script = path.join(
-    this.app.vault.adapter.basePath,
+    this.app.vault.adapter.getBasePath(),
     this.manifest.dir,
     "align-audio.py",
   );
   await fs.writeFile(script, this.bundledAudioScript, "utf8");
   return new Promise((resolve, reject) =>
     execFile(
-      "python",
+      program,
       [script, source, target],
       { windowsHide: true, timeout: 120000, maxBuffer: 1024 * 1024 },
       (error, stdout, stderr) => {
@@ -2196,19 +2156,9 @@ AniLink.prototype.ensureDownloader = async function ({ allowStart = true } = {})
     throw Error("远程下载器不可达，请检查服务");
   if (!this.downloaderStarting)
     this.downloaderStarting = (async () => {
-      await this.openDownloader();
+      await this.openDownloader({ refreshSubscriptions: false });
       this.downloaderStartedByAniLink = true;
-      for (let i = 0; i < 30; i++) {
-        await new Promise((r) => window.setTimeout(r, 500));
-        try {
-          await this.qb().call("app/version");
-          return;
-        } catch (error) {
-          if (!/ERR_CONNECTION_REFUSED|ECONNREFUSED/.test(error.message))
-            throw error;
-        }
-      }
-      throw Error("下载器启动超时，请检查Web UI地址");
+      await this.waitForDownloader();
     })().finally(() => {
       this.downloaderStarting = null;
     });
@@ -2223,9 +2173,24 @@ Dashboard.prototype.render = function () {
   responsiveDashboardRender.call(this);
   const root = this.contentEl;
   root.querySelectorAll(".al-mobile-back").forEach((back) => back.remove());
-  root.classList.toggle("al-mobile-detail", this.mobilePane === "detail");
+  const compact = Platform?.isMobile || root.clientWidth <= 620;
+  if (compact && !Platform?.isMobile && !this.mobilePane && this.selected && this.p.state.settings.openFirstShow)
+    this.mobilePane = "detail";
+  root.classList.toggle("al-mobile-detail", compact && this.mobilePane === "detail");
+  if (!Platform?.isMobile && !this.masterDetailObserver) {
+    this.masterDetailCompact = compact;
+    this.masterDetailObserver = new ResizeObserver(() => {
+      const next = root.clientWidth <= 620;
+      if (root.isConnected && next !== this.masterDetailCompact) {
+        this.masterDetailCompact = next;
+        this.render();
+      }
+    });
+    this.masterDetailObserver.observe(root);
+    this.register(() => this.masterDetailObserver.disconnect());
+  }
   const detail = root.querySelector(".al-detail");
-  if (!Platform?.isMobile || !detail || this.mobilePane !== "detail") return;
+  if (!compact || !detail || this.mobilePane !== "detail") return;
 
   const head = detail.querySelector(".al-detail-head");
   if (!head) return;
@@ -2244,4 +2209,26 @@ const readyDownload = AniLink.prototype.downloadRelease;
 AniLink.prototype.downloadRelease = async function (show, article, allowStart = false) {
   await this.ensureDownloader({ allowStart });
   return readyDownload.call(this, show, article);
+};
+
+const completedTasksRefresh = AniLink.prototype.refresh;
+AniLink.prototype.refresh = async function (manual) {
+  const result = await completedTasksRefresh.call(this, manual);
+  if (!this.state.settings.clearCompletedTasks || Platform.isMobile) return result;
+  try {
+    const qb = this.qb();
+    const tasks = await qb.call("torrents/info");
+    const completed = tasks.filter((task) =>
+      !/checking|moving|allocating/i.test(task.state) &&
+      (task.progress >= 1 || (task.state === "missingFiles" && task.completion_on > 0)),
+    );
+    if (completed.length) {
+      await qb.call("torrents/delete", { hashes: completed.map((task) => task.hash).join("|"), deleteFiles: "false" });
+      C.record(this.state, `已清除 ${completed.length} 个已完成的下载任务，保留文件`);
+      await this.persist();
+    }
+  } catch (error) {
+    C.record(this.state, `自动清除下载任务失败：${error.message}`);
+  }
+  return result;
 };

@@ -418,6 +418,21 @@ test("qBittorrent 5.3 login accepts HTTP 204 and forwards its session cookie", a
   assert.equal(await qb.call("app/version"), "v5.3.0");
   assert.equal(calls.length, 2);
 });
+
+test("qBittorrent reuses its session and replaces it when connection credentials change", async () => {
+  const h = harness(), p = plugin(h.http);
+  const first = p.qb();
+  await first.call("app/version");
+  await p.qb().call("app/version");
+  assert.equal(h.state.requests.filter((request) => request.url.endsWith("/auth/login")).length, 1);
+  p.state.settings.qbUrl = "http://localhost:8081";
+  p.state.settings.qbUser = "changed";
+  const next = p.qb();
+  assert.notEqual(first, next);
+  assert.notEqual(first.settings.qbUrl, next.settings.qbUrl);
+  await next.call("app/version");
+  assert.equal(h.state.requests.filter((request) => request.url.endsWith("/auth/login")).length, 2);
+});
 test("second season maps local ep to stable Bangumi IDs and refuses ambiguity or wrong season", () => {
   const s = C.newShow(
     { id: 665390, name_cn: "冰之城墙 第二季", name: "氷の城壁 第2期" },
