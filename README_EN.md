@@ -17,7 +17,11 @@ AniLink is an anime management plugin for [Obsidian](https://obsidian.md/). It b
 - Update watched progress manually, save ratings and reviews, and push changes through the Bangumi task queue.
 - Preview Bangumi, Fanku and rating trends, or open their websites.
 
-Current release **1.0.14**, updated **2026-11-21**.
+Current release **1.0.15**, updated **2026-11-22**.
+
+### Changes in 1.0.15
+
+- Configurable dates and shelf ordering, updated Bangumi mirror, improved danmaku merging and playback notices, and better settings layout on narrow screens.
 
 ### Changes in 1.0.12
 

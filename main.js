@@ -1,5 +1,5 @@
 "use strict";
-const ANI_RELEASE_DATE = "2026-11-21";
+const ANI_RELEASE_DATE = "2026-11-22";
 const ANI_ICON = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1024\" height=\"1024\" viewBox=\"60 10 660 610\"><path fill=\"currentColor\" fill-rule=\"evenodd\" d=\"M566,445L565,445L559,440L555,438L553,438L550,436L547,436L546,435L535,435L534,436L532,436L526,442L524,446L524,449L523,450L523,457L529,457L530,458L542,458L543,459L545,459L547,460L555,468L557,472L557,474L558,475L558,487L557,488L556,493L554,495L552,499L499,552L495,554L493,554L490,556L486,556L485,557L479,557L478,556L473,556L463,551L454,542L454,541L451,537L451,535L450,534L450,531L449,530L449,518L450,517L450,514L452,510L454,508L454,507L468,493L468,492L470,490L471,490L479,482L479,481L481,480L487,474L487,469L486,468L486,465L485,464L485,456L484,455L484,450L480,452L478,452L474,455L473,455L471,457L470,457L470,458L468,459L459,468L459,469L457,470L454,473L454,474L436,492L436,493L432,498L429,504L429,506L428,507L428,510L427,511L427,514L426,515L426,533L427,534L427,539L428,540L429,545L432,551L434,553L435,556L438,559L438,560L446,568L447,568L450,571L462,577L464,577L465,578L468,578L469,579L473,579L474,580L489,580L490,579L494,579L495,578L498,578L499,577L501,577L513,571L516,568L517,568L550,535L550,534L552,533L552,532L554,531L554,530L558,526L559,526L560,524L561,524L561,523L571,513L571,512L575,507L575,505L577,503L577,501L579,498L579,496L580,495L580,491L581,490L581,472L580,471L580,467L579,466L579,464L575,456L570,450L570,449Z M181,440L183,447L188,450L265,450L267,452L269,456L272,459L273,459L277,462L279,462L280,463L283,463L284,464L289,464L290,463L293,463L294,462L296,462L298,461L305,455L305,454L308,450L444,450L448,448L451,444L451,439L450,438L450,436L449,434L443,431L307,431L305,429L305,428L300,423L297,422L295,420L292,420L291,419L282,419L281,420L279,420L273,423L266,431L190,431L189,432L186,432L182,436L182,439Z M630,369L629,369L624,365L621,364L619,362L617,362L609,358L605,358L604,357L600,357L599,356L585,356L584,357L579,357L578,358L575,358L574,359L569,360L563,363L561,365L560,365L558,367L554,369L503,420L503,421L500,424L499,427L497,429L495,433L495,435L493,439L493,442L492,443L492,448L491,449L491,457L492,458L492,463L493,464L494,471L496,474L496,476L498,478L500,483L503,486L503,487L512,496L513,496L516,499L526,504L529,504L530,505L534,505L541,499L541,498L547,492L549,488L549,485L543,485L542,484L539,484L538,483L536,483L530,480L528,478L527,478L521,472L515,460L515,447L516,446L516,444L519,438L535,422L535,421L537,420L545,412L545,411L548,408L549,408L551,406L551,405L569,387L570,387L573,384L576,383L578,381L580,381L584,379L599,379L600,380L605,381L611,384L619,391L619,392L622,395L626,403L626,407L627,408L627,418L626,419L625,426L623,430L621,432L621,433L614,440L614,441L589,466L589,472L590,473L590,487L589,488L589,493L588,494L588,497L592,494L595,493L598,490L599,490L616,473L616,472L618,470L619,470L626,463L627,461L628,461L628,460L638,450L638,449L641,446L647,434L647,432L648,431L648,428L649,427L649,423L650,422L650,405L649,404L649,399L648,398L647,393L642,383L637,377L637,376L636,376L635,374Z M418,215L417,216L414,216L413,217L411,217L407,220L406,220L399,227L397,231L397,234L396,235L396,237L395,238L395,364L396,365L397,372L399,376L405,382L406,382L408,384L412,386L415,386L416,387L421,387L422,388L424,388L425,387L431,387L432,386L434,386L438,384L440,382L441,382L446,377L446,376L448,374L450,370L450,366L451,365L451,238L450,237L450,234L449,233L449,231L448,229L446,227L446,226L440,220L439,220L435,217L433,217L429,215Z M324,215L323,216L320,216L314,219L312,221L311,221L306,226L303,232L303,234L302,235L302,240L301,241L301,363L302,364L302,368L304,371L304,373L307,377L307,378L310,381L311,381L316,385L318,385L321,387L327,387L328,388L331,388L332,387L337,387L338,386L340,386L344,384L346,382L347,382L353,376L355,372L356,367L357,366L357,236L356,235L355,230L353,228L353,227L345,219L339,216L336,216L335,215Z M124,118L124,120L123,121L123,123L121,127L121,131L120,132L120,137L119,138L119,447L120,448L120,453L121,454L121,458L122,459L122,462L124,465L124,467L126,470L126,472L129,478L131,480L132,483L135,486L135,487L138,490L138,491L150,503L151,503L154,506L155,506L160,510L168,514L170,514L176,517L179,517L183,519L188,519L189,520L418,520L418,512L419,511L419,509L420,508L420,505L422,502L423,497L194,497L193,496L188,496L187,495L185,495L184,494L179,493L171,489L164,483L163,483L156,476L156,475L150,468L147,462L147,460L145,457L145,455L143,451L143,447L142,446L142,417L141,416L141,414L142,413L142,397L141,396L141,388L142,387L142,384L141,383L142,382L141,380L141,373L142,372L141,371L141,341L142,340L142,335L141,334L142,333L142,304L141,303L141,275L142,274L141,273L141,228L142,227L142,222L141,221L141,198L142,197L141,196L141,191L143,189L613,189L615,191L615,354L617,354L627,359L636,367L638,368L638,141L637,140L637,134L636,133L636,129L635,128L635,125L634,124L633,119L628,109L626,107L625,104L622,101L622,100L617,95L617,94L607,85L606,85L601,81L589,75L587,75L586,74L584,74L580,72L576,72L575,71L570,71L569,70L188,70L187,71L181,71L180,72L173,73L170,75L168,75L165,77L163,77L159,80L157,80L155,82L151,84L148,87L147,87L135,99L135,100L129,108Z M141,147L142,146L142,139L143,138L143,135L144,134L145,129L150,119L152,117L154,113L168,101L178,96L180,96L184,94L190,94L191,93L316,93L317,92L327,92L328,93L357,93L358,92L363,92L364,93L567,93L568,94L572,94L576,96L579,96L583,99L585,99L587,101L590,102L593,105L594,105L603,114L603,115L609,123L609,125L612,130L612,133L614,137L614,145L615,146L615,165L614,166L143,166L141,164Z M251,110L250,111L245,112L239,117L239,118L237,120L235,124L235,127L234,128L234,133L235,134L235,137L237,141L242,147L243,147L247,150L250,150L251,151L259,151L260,150L263,150L265,149L272,143L274,139L274,137L275,136L275,126L274,125L274,122L273,120L269,115L268,115L266,113L262,111L259,111L258,110Z M192,110L191,111L186,112L184,114L183,114L177,122L177,124L176,125L176,136L177,137L177,139L178,141L181,144L181,145L186,149L188,149L192,151L200,151L201,150L204,150L208,147L209,147L215,140L215,138L216,137L216,134L217,133L217,128L216,127L216,124L214,120L209,114L208,114L206,112L204,112L200,110Z\"/></svg>\n";
 const ANI_ICON_BODY = "<g transform=\"scale(0.09765625)\"><path fill=\"currentColor\" fill-rule=\"evenodd\" d=\"M566,445L565,445L559,440L555,438L553,438L550,436L547,436L546,435L535,435L534,436L532,436L526,442L524,446L524,449L523,450L523,457L529,457L530,458L542,458L543,459L545,459L547,460L555,468L557,472L557,474L558,475L558,487L557,488L556,493L554,495L552,499L499,552L495,554L493,554L490,556L486,556L485,557L479,557L478,556L473,556L463,551L454,542L454,541L451,537L451,535L450,534L450,531L449,530L449,518L450,517L450,514L452,510L454,508L454,507L468,493L468,492L470,490L471,490L479,482L479,481L481,480L487,474L487,469L486,468L486,465L485,464L485,456L484,455L484,450L480,452L478,452L474,455L473,455L471,457L470,457L470,458L468,459L459,468L459,469L457,470L454,473L454,474L436,492L436,493L432,498L429,504L429,506L428,507L428,510L427,511L427,514L426,515L426,533L427,534L427,539L428,540L429,545L432,551L434,553L435,556L438,559L438,560L446,568L447,568L450,571L462,577L464,577L465,578L468,578L469,579L473,579L474,580L489,580L490,579L494,579L495,578L498,578L499,577L501,577L513,571L516,568L517,568L550,535L550,534L552,533L552,532L554,531L554,530L558,526L559,526L560,524L561,524L561,523L571,513L571,512L575,507L575,505L577,503L577,501L579,498L579,496L580,495L580,491L581,490L581,472L580,471L580,467L579,466L579,464L575,456L570,450L570,449Z M181,440L183,447L188,450L265,450L267,452L269,456L272,459L273,459L277,462L279,462L280,463L283,463L284,464L289,464L290,463L293,463L294,462L296,462L298,461L305,455L305,454L308,450L444,450L448,448L451,444L451,439L450,438L450,436L449,434L443,431L307,431L305,429L305,428L300,423L297,422L295,420L292,420L291,419L282,419L281,420L279,420L273,423L266,431L190,431L189,432L186,432L182,436L182,439Z M630,369L629,369L624,365L621,364L619,362L617,362L609,358L605,358L604,357L600,357L599,356L585,356L584,357L579,357L578,358L575,358L574,359L569,360L563,363L561,365L560,365L558,367L554,369L503,420L503,421L500,424L499,427L497,429L495,433L495,435L493,439L493,442L492,443L492,448L491,449L491,457L492,458L492,463L493,464L494,471L496,474L496,476L498,478L500,483L503,486L503,487L512,496L513,496L516,499L526,504L529,504L530,505L534,505L541,499L541,498L547,492L549,488L549,485L543,485L542,484L539,484L538,483L536,483L530,480L528,478L527,478L521,472L515,460L515,447L516,446L516,444L519,438L535,422L535,421L537,420L545,412L545,411L548,408L549,408L551,406L551,405L569,387L570,387L573,384L576,383L578,381L580,381L584,379L599,379L600,380L605,381L611,384L619,391L619,392L622,395L626,403L626,407L627,408L627,418L626,419L625,426L623,430L621,432L621,433L614,440L614,441L589,466L589,472L590,473L590,487L589,488L589,493L588,494L588,497L592,494L595,493L598,490L599,490L616,473L616,472L618,470L619,470L626,463L627,461L628,461L628,460L638,450L638,449L641,446L647,434L647,432L648,431L648,428L649,427L649,423L650,422L650,405L649,404L649,399L648,398L647,393L642,383L637,377L637,376L636,376L635,374Z M418,215L417,216L414,216L413,217L411,217L407,220L406,220L399,227L397,231L397,234L396,235L396,237L395,238L395,364L396,365L397,372L399,376L405,382L406,382L408,384L412,386L415,386L416,387L421,387L422,388L424,388L425,387L431,387L432,386L434,386L438,384L440,382L441,382L446,377L446,376L448,374L450,370L450,366L451,365L451,238L450,237L450,234L449,233L449,231L448,229L446,227L446,226L440,220L439,220L435,217L433,217L429,215Z M324,215L323,216L320,216L314,219L312,221L311,221L306,226L303,232L303,234L302,235L302,240L301,241L301,363L302,364L302,368L304,371L304,373L307,377L307,378L310,381L311,381L316,385L318,385L321,387L327,387L328,388L331,388L332,387L337,387L338,386L340,386L344,384L346,382L347,382L353,376L355,372L356,367L357,366L357,236L356,235L355,230L353,228L353,227L345,219L339,216L336,216L335,215Z M124,118L124,120L123,121L123,123L121,127L121,131L120,132L120,137L119,138L119,447L120,448L120,453L121,454L121,458L122,459L122,462L124,465L124,467L126,470L126,472L129,478L131,480L132,483L135,486L135,487L138,490L138,491L150,503L151,503L154,506L155,506L160,510L168,514L170,514L176,517L179,517L183,519L188,519L189,520L418,520L418,512L419,511L419,509L420,508L420,505L422,502L423,497L194,497L193,496L188,496L187,495L185,495L184,494L179,493L171,489L164,483L163,483L156,476L156,475L150,468L147,462L147,460L145,457L145,455L143,451L143,447L142,446L142,417L141,416L141,414L142,413L142,397L141,396L141,388L142,387L142,384L141,383L142,382L141,380L141,373L142,372L141,371L141,341L142,340L142,335L141,334L142,333L142,304L141,303L141,275L142,274L141,273L141,228L142,227L142,222L141,221L141,198L142,197L141,196L141,191L143,189L613,189L615,191L615,354L617,354L627,359L636,367L638,368L638,141L637,140L637,134L636,133L636,129L635,128L635,125L634,124L633,119L628,109L626,107L625,104L622,101L622,100L617,95L617,94L607,85L606,85L601,81L589,75L587,75L586,74L584,74L580,72L576,72L575,71L570,71L569,70L188,70L187,71L181,71L180,72L173,73L170,75L168,75L165,77L163,77L159,80L157,80L155,82L151,84L148,87L147,87L135,99L135,100L129,108Z M141,147L142,146L142,139L143,138L143,135L144,134L145,129L150,119L152,117L154,113L168,101L178,96L180,96L184,94L190,94L191,93L316,93L317,92L327,92L328,93L357,93L358,92L363,92L364,93L567,93L568,94L572,94L576,96L579,96L583,99L585,99L587,101L590,102L593,105L594,105L603,114L603,115L609,123L609,125L612,130L612,133L614,137L614,145L615,146L615,165L614,166L143,166L141,164Z M251,110L250,111L245,112L239,117L239,118L237,120L235,124L235,127L234,128L234,133L235,134L235,137L237,141L242,147L243,147L247,150L250,150L251,151L259,151L260,150L263,150L265,149L272,143L274,139L274,137L275,136L275,126L274,125L274,122L273,120L269,115L268,115L266,113L262,111L259,111L258,110Z M192,110L191,111L186,112L184,114L183,114L177,122L177,124L176,125L176,136L177,137L177,139L178,141L181,144L181,145L186,149L188,149L192,151L200,151L201,150L204,150L208,147L209,147L215,140L215,138L216,137L216,134L217,133L217,128L216,127L216,124L214,120L209,114L208,114L206,112L204,112L200,110Z\"/></g>";
 const {
@@ -75,6 +75,7 @@ const defaults = () => ({
     storageLabel: "",
     pollSeconds: 60,
     rssRefreshMinutes: 1,
+    dateFormat: "yyyy/mm/dd",
     browserMode: "obsidian",
     openFirstShow: true,
     logScope: "all",
@@ -891,7 +892,56 @@ function mergeFiles(show, torrents, fileLists, settings) {
   show.unmatched = result.filter((f) => !f.episodeId);
   return result;
 }
+// Bangumi supplies a Japanese broadcast date, without a broadcast hour.
+function episodeAirState(date, japanDate) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "")) return "unknown";
+  return date > japanDate ? "future" : date === japanDate ? "today" : "past";
+}
+function japanBroadcastDate(now = new Date()) {
+  return new Date(now.getTime() + 9 * 3600000).toISOString().slice(0, 10);
+}
+function shelfBroadcastDates(episodes, japanDate) {
+  let latest = "", next = "";
+  for (const episode of episodes) {
+    if (episode.type !== 0) continue;
+    const date = episode.airdate;
+    const state = episodeAirState(date, japanDate);
+    if (state === "past" && date > latest) latest = date;
+    if ((state === "today" || state === "future") && (!next || date < next)) next = date;
+  }
+  return { latest, next };
+}
+
+function formatDate(value, format = "yyyy/mm/dd") {
+  if (!value) return "";
+  const parts = typeof value === "string" && value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const date = parts ? null : new Date(value);
+  if (date && !Number.isFinite(date.getTime())) return "";
+  const [year, month, day] = parts ? parts.slice(1) : [
+    String(date.getFullYear()),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ];
+  const formats = {
+    "yyyymmdd": year + month + day,
+    "yyyy/mm/dd": year + "/" + month + "/" + day,
+    "yyyy-mm-dd": year + "-" + month + "-" + day,
+    "yyyy.mm.dd": year + "." + month + "." + day,
+    "mm/dd/yyyy": month + "/" + day + "/" + year,
+    "mm-dd-yyyy": month + "-" + day + "-" + year,
+    "dd/mm/yyyy": day + "/" + month + "/" + year,
+    "dd-mm-yyyy": day + "-" + month + "-" + year,
+    "dd.mm.yyyy": day + "." + month + "." + year,
+    "yyyy年mm月dd日": year + "年" + month + "月" + day + "日",
+  };
+  return Object.hasOwn(formats, format) ? formats[format] : formats["yyyy/mm/dd"];
+}
+
 module.exports = {
+  formatDate,
+  episodeAirState,
+  japanBroadcastDate,
+  shelfBroadcastDates,
   STATUS,
   VIDEO,
   defaults,
@@ -982,8 +1032,9 @@ function link(el, text, url) {
   );
 }
 /** @param {number | string | Date} t */
-function time(t) {
-  return t ? new Date(t).toLocaleString("zh-CN") : "尚未同步";
+function time(t, format) {
+  const date = C.formatDate(t, format);
+  return date ? date + " " + new Date(t).toLocaleTimeString("zh-CN", { hour12: false }) : "尚未同步";
 }
 /** @param {AniLinkData.Show} show */
 function allFiles(show) {
@@ -1119,7 +1170,7 @@ class Dashboard extends ItemView {
     const footer = root.createDiv("al-footer");
     footer.createEl("span", {
       text: p.state.events[0]
-        ? `${time(p.state.events[0].at)} · ${p.state.events[0].message}`
+        ? `${time(p.state.events[0].at, p.state.settings.dateFormat)} · ${p.state.events[0].message}`
         : "还没有任务。先添加一部想看的番剧。",
     });
   }
@@ -1374,7 +1425,7 @@ class Dashboard extends ItemView {
         "mod-cta",
       );
       body.createEl("p", {
-        text: `最近成功同步：${time(s.lastSync)}`,
+        text: `最近成功同步：${time(s.lastSync, this.p.state.settings.dateFormat)}`,
         cls: "al-muted",
       });
       button(body, "打开番库", () => p.fankuModal(s));
@@ -1525,7 +1576,7 @@ class AniLink extends Plugin {
     return this.qbClient;
   }
   bgm() {
-    return new C.Bangumi(this.http, this.state.settings.bgmToken, this.state.settings.bgmMirror && this.state.settings.bgmMirrorApi !== false ? "https://api.bangumi.lat" : "https://api.bgm.tv");
+    return new C.Bangumi(this.http, this.state.settings.bgmToken, this.state.settings.bgmMirror && this.state.settings.bgmMirrorApi !== false ? "https://api.bgm.lat" : "https://api.bgm.tv");
   }
   confirm(title, text, fn) {
     new Panel(this, title, (el, m) => {
@@ -1730,7 +1781,15 @@ class AniLink extends Plugin {
           });
       }).open();
   }
-  async play(s, e, f) {
+  localPlayerName() {
+    const name = String(this.state.settings.playerExe || "").split(/[\\/]/).pop().replace(/\.(exe|app)$/i, "");
+    if (/^dandanplay/i.test(name)) return "弹弹play";
+    if (/^potplayer/i.test(name)) return "PotPlayer";
+    if (/^vlc$/i.test(name)) return "VLC";
+    if (/^mpv$/i.test(name)) return "mpv";
+    return name || "播放器";
+  }
+  async play(s, e, f, showOpenedNotice = true) {
     if (s.demo) {
       new Notice("这是演练文件，不会启动真实播放器");
       return;
@@ -1738,7 +1797,7 @@ class AniLink extends Plugin {
     await fs.access(f.path);
     const exe = this.state.settings.playerExe;
     if (!exe || !path.isAbsolute(exe))
-      throw Error("请先在连接设置中填写弹弹play可执行文件的绝对路径");
+      throw Error("请先在连接设置中填写播放器可执行文件的绝对路径");
     await fs.access(exe);
     await new Promise((resolve, reject) => {
       const macApplication = process.platform === "darwin" && exe.endsWith(".app");
@@ -1748,9 +1807,9 @@ class AniLink extends Plugin {
       child.once("error", reject);
       child.once("spawn", resolve);
     });
-    C.record(this.state, `已交给弹弹play：${s.title} 第 ${e.sort} 集`);
+    C.record(this.state, `已交给${this.localPlayerName()}：${s.title} 第 ${e.sort} 集`);
     await this.persist();
-    this.notify("playback", "已打开弹弹play");
+    if (showOpenedNotice) this.notify("playback", "已打开" + this.localPlayerName());
   }
   filesModal(s, e) {
     new Panel(this, `第 ${e.sort} 集 · 文件管理`, (el, m) => {
@@ -1955,7 +2014,7 @@ class AniLink extends Plugin {
       el.createEl("h3", { text: "最近记录" });
       for (const e of this.state.events.slice(0, 30))
         el.createEl("p", {
-          text: `${time(e.at)} · ${e.message}`,
+          text: `${time(e.at, this.state.settings.dateFormat)} · ${e.message}`,
           cls: "al-muted",
         });
     }).open();
@@ -2240,7 +2299,7 @@ AniLink.prototype.searchModal = function () {
       prev.disabled = next.disabled = true;
       try {
         const id = keyword.match(
-          /^(?:https?:\/\/(?:bgm\.tv|bangumi\.tv|chii\.in)\/subject\/)?(\d+)\/?$/,
+          /^(?:https?:\/\/(?:bgm\.tv|bangumi\.tv|chii\.in|bangumi\.lat|bgm\.lat)\/subject\/)?(\d+)\/?$/,
         )?.[1];
         const data = id
           ? { data: [await this.bgm().call("/v0/subjects/" + id)], total: 1 }
@@ -2266,7 +2325,7 @@ AniLink.prototype.searchModal = function () {
           if (s.name_cn && s.name_cn !== s.name)
             info.createEl("p", { text: s.name, cls: "al-muted" });
           info.createEl("p", {
-            text: `${s.date || "日期未定"} · ${s.platform || "动画"} · ${s.eps || s.total_episodes || "待定"} 集`,
+            text: `${C.formatDate(s.date, this.state.settings.dateFormat) || "日期未定"} · ${s.platform || "动画"} · ${s.eps || s.total_episodes || "待定"} 集`,
           });
           info.createEl("p", {
             text: `★ ${s.rating?.score || "暂无评分"} · ${s.rating?.total || 0} 人评分${s.rating?.rank ? " · 排名 " + s.rating.rank : ""}`,
@@ -2476,7 +2535,7 @@ AniLink.prototype.subscriptionModal = function (s) {
                       .sort((a, b) => b - a)[0];
                     if (latest)
                       info.createEl("p", {
-                        text: `更新于 ${new Date(latest).toLocaleDateString("zh-CN")}`,
+                        text: `更新于 ${C.formatDate(latest, this.state.settings.dateFormat)}`,
                         cls: "al-muted",
                       });
                     const tags = info.createDiv("al-version-tags");
@@ -3585,11 +3644,14 @@ Dashboard.prototype.renderDetail = function (el, s) {
     details.createEl("summary", { text: `特别篇（${special.length}）` });
     spGrid = details.createDiv("al-episode-grid");
   }
+  const today = C.japanBroadcastDate();
   for (const e of s.episodes) {
     const downloaded = e.files?.some(
         (f) => f.progress === 1 && f.localExists !== false,
       ),
-      future = e.airdate && e.airdate > new Date().toLocaleDateString("sv-SE");
+      airState = C.episodeAirState(e.airdate, today),
+      future = airState === "future";
+    const unbroadcast = future || airState === "today";
     const tile = button(
       e.type === 0 ? grid : spGrid,
       "",
@@ -3598,7 +3660,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
         this.renderDetail(this.contentEl.querySelector(".al-detail"), s);
       },
       "al-episode-tile" +
-        (future && !e.watched && !downloaded ? " is-future" : "") +
+        (unbroadcast && !e.watched && !e.files?.length ? " is-future" : "") +
         (downloaded && !e.watched ? " is-ready" : "") +
         (e.watched ? " is-watched" : "") +
         (e.id === selected?.id ? " is-current" : ""),
@@ -3616,9 +3678,11 @@ Dashboard.prototype.renderDetail = function (el, s) {
             ? e.files.every((f) => f.localExists === false)
               ? "文件缺失"
               : "下载中"
-            : future
+            : unbroadcast
               ? "未播"
-              : "未下载",
+                : airState === "unknown"
+                  ? "播期待定"
+                  : "未下载",
     });
   }
   if (!selected) {
@@ -3635,14 +3699,15 @@ Dashboard.prototype.renderDetail = function (el, s) {
     text: `${e.type === 0 ? "第 " + (e.ep || e.sort) + " 集" : "特别篇 " + e.sort} · ${e.title || "标题未公布"}`,
   });
   focus.createEl("p", {
-    text: [e.airdate, e.watched ? "已看" : "未看"].filter(Boolean).join(" · "),
+    text: [C.formatDate(e.airdate, p.state.settings.dateFormat), e.watched ? "已看" : "未看"].filter(Boolean).join(" · "),
     cls: "al-muted",
   });
   const actions = focus.createDiv("al-actions"),
     files = (e.files || []).filter(
       (f) => f.progress === 1 && f.localExists !== false,
     ),
-    future = e.airdate && e.airdate > new Date().toLocaleDateString("sv-SE");
+    airState = C.episodeAirState(e.airdate, today),
+      future = airState === "future";
   if (files.length)
     button(actions, "播放", () => p.pickFile(s, e, files), "mod-cta");
   else if (!future)
@@ -3711,6 +3776,14 @@ const newestReady = (s) =>
         .map((f) => f.completedAt || 0),
     ),
   );
+function shelfUpdate(show, today) {
+  const { latest, next } = C.shelfBroadcastDates(show.episodes, today);
+  if (readyEpisodes(show).length) return { group: 0, date: newestReady(show), label: "待看" };
+  if (latest && show.episodes.some((e) => e.type === 0 && !e.watched && e.airdate === latest))
+    return { group: 1, date: latest, label: "暂无" };
+  if (next) return { group: 2, date: next, label: "下集" };
+  return { group: 3, date: latest, label: "上次播出" };
+}
 const fieldsOf = (s) => ({
   status: s.status,
   rate: s.rate || 0,
@@ -3894,7 +3967,7 @@ AniLink.prototype.syncModal = function () {
     m.modalEl.addClass("al-sync-modal");
     const status = el.createDiv("al-sync-status al-muted");
     status.createEl("p", { text: `待推送 ${this.state.queue.length} 项` });
-    status.createEl("p", { text: `上次推送 ${time(this.state.lastPush)}` });
+    status.createEl("p", { text: `上次推送 ${time(this.state.lastPush, this.state.settings.dateFormat)}` });
     const actions = el.createDiv("al-sync-toolbar");
     button(
       actions,
@@ -4120,6 +4193,19 @@ const cardControl = Dashboard.prototype.renderCards;
 Dashboard.prototype.renderCards = function (cards) {
   const original = this.p.state.shows,
     mode = this.sortMode || this.p.state.settings.shelfSort || "ready";
+  const dates = new Map();
+  const today = C.japanBroadcastDate();
+  if (mode === "ready") {
+    for (const show of original) dates.set(show, shelfUpdate(show, today));
+  }
+  const compareUpdates = (a, b) => {
+    const left = dates.get(a), right = dates.get(b);
+    return left.group - right.group ||
+      (left.group === 0 ? Number(right.date) - Number(left.date)
+        : left.group === 2 ? String(left.date).localeCompare(String(right.date))
+        : String(right.date).localeCompare(String(left.date))) ||
+      a.title.localeCompare(b.title, "zh-CN");
+  };
   const compare = (a, b) =>
     mode === "title"
       ? a.title.localeCompare(b.title, "zh-CN")
@@ -4128,8 +4214,7 @@ Dashboard.prototype.renderCards = function (cards) {
           a.episodes.filter((e) => e.watched).length
         : mode === "added"
           ? (b.addedAt || b.id) - (a.addedAt || a.id)
-          : newestReady(b) - newestReady(a) ||
-            a.title.localeCompare(b.title, "zh-CN");
+          : compareUpdates(a, b);
   this.p.state.shows = [...original].sort(compare);
   try {
     cardControl.call(this, cards);
@@ -4191,7 +4276,7 @@ Dashboard.prototype.render = function () {
       cls: failed ? "al-error" : "",
     });
     footer.createSpan({
-      text: `Bangumi ${p.state.lastPush ? "已推送 " + time(p.state.lastPush) : "待推送"}`,
+      text: `Bangumi ${p.state.lastPush ? "已推送 " + time(p.state.lastPush, p.state.settings.dateFormat) : "待推送"}`,
     });
     button(footer, "同步详情", () => p.syncModal(), "al-link");
   }
@@ -4995,7 +5080,7 @@ AniLink.prototype.subscriptionsManager = function () {
       const tags = info.createDiv("al-version-tags");
       for (const tag of [s.subscription.profile?.quality || s.subscription.quality, s.subscription.profile?.language || s.subscription.language, s.subscription.profile?.codec, s.subscription.profile?.subtitle].filter((value) => value && value !== "未标注")) tags.createSpan({ text: tag });
       const status = info.createEl("p", { cls: "al-muted" });
-      const showUpdate = () => status.setText((s.subscription.enabled ? "自动下载" : "已暂停") + " · 最近更新 " + (s.subscription.rssUpdatedAt ? new Date(s.subscription.rssUpdatedAt).toLocaleDateString("zh-CN") : "暂无记录"));
+      const showUpdate = () => status.setText((s.subscription.enabled ? "自动下载" : "已暂停") + " · 最近更新 " + (s.subscription.rssUpdatedAt ? C.formatDate(s.subscription.rssUpdatedAt, this.state.settings.dateFormat) : "暂无记录"));
       showUpdate();
       this.readFeed(s.subscription.feed).then((rows) => {
         s.subscription.rssUpdatedAt = Math.max(0, ...rows.map((item) => Date.parse(item.date)).filter(Number.isFinite));
@@ -5618,7 +5703,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
   const viewport = panel.createDiv("al-preview-viewport");
   const pages = {
     trend: { url: `https://netaba.re/subject/${s.id}` },
-    bangumi: { url: `https://${this.p.state.settings.bgmMirror && this.p.state.settings.bgmMirrorWeb !== false ? "bangumi.lat" : "bgm.tv"}/subject/${s.id}` },
+    bangumi: { url: `https://${this.p.state.settings.bgmMirror && this.p.state.settings.bgmMirrorWeb !== false ? "bgm.lat" : "bgm.tv"}/subject/${s.id}` },
     fanku: {
       url: s.fankuUrl || null,
     },
@@ -5859,7 +5944,7 @@ AniLink.prototype.logsModal = function () {
     const list = el.createDiv("al-log-list");
     for (const log of logs) {
       const row = list.createDiv("al-log-row");
-      row.createEl("time", { text: time(log.at) });
+      row.createEl("time", { text: time(log.at, this.state.settings.dateFormat) });
       row.createEl("p", { text: log.message });
     }
   }).open();
@@ -5867,33 +5952,29 @@ AniLink.prototype.logsModal = function () {
 const finalCards = Dashboard.prototype.renderCards;
 Dashboard.prototype.renderCards = function (cards) {
   finalCards.call(this, cards);
+  this.contentEl.classList.toggle("al-hide-original", this.p.state.settings.showOriginalName === false);
   for (const card of cards.querySelectorAll(".al-card")) {
     const show = this.p.state.shows.find(
       (s) => String(s.id) === card.dataset.showId,
     );
-    const meta = card.querySelector(":scope > div");
+    const meta = card.querySelector(":scope > div:not(.al-cover-placeholder)");
     if (!show || !meta) continue;
     const episodes = show.episodes.filter((e) => e.type === 0);
     const watched = episodes.filter((e) => e.watched).length;
-    const stamp = Math.max(
-      show.lastLocalUpdate || 0,
-      0,
-      ...episodes.flatMap((e) =>
-        (e.files || []).map((f) => f.completedAt || 0),
-      ),
-    );
-    show.lastLocalUpdate = stamp;
+    const update = shelfUpdate(show, C.japanBroadcastDate());
+    const date = C.formatDate(update.date, this.p.state.settings.dateFormat);
+    const dateLabel = date ? date + " " + update.label : "";
     meta.empty();
     meta.createEl("strong", { text: show.title });
-    if (show.name && show.name !== show.title)
+    if (this.p.state.settings.showOriginalName !== false && show.name && show.name !== show.title)
       meta.createEl("p", { text: show.name, cls: "al-original-name" });
     const summary = meta.createEl("p", {
       text: `${C.STATUS[show.status]} · ${watched}/${show.total || episodes.length || "待定"}集`,
       cls: "al-card-summary",
     });
-    if (stamp)
+    if (dateLabel)
       summary.createSpan({
-        text: " · " + new Date(stamp).toLocaleDateString("zh-CN"),
+        text: " · " + dateLabel,
         cls: "al-update-date",
       });
     meta.createEl("p", {
@@ -6121,6 +6202,45 @@ Dashboard.prototype.render = function () {
   window.requestAnimationFrame(() => this.fitInformation());
 };
 
+// Keep source coordinates separate from the timestamp sent to the player.
+function alignDanmakuNode(node, cid, align) {
+  const fields = node.getAttribute("p").split(",");
+  const original = Number(fields[0]);
+  const key = String(cid) + ":" + (fields[7] || fields.join(",") + "|" + node.textContent);
+  node.setAttribute("anilink-key", key);
+  if (!Number.isFinite(original)) return key;
+  node.setAttribute("anilink-source-time", String(original));
+  fields[0] = String(align(original));
+  node.setAttribute("p", fields.join(","));
+  return key;
+}
+
+function mergeDanmakuNodes(fresh, saved, alignments) {
+  const freshNodes = Array.from(fresh);
+  const keys = new Set(Array.from(freshNodes, (node) => node.getAttribute("anilink-key")));
+  // Bilibili row IDs let us recognize older entries without source metadata.
+  const rowIds = new Set(Array.from(freshNodes, (node) => node.getAttribute("p").split(",")[7]).filter(Boolean));
+  const retained = [];
+  for (const node of saved) {
+    const fields = node.getAttribute("p").split(",");
+    const sourceKey = node.getAttribute("anilink-key");
+    const rowId = fields[7];
+    const key = sourceKey || (rowId ? "legacy:" + rowId : fields.join(",") + "|" + node.textContent);
+    if (keys.has(key) || (!sourceKey && rowId && rowIds.has(rowId))) continue;
+    const align = sourceKey && alignments.get(sourceKey.split(":", 1)[0]);
+    const rawTime = node.getAttribute("anilink-source-time");
+    if (align && rawTime !== null && Number.isFinite(Number(rawTime))) {
+      const stamp = align(Number(rawTime));
+      if (stamp < 0) continue;
+      fields[0] = String(stamp);
+      node.setAttribute("p", fields.join(","));
+    }
+    keys.add(key);
+    retained.push(node);
+  }
+  return retained;
+}
+
 AniLink.prototype.prepareUploaderDanmaku = async function (
   show,
   episode,
@@ -6183,6 +6303,7 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
       }
     }
   }
+  const freshNodes = new Map();
   const sources = [],
     comments = new Map();
   for (const candidate of candidates.values()) {
@@ -6234,17 +6355,10 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
           )
             throw Error("B站弹幕格式错误");
           for (const node of doc.querySelectorAll("d")) {
-          const fields = node.getAttribute("p").split(",");
-        const identity = String(page.cid) + ":" + (fields[7] || fields.join(",") + "|" + node.textContent);
-        node.setAttribute("anilink-key", identity);
-            const stamp = Number(fields[0]) + calibration.offsetSeconds;
-            if (stamp < 0) continue;
-            fields[0] = String(stamp);
-            node.setAttribute("p", fields.join(","));
-            comments.set(
-          identity,
-              new XMLSerializer().serializeToString(node),
-            );
+            const identity = alignDanmakuNode(node, page.cid, (time) => time + calibration.offsetSeconds);
+            if (Number(node.getAttribute("p").split(",")[0]) < 0) continue;
+            freshNodes.set(identity, node);
+            comments.set(identity, new XMLSerializer().serializeToString(node));
           }
           sources.push({
             bvid: candidate.bvid,
@@ -6279,9 +6393,10 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
   if (existing && !this.danmakuResetPaths?.has(target)) {
     const old = new DOMParser().parseFromString(existing, "text/xml");
     if (old.querySelector("parsererror")) throw Error("已有弹幕 XML 无法解析，已保留原文件");
-    for (const node of old.querySelectorAll("d")) {
+    const alignments = new Map(sources.map(({ cid, calibration }) => [String(cid), (time) => time + calibration.offsetSeconds]));
+    for (const node of mergeDanmakuNodes(freshNodes.values(), old.querySelectorAll("d"), alignments)) {
       const identity = node.getAttribute("anilink-key") || node.getAttribute("p") + "|" + node.textContent;
-      if (!comments.has(identity)) comments.set(identity, new XMLSerializer().serializeToString(node));
+      comments.set(identity, new XMLSerializer().serializeToString(node));
     }
   }
   await fs.writeFile(
@@ -6303,7 +6418,7 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
   await this.persist();
   return { sources, count: comments.size, elapsedMs: Date.now() - started };
 };
-AniLink.prototype.play = async function (show, episode, file) {
+AniLink.prototype.play = async function (show, episode, file, onPrepared) {
   if (file.remotePath) await this.cacheRemoteVideo(file);
   let cached = !!episode.danmaku?.biliMatchedAt;
   const uploaderIds = String(this.state.settings.biliUploaders || "").split(/[\s,，]+/).filter(Boolean).sort().join(",");
@@ -6327,9 +6442,11 @@ AniLink.prototype.play = async function (show, episode, file) {
     episode.danmaku?.sources?.some((source) => source.calibration?.disabled)
   )
     cached = false;
-  if (!cached) {
+  let prepared;
+  if (!cached || !episode.watched) {
+    cached = false;
     try {
-      await this.prepareUploaderDanmaku(show, episode, file);
+      prepared = await this.prepareUploaderDanmaku(show, episode, file);
       if (episode.danmaku) episode.danmaku.sourceOptions = sourceOptions;
     } catch (error) {
       C.record(this.state, `${show.title} 第${episode.sort}集 · UP ${this.state.settings.biliUploaders || C.defaults().settings.biliUploaders}：弹幕匹配失败 ${error.message}`);
@@ -6337,7 +6454,20 @@ AniLink.prototype.play = async function (show, episode, file) {
       this.danmakuResetPaths?.delete(file.path.replace(/\.[^.]+$/, ".xml"));
     }
   }
-  const result = await launchLocalMedia.call(this, show, episode, file);
+  if (onPrepared && !show.demo) {
+    let count = prepared?.count || 0;
+    if (!prepared) {
+      try {
+        const xml = await fs.readFile(file.path.replace(/\.[^.]+$/, ".xml"), "utf8");
+        count = new DOMParser().parseFromString(xml, "text/xml").querySelectorAll("i > d").length;
+      } catch {
+        // Playback can still start if the cached sidecar cannot be read.
+      }
+    }
+    const videos = new Set((prepared?.sources || []).map((source) => String(source.cid))).size;
+    onPrepared({ videos, count, cached, reusedLocal: !prepared && count > 0 });
+  }
+  const result = await launchLocalMedia.call(this, show, episode, file, !onPrepared);
   if (show.episodes && !this.danmakuPrefetchRunning) {
     this.danmakuPrefetchRunning = true;
     this.background("后续剧集弹幕", async () => {
@@ -7023,16 +7153,21 @@ Connections.prototype.display = function () {
   };
 
   heading("通用");
-  choice("网页打开方式", "browserMode", { external: "默认浏览器", obsidian: "Obsidian Web viewer" }, "external");
+  choice("日期格式", "dateFormat", { "yyyy/mm/dd": "YYYY/MM/DD", "yyyy-mm-dd": "YYYY-MM-DD", "yyyy.mm.dd": "YYYY.MM.DD", "yyyymmdd": "YYYYMMDD",
+    "mm/dd/yyyy": "MM/DD/YYYY", "mm-dd-yyyy": "MM-DD-YYYY",
+    "dd/mm/yyyy": "DD/MM/YYYY", "dd-mm-yyyy": "DD-MM-YYYY", "dd.mm.yyyy": "DD.MM.YYYY",
+    "yyyy年mm月dd日": "YYYY年MM月DD日",
+  }, "yyyy/mm/dd").setClass("al-wide-select-setting");
+  choice("网页打开方式", "browserMode", { external: "默认浏览器", obsidian: "Obsidian 内置" }, "external").setClass("al-wide-select-setting");
   toggle("默认打开第一个番剧", "openFirstShow", false);
   new Setting(el).setName("运行日志").setClass("al-log-setting").addButton((b) => b.setButtonText("查看日志").onClick(() => p.logsModal()));
   choice("日志记录范围", "logScope", { all: "全量操作", errors: "错误信息" }, "all");
   choice("日志缓存时间", "logRetention", { session: "退出后清除", day: "一天", week: "七天", forever: "长期保留" }, "session");
 
   toggle("启动通知", "startupNotifications", true);
-  toggle("播放准备通知", "playbackNotifications", true);
+  if (Platform.isDesktop) toggle("播放准备通知", "playbackNotifications", true);
   toggle("进度与状态通知", "progressNotifications", true);
-  toggle("下载完成通知", "downloadNotifications", false);
+  if (Platform.isDesktop) toggle("下载完成通知", "downloadNotifications", false);
   toggle("刷新完成通知", "refreshNotifications", true);
   toggle("同步完成通知", "syncNotifications", true);
 
@@ -7050,14 +7185,16 @@ Connections.prototype.display = function () {
   heading("Bangumi");
   const token = text("访问令牌", "bgmToken", "用于同步收藏、进度与评价。", true);
   sideAction(token.row, "获取 Token", () => p.openWebsite("https://next.bgm.tv/demo/access-token"));
-  toggle("使用镜像网站", "bgmMirror", false, "使用 bangumi.lat 镜像。", (enabled) => { mirrorControls.hidden = !enabled; });
+  toggle("使用镜像网站", "bgmMirror", false, "使用 bgm.lat 镜像。", (enabled) => { mirrorControls.hidden = !enabled; });
   const mirrorControls = el.createDiv("al-settings-conditional");
   mirrorControls.hidden = !s.bgmMirror;
   for (const [name, key] of [["网页使用镜像网站", "bgmMirrorWeb"], ["API使用镜像网站", "bgmMirrorApi"], ["数据源使用镜像网站", "bgmMirrorData"]]) {
     const control = toggle(name, key, true);
     mirrorControls.appendChild(control.row.settingEl);
   }
-  text("自动同步间隔（分钟）", "bgmSyncMinutes", "0 为关闭定时同步。");
+  const syncInterval = text("自动同步间隔（分钟）", "bgmSyncMinutes", "0 为关闭定时同步。");
+  syncInterval.row.settingEl.addClass("al-sync-interval-setting");
+  syncInterval.input().inputMode = "numeric";
   toggle("启动时自动同步", "bgmSyncStartup", true);
   toggle("退出时自动同步", "bgmSyncExit", true);
   toggle("看到最后一集自动标记看过", "bgmAutoComplete", true);
@@ -7099,7 +7236,7 @@ Connections.prototype.display = function () {
   );
 
   el.appendChild(startupSetting.settingEl);
-  toggle("打开软件自动启动", "downloaderOnStartup", false);
+  toggle("打开插件自动启动", "downloaderOnStartup", false);
   toggle("自动刷新 RSS 订阅", "autoRefresh", true, "", (value) => { polling.settingEl.hidden = !value; });
   const polling = text("自动刷新 RSS 订阅（分钟）", "rssRefreshMinutes").row;
   polling.settingEl.hidden = s.autoRefresh === false;
@@ -7141,7 +7278,7 @@ Connections.prototype.display = function () {
   };
   renderLibraries();
 
-  new Setting(el).setName("手动关联本地番剧").addButton((control) => control.setButtonText("关联 Bangumi 条目").onClick(() => p.localLibraryModal()));
+  new Setting(el).setName("手动关联本地番剧").setClass("al-local-association-setting").addButton((control) => control.setButtonText("关联 Bangumi 条目").onClick(() => p.localLibraryModal()));
   choice("点击看到这里", "cleanupMode", { none: "不清理", current: "清理当前文件", watched: "清理已看文件" }, s.cleanupAfterWatch === false ? "none" : "watched").settingEl.addClass("al-cleanup-setting");
   toggle("删除文件时同步删除种子", "deleteTorrentWithFiles", true);
 
@@ -7289,7 +7426,7 @@ Connections.prototype.display = function () {
     row.classList.toggle("al-setting-no-description", !row.querySelector(".setting-item-description"));
     row.classList.toggle("al-toggle-setting", !!row.querySelector(".checkbox-container"));
     row.classList.toggle("al-input-setting", !!row.querySelector('input[type="text"], input[type="password"], input[type="number"]'));
-    row.classList.toggle("al-browser-setting", !!row.querySelector('option[value="obsidian"]'));
+    row.classList.toggle("al-select-setting", !!row.querySelector("select"));
   }
   const footer = el.createDiv("al-plugin-footer");
   const logo = new DOMParser().parseFromString(ANI_ICON, "image/svg+xml").documentElement;
@@ -7653,9 +7790,10 @@ AniLink.prototype.play = async function (show, episode, file) {
   this.playPreparing = true;
   const buttons = [...document.querySelectorAll(".al-root button")].filter((button) => button.textContent === "播放");
   for (const button of buttons) { button.disabled = true; button.textContent = "准备弹幕…"; }
-  const notice = this.notify("playback", "正在匹配来源、抓取并校准弹幕…", 0);
-  try {
   const settings = this.state.settings;
+  const networkName = settings.remoteEnabled && { kodi: "Kodi", jellyfin: "Jellyfin", emby: "Emby" }[settings.networkPlayer];
+  const notice = this.notify("playback", networkName ? `正在打开 ${networkName}…` : "正在匹配来源、抓取并校准弹幕…", 0);
+  try {
   if (settings.remoteEnabled && settings.networkPlayer && settings.networkPlayer !== "local") {
     const base = new URL(settings.networkPlayerUrl);
     if (!["http:", "https:"].includes(base.protocol)) throw Error("播放器服务地址须为 HTTP(S)");
@@ -7674,8 +7812,15 @@ AniLink.prototype.play = async function (show, episode, file) {
     }
     return;
   }
-  const result = await settingsPlay.call(this, show, episode, file);
-  notice.setMessage("弹幕准备完成，正在打开播放器");
+  let summary;
+  const result = await settingsPlay.call(this, show, episode, file, ({ videos, count, cached, reusedLocal }) => {
+    summary = cached ? `已读取缓存弹幕 ${count} 条` : reusedLocal ? `本次未获取到新弹幕，沿用本地 ${count} 条` : `本次抓取 ${videos} 条视频的弹幕，合并去重后共 ${count} 条`;
+    notice.setMessage(`${summary}，正在打开 ${this.localPlayerName()}…`);
+  });
+  if (summary) {
+    notice.hide();
+    this.notify("playback", summary + "，已打开 " + this.localPlayerName(), 8000);
+  }
   try { await this.focusLocalPlayer?.(); }
   catch (error) { C.record(this.state, "播放器窗口置前失败：" + error.message); }
   return result;
@@ -7721,27 +7866,24 @@ AniLink.prototype.prepareUploaderDanmaku = async function (show, episode, file) 
           if (document.querySelector("parsererror") || document.documentElement.tagName !== "i") throw Error("官方弹幕响应无效");
           this.filterDanmaku(document);
           const cuts = this.state.settings.biliCutAlignment === false ? [] : await this.officialCuts(show, number, match.cid);
-          for (const node of document.querySelectorAll("d")) {
-            const fields = node.getAttribute("p").split(",");
-            const sourceTime = Number(fields[0]);
-            fields[0] = String(sourceTime + cuts.filter((cut) => sourceTime >= cut.at).reduce((total, cut) => total + cut.duration, 0));
-            node.setAttribute("p", fields.join(","));
-          }
+          const align = (time) => time + cuts.filter((cut) => time >= cut.at).reduce((total, cut) => total + cut.duration, 0);
+          for (const node of document.querySelectorAll("d")) alignDanmakuNode(node, match.cid, align);
           const target = file.path.replace(/\.[^.]+$/, ".xml");
           try {
             const existing = await fs.readFile(target, "utf8");
             const previous = new DOMParser().parseFromString(existing, "text/xml");
-            const known = new Set([...document.querySelectorAll("d")].map((node) => node.getAttribute("p") + "|" + node.textContent));
-            for (const node of this.danmakuResetPaths?.has(target) ? [] : previous.querySelectorAll("d")) {
-              const key = node.getAttribute("p") + "|" + node.textContent;
-              if (!known.has(key)) { document.documentElement.appendChild(document.importNode(node, true)); known.add(key); }
+            if (previous.querySelector("parsererror")) throw Error("已有弹幕 XML 无法解析，已保留原文件");
+            if (!this.danmakuResetPaths?.has(target)) {
+              const alignments = new Map([[String(match.cid), align]]);
+              for (const node of mergeDanmakuNodes(document.querySelectorAll("d"), previous.querySelectorAll("d"), alignments))
+                document.documentElement.appendChild(document.importNode(node, true));
             }
           } catch (error) { if (error.code !== "ENOENT") throw error; }
           await fs.writeFile(target, new XMLSerializer().serializeToString(document), "utf8");
           this.danmakuResetPaths?.delete(target);
           episode.danmaku = { ...episode.danmaku, cid: match.cid, official: true, cuts, xmlPath: target, biliMatchedAt: Date.now() };
           await this.persist();
-          return;
+          return { sources: [...(uploaderResult?.sources || []), { cid: match.cid }], count: document.querySelectorAll("d").length };
         }
       }
     } catch (error) { C.record(this.state, `${show.title} 第${episode.sort}集 · 官方弹幕获取失败：${error.message}`); }
@@ -7831,7 +7973,7 @@ const settingsOpenWebsite = AniLink.prototype.openWebsite;
 AniLink.prototype.openWebsite = function (value) {
   const url = new URL(value);
   if (this.state.settings.bgmMirror && this.state.settings.bgmMirrorWeb !== false && ["bgm.tv", "www.bgm.tv"].includes(url.hostname))
-    url.hostname = "bangumi.lat";
+    url.hostname = "bgm.lat";
   return settingsOpenWebsite.call(this, url.href);
 };
 
@@ -7841,7 +7983,7 @@ Dashboard.prototype.renderDetail = function (el, show) {
   if (this.p.state.settings.bgmMirror && this.p.state.settings.bgmMirrorWeb !== false) {
     for (const guest of el.querySelectorAll("webview")) {
       const src = guest.getAttribute("src");
-      if (src?.startsWith("https://bgm.tv/")) guest.setAttribute("src", src.replace("https://bgm.tv/", "https://bangumi.lat/"));
+      if (src?.startsWith("https://bgm.tv/")) guest.setAttribute("src", src.replace("https://bgm.tv/", "https://bgm.lat/"));
     }
   }
 };
@@ -8066,7 +8208,7 @@ class MobileAniLink extends AniLink {
   async openWebsite(value) {
     const url = new URL(value);
     if (!["https:", "http:"].includes(url.protocol)) throw Error("链接地址无效");
-    if (this.state.settings.bgmMirror && this.state.settings.bgmMirrorWeb !== false && ["bgm.tv", "bangumi.tv", "www.bgm.tv"].includes(url.hostname)) url.hostname = "bangumi.lat";
+    if (this.state.settings.bgmMirror && this.state.settings.bgmMirrorWeb !== false && ["bgm.tv", "bangumi.tv", "www.bgm.tv"].includes(url.hostname)) url.hostname = "bgm.lat";
     if (this.state.settings.browserMode === "obsidian" && this.app.viewRegistry?.getViewCreatorByType("webviewer")) {
       const leaf = this.app.workspace.getLeaf("tab");
       try { await leaf.setViewState({ type: "webviewer", state: { url: url.href }, active: true }); }
@@ -8163,13 +8305,13 @@ class MobileAniLink extends AniLink {
       const logs = [...this.state.queue.filter((job) => job.error).map((job) => ({ at: Date.now(), message: job.error })), ...this.state.events];
       button(el, "导出日志", () => this.run(async () => {
         const file = "AniLink-log-" + Date.now() + ".txt";
-        await this.app.vault.create(file, logs.map((log) => time(log.at) + " " + log.message).join("\n"));
+        await this.app.vault.create(file, logs.map((log) => time(log.at, this.state.settings.dateFormat) + " " + log.message).join("\n"));
         new Notice("日志已导出到仓库根目录");
       }));
       const list = el.createDiv("al-log-list");
       for (const log of logs) {
         const row = list.createDiv("al-log-row");
-        row.createEl("time", { text: time(log.at) });
+        row.createEl("time", { text: time(log.at, this.state.settings.dateFormat) });
         row.createEl("p", { text: log.message });
       }
     }).open();
@@ -8423,22 +8565,24 @@ AniLink.prototype.attachLocalLibrary = async function (subject, directory, statu
 };
 AniLink.prototype.localLibraryModal = function () {
   new Panel(this, "手动关联本地番剧", (el, modal) => {
+    modal.modalEl.addClass("al-local-library-modal");
     const query = field(el, "Bangumi 条目 ID 或番剧名称");
     const directory = field(el, "本地番剧目录");
-    button(el, "选择目录", () => this.run(async () => {
+    for (const input of [query, directory]) input.parentElement.addClass("al-library-field");
+    button(directory.parentElement, "选择目录", () => this.run(async () => {
       const result = await desktop.remote.dialog.showOpenDialog({ properties: ["openDirectory"] });
       if (!result.canceled) directory.value = result.filePaths[0] || "";
     }));
     const status = select(el, "未收藏时加入", "3", { 1: "想看", 3: "在看", 2: "看过" });
     const results = el.createDiv("al-results");
-    button(el, "搜索条目", () => this.run(async () => {
+    button(query.parentElement, "搜索条目", () => this.run(async () => {
       const value = query.value.trim();
       if (!value) throw Error("请输入 Bangumi 条目 ID 或名称");
       const response = /^\d+$/.test(value) ? { data: [await this.bgm().call("/v0/subjects/" + value)] } : await this.bgm().search(value);
       results.empty();
       for (const subject of response.data || []) {
         if (subject.type !== 2) continue;
-        new Setting(results).setName(subject.name_cn || subject.name).setDesc(`${subject.id} · ${subject.date || "日期未定"}`)
+        new Setting(results).setName(subject.name_cn || subject.name).setDesc(`${subject.id} · ${C.formatDate(subject.date, this.state.settings.dateFormat) || "日期未定"}`)
           .addButton((control) => control.setButtonText("关联并收藏").onClick(() => this.run(async () => {
             await this.attachLocalLibrary(subject, directory.value.trim(), Number(status.value));
             modal.close();
@@ -8451,7 +8595,7 @@ AniLink.prototype.localLibraryModal = function () {
 // Display data is kept separate from Bangumi identity, progress and media paths.
 AniLink.prototype.displayMetadata = async function (show) {
   const settings = this.state.settings;
-  const base = settings.bgmMirror && settings.bgmMirrorData !== false ? "https://api.bangumi.lat" : "https://api.bgm.tv";
+  const base = settings.bgmMirror && settings.bgmMirrorData !== false ? "https://api.bgm.lat" : "https://api.bgm.tv";
   const subject = await new C.Bangumi(this.http, "", base).call("/v0/subjects/" + show.id);
   show.displayMetadata = { title: subject.name_cn || subject.name, name: subject.name, cover: subject.images?.medium || subject.images?.common || "", source: "bangumi" };
 };
@@ -8475,7 +8619,7 @@ function displayShow(show, settings) {
   const metadata = show.displayMetadata?.source === expected ? show.displayMetadata : {};
   const cover = metadata.cover || show.cover;
   const mirror = settings.bgmMirror && settings.bgmMirrorData !== false;
-  const image = cover?.replace(/^https:\/\/lain\.(?:bgm\.tv|bangumi\.lat)\//, mirror ? "https://lain.bangumi.lat/" : "https://lain.bgm.tv/");
+  const image = cover?.replace(/^https:\/\/lain\.(?:bgm\.tv|bgm\.lat|bangumi\.lat)\//, mirror ? "https://lain.bgm.lat/" : "https://lain.bgm.tv/");
   return { ...show, title: metadata.title || show.title, name: metadata.name || show.name, cover: image };
 }
 const sourceCards = Dashboard.prototype.renderCards;
@@ -8495,7 +8639,7 @@ Dashboard.prototype.renderDetail = function (el, show) {
 
 AniLink.prototype.loadCoverImage = function (address) {
   const url = new URL(address);
-  if (url.protocol !== "https:" || !["assets.fankuhub.cn", "img.fankuhub.com", "lain.bgm.tv", "lain.bangumi.lat"].includes(url.hostname))
+  if (url.protocol !== "https:" || !["assets.fankuhub.cn", "img.fankuhub.com", "lain.bgm.tv", "lain.bgm.lat", "lain.bangumi.lat"].includes(url.hostname))
     return Promise.reject(Error("不支持的封面地址"));
   this.coverImageCache ||= new Map();
   if (this.coverImageCache.has(url.href)) return this.coverImageCache.get(url.href);

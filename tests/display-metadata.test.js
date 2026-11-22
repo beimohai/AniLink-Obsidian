@@ -10,7 +10,7 @@ test('legacy Fanku preference restores canonical Bangumi metadata',()=>{
  const {p,v}=fixture();p.state.settings.animeDataSource='fanku';v.renderCards({});assert.equal(v.rendered[0].title,'Canonical');assert.equal(p.state.shows[0].title,'Canonical');
 });
 test('cover mirrors follow the data flag independently of the API flag',()=>{
- const {p,v}=fixture();Object.assign(p.state.settings,{bgmMirror:true,bgmMirrorApi:false,bgmMirrorData:true});v.renderCards({});assert.equal(v.rendered[0].cover,'https://lain.bangumi.lat/cover.jpg');p.state.settings.bgmMirrorData=false;v.renderCards({});assert.equal(v.rendered[0].cover,'https://lain.bgm.tv/cover.jpg');
+ const {p,v}=fixture();Object.assign(p.state.settings,{bgmMirror:true,bgmMirrorApi:false,bgmMirrorData:true});v.renderCards({});assert.equal(v.rendered[0].cover,'https://lain.bgm.lat/cover.jpg');p.state.settings.bgmMirrorData=false;v.renderCards({});assert.equal(v.rendered[0].cover,'https://lain.bgm.tv/cover.jpg');
 });
 test('removed associations stay hidden after field records restore their metadata',()=>{
  const {p,v}=fixture();p.state.hiddenShows=[1];v.renderCards({});assert.equal(v.rendered.length,0);assert.equal(p.state.shows.length,1);

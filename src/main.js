@@ -94,8 +94,9 @@ function link(el, text, url) {
   );
 }
 /** @param {number | string | Date} t */
-function time(t) {
-  return t ? new Date(t).toLocaleString("zh-CN") : "尚未同步";
+function time(t, format) {
+  const date = C.formatDate(t, format);
+  return date ? date + " " + new Date(t).toLocaleTimeString("zh-CN", { hour12: false }) : "尚未同步";
 }
 /** @param {AniLinkData.Show} show */
 function allFiles(show) {
@@ -231,7 +232,7 @@ class Dashboard extends ItemView {
     const footer = root.createDiv("al-footer");
     footer.createEl("span", {
       text: p.state.events[0]
-        ? `${time(p.state.events[0].at)} · ${p.state.events[0].message}`
+        ? `${time(p.state.events[0].at, p.state.settings.dateFormat)} · ${p.state.events[0].message}`
         : "还没有任务。先添加一部想看的番剧。",
     });
   }
@@ -486,7 +487,7 @@ class Dashboard extends ItemView {
         "mod-cta",
       );
       body.createEl("p", {
-        text: `最近成功同步：${time(s.lastSync)}`,
+        text: `最近成功同步：${time(s.lastSync, this.p.state.settings.dateFormat)}`,
         cls: "al-muted",
       });
       button(body, "打开番库", () => p.fankuModal(s));
@@ -637,7 +638,7 @@ class AniLink extends Plugin {
     return this.qbClient;
   }
   bgm() {
-    return new C.Bangumi(this.http, this.state.settings.bgmToken, this.state.settings.bgmMirror && this.state.settings.bgmMirrorApi !== false ? "https://api.bangumi.lat" : "https://api.bgm.tv");
+    return new C.Bangumi(this.http, this.state.settings.bgmToken, this.state.settings.bgmMirror && this.state.settings.bgmMirrorApi !== false ? "https://api.bgm.lat" : "https://api.bgm.tv");
   }
   confirm(title, text, fn) {
     new Panel(this, title, (el, m) => {
@@ -842,7 +843,15 @@ class AniLink extends Plugin {
           });
       }).open();
   }
-  async play(s, e, f) {
+  localPlayerName() {
+    const name = String(this.state.settings.playerExe || "").split(/[\\/]/).pop().replace(/\.(exe|app)$/i, "");
+    if (/^dandanplay/i.test(name)) return "弹弹play";
+    if (/^potplayer/i.test(name)) return "PotPlayer";
+    if (/^vlc$/i.test(name)) return "VLC";
+    if (/^mpv$/i.test(name)) return "mpv";
+    return name || "播放器";
+  }
+  async play(s, e, f, showOpenedNotice = true) {
     if (s.demo) {
       new Notice("这是演练文件，不会启动真实播放器");
       return;
@@ -850,7 +859,7 @@ class AniLink extends Plugin {
     await fs.access(f.path);
     const exe = this.state.settings.playerExe;
     if (!exe || !path.isAbsolute(exe))
-      throw Error("请先在连接设置中填写弹弹play可执行文件的绝对路径");
+      throw Error("请先在连接设置中填写播放器可执行文件的绝对路径");
     await fs.access(exe);
     await new Promise((resolve, reject) => {
       const macApplication = process.platform === "darwin" && exe.endsWith(".app");
@@ -860,9 +869,9 @@ class AniLink extends Plugin {
       child.once("error", reject);
       child.once("spawn", resolve);
     });
-    C.record(this.state, `已交给弹弹play：${s.title} 第 ${e.sort} 集`);
+    C.record(this.state, `已交给${this.localPlayerName()}：${s.title} 第 ${e.sort} 集`);
     await this.persist();
-    this.notify("playback", "已打开弹弹play");
+    if (showOpenedNotice) this.notify("playback", "已打开" + this.localPlayerName());
   }
   filesModal(s, e) {
     new Panel(this, `第 ${e.sort} 集 · 文件管理`, (el, m) => {
@@ -1067,7 +1076,7 @@ class AniLink extends Plugin {
       el.createEl("h3", { text: "最近记录" });
       for (const e of this.state.events.slice(0, 30))
         el.createEl("p", {
-          text: `${time(e.at)} · ${e.message}`,
+          text: `${time(e.at, this.state.settings.dateFormat)} · ${e.message}`,
           cls: "al-muted",
         });
     }).open();

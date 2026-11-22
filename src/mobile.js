@@ -94,7 +94,7 @@ class MobileAniLink extends AniLink {
   async openWebsite(value) {
     const url = new URL(value);
     if (!["https:", "http:"].includes(url.protocol)) throw Error("链接地址无效");
-    if (this.state.settings.bgmMirror && this.state.settings.bgmMirrorWeb !== false && ["bgm.tv", "bangumi.tv", "www.bgm.tv"].includes(url.hostname)) url.hostname = "bangumi.lat";
+    if (this.state.settings.bgmMirror && this.state.settings.bgmMirrorWeb !== false && ["bgm.tv", "bangumi.tv", "www.bgm.tv"].includes(url.hostname)) url.hostname = "bgm.lat";
     if (this.state.settings.browserMode === "obsidian" && this.app.viewRegistry?.getViewCreatorByType("webviewer")) {
       const leaf = this.app.workspace.getLeaf("tab");
       try { await leaf.setViewState({ type: "webviewer", state: { url: url.href }, active: true }); }
@@ -191,13 +191,13 @@ class MobileAniLink extends AniLink {
       const logs = [...this.state.queue.filter((job) => job.error).map((job) => ({ at: Date.now(), message: job.error })), ...this.state.events];
       button(el, "导出日志", () => this.run(async () => {
         const file = "AniLink-log-" + Date.now() + ".txt";
-        await this.app.vault.create(file, logs.map((log) => time(log.at) + " " + log.message).join("\n"));
+        await this.app.vault.create(file, logs.map((log) => time(log.at, this.state.settings.dateFormat) + " " + log.message).join("\n"));
         new Notice("日志已导出到仓库根目录");
       }));
       const list = el.createDiv("al-log-list");
       for (const log of logs) {
         const row = list.createDiv("al-log-row");
-        row.createEl("time", { text: time(log.at) });
+        row.createEl("time", { text: time(log.at, this.state.settings.dateFormat) });
         row.createEl("p", { text: log.message });
       }
     }).open();

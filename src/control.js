@@ -13,6 +13,14 @@ const newestReady = (s) =>
         .map((f) => f.completedAt || 0),
     ),
   );
+function shelfUpdate(show, today) {
+  const { latest, next } = C.shelfBroadcastDates(show.episodes, today);
+  if (readyEpisodes(show).length) return { group: 0, date: newestReady(show), label: "待看" };
+  if (latest && show.episodes.some((e) => e.type === 0 && !e.watched && e.airdate === latest))
+    return { group: 1, date: latest, label: "暂无" };
+  if (next) return { group: 2, date: next, label: "下集" };
+  return { group: 3, date: latest, label: "上次播出" };
+}
 const fieldsOf = (s) => ({
   status: s.status,
   rate: s.rate || 0,
@@ -196,7 +204,7 @@ AniLink.prototype.syncModal = function () {
     m.modalEl.addClass("al-sync-modal");
     const status = el.createDiv("al-sync-status al-muted");
     status.createEl("p", { text: `待推送 ${this.state.queue.length} 项` });
-    status.createEl("p", { text: `上次推送 ${time(this.state.lastPush)}` });
+    status.createEl("p", { text: `上次推送 ${time(this.state.lastPush, this.state.settings.dateFormat)}` });
     const actions = el.createDiv("al-sync-toolbar");
     button(
       actions,
@@ -422,6 +430,19 @@ const cardControl = Dashboard.prototype.renderCards;
 Dashboard.prototype.renderCards = function (cards) {
   const original = this.p.state.shows,
     mode = this.sortMode || this.p.state.settings.shelfSort || "ready";
+  const dates = new Map();
+  const today = C.japanBroadcastDate();
+  if (mode === "ready") {
+    for (const show of original) dates.set(show, shelfUpdate(show, today));
+  }
+  const compareUpdates = (a, b) => {
+    const left = dates.get(a), right = dates.get(b);
+    return left.group - right.group ||
+      (left.group === 0 ? Number(right.date) - Number(left.date)
+        : left.group === 2 ? String(left.date).localeCompare(String(right.date))
+        : String(right.date).localeCompare(String(left.date))) ||
+      a.title.localeCompare(b.title, "zh-CN");
+  };
   const compare = (a, b) =>
     mode === "title"
       ? a.title.localeCompare(b.title, "zh-CN")
@@ -430,8 +451,7 @@ Dashboard.prototype.renderCards = function (cards) {
           a.episodes.filter((e) => e.watched).length
         : mode === "added"
           ? (b.addedAt || b.id) - (a.addedAt || a.id)
-          : newestReady(b) - newestReady(a) ||
-            a.title.localeCompare(b.title, "zh-CN");
+          : compareUpdates(a, b);
   this.p.state.shows = [...original].sort(compare);
   try {
     cardControl.call(this, cards);
@@ -493,7 +513,7 @@ Dashboard.prototype.render = function () {
       cls: failed ? "al-error" : "",
     });
     footer.createSpan({
-      text: `Bangumi ${p.state.lastPush ? "已推送 " + time(p.state.lastPush) : "待推送"}`,
+      text: `Bangumi ${p.state.lastPush ? "已推送 " + time(p.state.lastPush, p.state.settings.dateFormat) : "待推送"}`,
     });
     button(footer, "同步详情", () => p.syncModal(), "al-link");
   }

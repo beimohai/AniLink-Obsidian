@@ -35,6 +35,7 @@ const defaults = () => ({
     storageLabel: "",
     pollSeconds: 60,
     rssRefreshMinutes: 1,
+    dateFormat: "yyyy/mm/dd",
     browserMode: "obsidian",
     openFirstShow: true,
     logScope: "all",
@@ -851,7 +852,56 @@ function mergeFiles(show, torrents, fileLists, settings) {
   show.unmatched = result.filter((f) => !f.episodeId);
   return result;
 }
+// Bangumi supplies a Japanese broadcast date, without a broadcast hour.
+function episodeAirState(date, japanDate) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "")) return "unknown";
+  return date > japanDate ? "future" : date === japanDate ? "today" : "past";
+}
+function japanBroadcastDate(now = new Date()) {
+  return new Date(now.getTime() + 9 * 3600000).toISOString().slice(0, 10);
+}
+function shelfBroadcastDates(episodes, japanDate) {
+  let latest = "", next = "";
+  for (const episode of episodes) {
+    if (episode.type !== 0) continue;
+    const date = episode.airdate;
+    const state = episodeAirState(date, japanDate);
+    if (state === "past" && date > latest) latest = date;
+    if ((state === "today" || state === "future") && (!next || date < next)) next = date;
+  }
+  return { latest, next };
+}
+
+function formatDate(value, format = "yyyy/mm/dd") {
+  if (!value) return "";
+  const parts = typeof value === "string" && value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const date = parts ? null : new Date(value);
+  if (date && !Number.isFinite(date.getTime())) return "";
+  const [year, month, day] = parts ? parts.slice(1) : [
+    String(date.getFullYear()),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ];
+  const formats = {
+    "yyyymmdd": year + month + day,
+    "yyyy/mm/dd": year + "/" + month + "/" + day,
+    "yyyy-mm-dd": year + "-" + month + "-" + day,
+    "yyyy.mm.dd": year + "." + month + "." + day,
+    "mm/dd/yyyy": month + "/" + day + "/" + year,
+    "mm-dd-yyyy": month + "-" + day + "-" + year,
+    "dd/mm/yyyy": day + "/" + month + "/" + year,
+    "dd-mm-yyyy": day + "-" + month + "-" + year,
+    "dd.mm.yyyy": day + "." + month + "." + year,
+    "yyyy年mm月dd日": year + "年" + month + "月" + day + "日",
+  };
+  return Object.hasOwn(formats, format) ? formats[format] : formats["yyyy/mm/dd"];
+}
+
 module.exports = {
+  formatDate,
+  episodeAirState,
+  japanBroadcastDate,
+  shelfBroadcastDates,
   STATUS,
   VIDEO,
   defaults,

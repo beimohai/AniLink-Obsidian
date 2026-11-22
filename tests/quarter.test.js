@@ -14,7 +14,7 @@ test("verified Bilibili translation matches the correct cour and rejects other s
 });
 test("optional danmaku failure still launches local media", async () => {
   const source = fs.readFileSync("src/ux.js", "utf8");
-  const start = source.indexOf("AniLink.prototype.play = async function (show, episode, file)");
+  const start = source.indexOf("AniLink.prototype.play = async function (show, episode, file, onPrepared)");
   const end = source.indexOf("AniLink.prototype.suspendSearch", start);
   let launched = 0;
   const Plugin = function () {};
@@ -26,9 +26,17 @@ test("optional danmaku failure still launches local media", async () => {
   });
   const p = new Plugin();
   p.state = C.defaults();
-  p.prepareUploaderDanmaku = async () => { throw Error("没有匹配来源"); };
-  await p.play({}, {}, { path: "D:/Anime/episode.mkv" });
+  let refreshes = 0;
+  p.prepareUploaderDanmaku = async () => { refreshes++; throw Error("没有匹配来源"); };
+  const episode = { watched: false, danmaku: { biliMatchedAt: 1, official: true, sourceOptions: "opening-consensus-v2:true:true:true:154244413,3546957240862932,4262884,442715778,5306996,690151424:0" } };
+  const file = { path: "D:/Anime/episode.mkv" };
+  await p.play({}, episode, file);
+  assert.equal(refreshes, 1);
   assert.equal(launched, 1);
+  episode.watched = true;
+  await p.play({}, episode, file);
+  assert.equal(refreshes, 1);
+  assert.equal(launched, 2);
 });
 function fixture() {
   return C.newShow(
@@ -380,7 +388,7 @@ test("offline changes coalesce, persist, and undo watched status syncs type 0", 
   assert.equal(h.state.episodes["100"].type, 0);
   assert.equal(p.state.queue.length, 0);
 });
-test("search paginates and preserves official sort/filter parameters", async () => {
+test("search uses the selected mirror and preserves pagination, sort and filters", async () => {
   let request;
   const bgm = new C.Bangumi(
     new C.Http(async (r) => {
@@ -388,9 +396,11 @@ test("search paginates and preserves official sort/filter parameters", async () 
       return { status: 200, text: '{"data":[],"total":0}' };
     }),
     "",
+    "https://api.bgm.lat",
   );
   await bgm.search("冰之城墙", 20, "score");
-  assert.match(request.url, /offset=20/);
+  assert.equal(request.url, "https://api.bgm.lat/v0/search/subjects?limit=20&offset=20");
+  assert.equal(request.method, "POST");
   assert.deepEqual(JSON.parse(request.body), {
     keyword: "冰之城墙",
     sort: "score",
@@ -1064,4 +1074,36 @@ test("exit synchronization can drain the queue after normal background work is d
   p.exitSyncRunning = true;
   await p.sync();
   assert.equal(p.state.queue.length, 0);
+});
+
+test("danmaku merge replaces shifted duplicates and recalibrates saved-only entries", () => {
+  const source = fs.readFileSync("src/ux.js", "utf8");
+  const api = vm.runInNewContext(
+    source.slice(source.indexOf("function alignDanmakuNode"), source.indexOf("AniLink.prototype.prepareUploaderDanmaku =")) +
+    "\n({alignDanmakuNode, mergeDanmakuNodes})",
+  );
+  const node = (time, id) => {
+    const attrs = new Map([["p", [time, 1, 25, 0, 1, 0, "user", id].join(",")]]);
+    return { textContent: "same text", getAttribute: (key) => attrs.get(key) ?? null, setAttribute: (key, value) => attrs.set(key, value) };
+  };
+  const fresh = node(82, "123");
+  const old = node(82, "123");
+  const legacy = node(81, "123");
+  const savedOnly = node(90, "124");
+  api.alignDanmakuNode(fresh, 42, (time) => time + 0.9);
+  for (const entry of [old, savedOnly]) api.alignDanmakuNode(entry, 42, (time) => time + 0.4);
+  const kept = api.mergeDanmakuNodes([fresh].values(), [old, legacy, savedOnly], new Map([["42", (time) => time + 0.9]]));
+  assert.equal(kept.length, 1);
+  assert.equal(kept[0], savedOnly);
+  assert.equal(Number(savedOnly.getAttribute("p").split(",")[0]), 90.9);
+  assert.equal(Number(fresh.getAttribute("p").split(",")[0]), 82.9);
+});
+
+test("date-only episode schedules use the Japan day and keep the broadcast day provisional", () => {
+  const before = C.japanBroadcastDate(new Date("2026-11-22T14:59:59Z"));
+  const after = C.japanBroadcastDate(new Date("2026-11-22T15:00:00Z"));
+  assert.equal(C.episodeAirState("2026-11-23", before), "future");
+  assert.equal(C.episodeAirState("2026-11-23", after), "today");
+  assert.equal(C.episodeAirState("2026-11-22", after), "past");
+  assert.equal(C.episodeAirState("", after), "unknown");
 });

@@ -43,11 +43,14 @@ Dashboard.prototype.renderDetail = function (el, s) {
     details.createEl("summary", { text: `特别篇（${special.length}）` });
     spGrid = details.createDiv("al-episode-grid");
   }
+  const today = C.japanBroadcastDate();
   for (const e of s.episodes) {
     const downloaded = e.files?.some(
         (f) => f.progress === 1 && f.localExists !== false,
       ),
-      future = e.airdate && e.airdate > new Date().toLocaleDateString("sv-SE");
+      airState = C.episodeAirState(e.airdate, today),
+      future = airState === "future";
+    const unbroadcast = future || airState === "today";
     const tile = button(
       e.type === 0 ? grid : spGrid,
       "",
@@ -56,7 +59,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
         this.renderDetail(this.contentEl.querySelector(".al-detail"), s);
       },
       "al-episode-tile" +
-        (future && !e.watched && !downloaded ? " is-future" : "") +
+        (unbroadcast && !e.watched && !e.files?.length ? " is-future" : "") +
         (downloaded && !e.watched ? " is-ready" : "") +
         (e.watched ? " is-watched" : "") +
         (e.id === selected?.id ? " is-current" : ""),
@@ -74,9 +77,11 @@ Dashboard.prototype.renderDetail = function (el, s) {
             ? e.files.every((f) => f.localExists === false)
               ? "文件缺失"
               : "下载中"
-            : future
+            : unbroadcast
               ? "未播"
-              : "未下载",
+                : airState === "unknown"
+                  ? "播期待定"
+                  : "未下载",
     });
   }
   if (!selected) {
@@ -93,14 +98,15 @@ Dashboard.prototype.renderDetail = function (el, s) {
     text: `${e.type === 0 ? "第 " + (e.ep || e.sort) + " 集" : "特别篇 " + e.sort} · ${e.title || "标题未公布"}`,
   });
   focus.createEl("p", {
-    text: [e.airdate, e.watched ? "已看" : "未看"].filter(Boolean).join(" · "),
+    text: [C.formatDate(e.airdate, p.state.settings.dateFormat), e.watched ? "已看" : "未看"].filter(Boolean).join(" · "),
     cls: "al-muted",
   });
   const actions = focus.createDiv("al-actions"),
     files = (e.files || []).filter(
       (f) => f.progress === 1 && f.localExists !== false,
     ),
-    future = e.airdate && e.airdate > new Date().toLocaleDateString("sv-SE");
+    airState = C.episodeAirState(e.airdate, today),
+      future = airState === "future";
   if (files.length)
     button(actions, "播放", () => p.pickFile(s, e, files), "mod-cta");
   else if (!future)

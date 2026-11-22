@@ -907,9 +907,6 @@
   .al-card p {
     font-size: 10px;
   }
-  .al-original-name {
-    display: none;
-  }
   .al-shelf-tools {
     flex-wrap: wrap;
   }
@@ -3087,7 +3084,7 @@
 .mod-settings .al-plugin-settings.al-settings-v2 .setting-item-control > input:is([type="text"],[type="password"]) { box-sizing: border-box; width: 224px; min-width: 0; max-width: 100%; flex: 0 1 224px; margin: 0; padding-inline: 8px; }
 .mod-settings .al-plugin-settings.al-settings-v2 .al-uploader-setting .setting-item-control > input { width: 100%; flex-basis: 100%; }
 .mod-settings .al-plugin-settings.al-settings-v2 .setting-item-control > select { width: 112px; min-width: 0; max-width: 100%; flex: 0 1 112px; }
-.mod-settings .al-plugin-settings.al-settings-v2 .setting-item.al-browser-setting select { width: 190px; flex-basis: 190px; }
+.mod-settings .al-plugin-settings.al-settings-v2 .setting-item.al-wide-select-setting select { width: 190px; flex-basis: 190px; }
 .mod-settings .al-plugin-settings.al-settings-v2 .al-cleanup-setting select { width: 160px; flex-basis: 160px; }
 .mod-settings .al-plugin-settings.al-settings-v2 .setting-item-control > button:not(.clickable-icon) { width: auto; min-width: 0; flex: 0 0 auto; margin: 0; padding: var(--size-4-1) var(--size-4-3); white-space: nowrap; }
 .mod-settings .al-plugin-settings.al-settings-v2 .al-sync-actions .setting-item-control { width: 112px; justify-self: end; }
@@ -3109,7 +3106,7 @@
 .mod-settings .al-plugin-settings.al-settings-v2 .al-bili-profile > button { margin-left: auto; }
 @container al-settings (max-width: 560px) {
   .mod-settings .al-plugin-settings.al-settings-v2 .setting-item { grid-template-columns: minmax(0, 1fr) minmax(0, 52%); padding: 12px 4px; gap: 8px; }
-  .mod-settings .al-plugin-settings.al-settings-v2 .al-browser-setting { grid-template-columns: minmax(0, 1fr) minmax(0, 190px); }
+  .mod-settings .al-plugin-settings.al-settings-v2 .al-wide-select-setting { grid-template-columns: minmax(0, 1fr) minmax(0, 190px); }
   .mod-settings .al-plugin-settings.al-settings-v2 .al-input-setting { grid-template-columns: minmax(0, 1fr) minmax(0, 224px); }
   .mod-settings .al-plugin-settings.al-settings-v2 .al-setting-has-side-action { grid-template-columns: minmax(0, 1fr) minmax(0, 320px); }
   .mod-settings .al-plugin-settings.al-settings-v2 .al-cleanup-setting { grid-template-columns: minmax(0, 1fr) minmax(0, 160px); }
@@ -3143,7 +3140,7 @@
   .mod-settings .al-plugin-settings.al-settings-v2 .al-input-setting .setting-item-control { width: min(100%, 320px); }
 }
 @container al-settings (max-width: 280px) {
-  .mod-settings .al-plugin-settings.al-settings-v2 .al-browser-setting { grid-template-columns: minmax(0, 1fr); }
+  .mod-settings .al-plugin-settings.al-settings-v2 .al-wide-select-setting { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Phones retain the same cards and panels in a single-column master/detail flow. */
@@ -3313,3 +3310,46 @@ body.is-mobile .al-mobile-dashboard .al-section-trend .al-status-buttons > butto
 @container anilink-dashboard (max-width: 620px) {
   .al-root .al-mobile-back { display: inline-flex; grid-column: 1; grid-row: 1; order: -1; justify-self: start; padding-inline: 0; background: transparent; box-shadow: none; color: var(--text-muted); }
 }
+
+/* Settings control widths stay independent of label length. */
+.mod-settings .al-plugin-settings.al-settings-v2 { --al-library-control-width: 160px; }
+.mod-settings .al-plugin-settings.al-settings-v2 .al-local-association-setting .setting-item-control > button:not(.clickable-icon),
+.mod-settings .al-plugin-settings.al-settings-v2 .al-cleanup-setting .setting-item-control > select {
+  width: var(--al-library-control-width);
+  flex: 0 0 var(--al-library-control-width);
+  max-width: 100%;
+}
+.mod-settings .al-plugin-settings.al-settings-v2 .setting-item.al-sync-interval-setting {
+  grid-template-columns: minmax(0, 1fr) 88px;
+}
+.mod-settings .al-plugin-settings.al-settings-v2 .al-sync-interval-setting .setting-item-control > input {
+  width: 88px;
+  flex: 0 0 88px;
+  max-width: 100%;
+}
+body.is-mobile .mod-settings .al-plugin-settings.al-settings-v2 .setting-item.al-select-setting {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+body.is-mobile .mod-settings .al-plugin-settings.al-settings-v2 .al-select-setting .setting-item-control > select {
+  width: 132px;
+  min-width: 132px;
+  flex: 0 0 132px;
+}
+body.is-mobile .mod-settings .al-plugin-settings.al-settings-v2 .setting-item.al-wide-select-setting select {
+  width: 168px;
+  min-width: 168px;
+  flex-basis: 168px;
+}
+body.is-mobile .mod-settings .al-plugin-settings.al-settings-v2 .setting-item.al-sync-interval-setting {
+  grid-template-columns: minmax(0, 1fr) 72px;
+}
+body.is-mobile .mod-settings .al-plugin-settings.al-settings-v2 .al-sync-interval-setting .setting-item-control > input {
+  width: 72px;
+  flex-basis: 72px;
+}
+
+.al-local-library-modal.modal { width: min(480px, calc(100vw - 24px)); }
+.al-local-library-modal .al-library-field { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 8px; }
+.al-local-library-modal .al-library-field > label { grid-column: 1 / -1; }
+.al-local-library-modal .al-library-field > input { width: 100%; min-width: 0; margin: 0; }
+.al-local-library-modal .al-library-field > button { margin: 0; white-space: nowrap; }

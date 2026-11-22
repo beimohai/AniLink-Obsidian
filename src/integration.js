@@ -178,7 +178,7 @@ AniLink.prototype.searchModal = function () {
       prev.disabled = next.disabled = true;
       try {
         const id = keyword.match(
-          /^(?:https?:\/\/(?:bgm\.tv|bangumi\.tv|chii\.in)\/subject\/)?(\d+)\/?$/,
+          /^(?:https?:\/\/(?:bgm\.tv|bangumi\.tv|chii\.in|bangumi\.lat|bgm\.lat)\/subject\/)?(\d+)\/?$/,
         )?.[1];
         const data = id
           ? { data: [await this.bgm().call("/v0/subjects/" + id)], total: 1 }
@@ -204,7 +204,7 @@ AniLink.prototype.searchModal = function () {
           if (s.name_cn && s.name_cn !== s.name)
             info.createEl("p", { text: s.name, cls: "al-muted" });
           info.createEl("p", {
-            text: `${s.date || "日期未定"} · ${s.platform || "动画"} · ${s.eps || s.total_episodes || "待定"} 集`,
+            text: `${C.formatDate(s.date, this.state.settings.dateFormat) || "日期未定"} · ${s.platform || "动画"} · ${s.eps || s.total_episodes || "待定"} 集`,
           });
           info.createEl("p", {
             text: `★ ${s.rating?.score || "暂无评分"} · ${s.rating?.total || 0} 人评分${s.rating?.rank ? " · 排名 " + s.rating.rank : ""}`,
@@ -414,7 +414,7 @@ AniLink.prototype.subscriptionModal = function (s) {
                       .sort((a, b) => b - a)[0];
                     if (latest)
                       info.createEl("p", {
-                        text: `更新于 ${new Date(latest).toLocaleDateString("zh-CN")}`,
+                        text: `更新于 ${C.formatDate(latest, this.state.settings.dateFormat)}`,
                         cls: "al-muted",
                       });
                     const tags = info.createDiv("al-version-tags");

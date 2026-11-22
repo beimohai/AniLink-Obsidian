@@ -102,9 +102,10 @@ AniLink.prototype.play = async function (show, episode, file) {
   this.playPreparing = true;
   const buttons = [...document.querySelectorAll(".al-root button")].filter((button) => button.textContent === "播放");
   for (const button of buttons) { button.disabled = true; button.textContent = "准备弹幕…"; }
-  const notice = this.notify("playback", "正在匹配来源、抓取并校准弹幕…", 0);
-  try {
   const settings = this.state.settings;
+  const networkName = settings.remoteEnabled && { kodi: "Kodi", jellyfin: "Jellyfin", emby: "Emby" }[settings.networkPlayer];
+  const notice = this.notify("playback", networkName ? `正在打开 ${networkName}…` : "正在匹配来源、抓取并校准弹幕…", 0);
+  try {
   if (settings.remoteEnabled && settings.networkPlayer && settings.networkPlayer !== "local") {
     const base = new URL(settings.networkPlayerUrl);
     if (!["http:", "https:"].includes(base.protocol)) throw Error("播放器服务地址须为 HTTP(S)");
@@ -123,8 +124,15 @@ AniLink.prototype.play = async function (show, episode, file) {
     }
     return;
   }
-  const result = await settingsPlay.call(this, show, episode, file);
-  notice.setMessage("弹幕准备完成，正在打开播放器");
+  let summary;
+  const result = await settingsPlay.call(this, show, episode, file, ({ videos, count, cached, reusedLocal }) => {
+    summary = cached ? `已读取缓存弹幕 ${count} 条` : reusedLocal ? `本次未获取到新弹幕，沿用本地 ${count} 条` : `本次抓取 ${videos} 条视频的弹幕，合并去重后共 ${count} 条`;
+    notice.setMessage(`${summary}，正在打开 ${this.localPlayerName()}…`);
+  });
+  if (summary) {
+    notice.hide();
+    this.notify("playback", summary + "，已打开 " + this.localPlayerName(), 8000);
+  }
   try { await this.focusLocalPlayer?.(); }
   catch (error) { C.record(this.state, "播放器窗口置前失败：" + error.message); }
   return result;
@@ -170,27 +178,24 @@ AniLink.prototype.prepareUploaderDanmaku = async function (show, episode, file) 
           if (document.querySelector("parsererror") || document.documentElement.tagName !== "i") throw Error("官方弹幕响应无效");
           this.filterDanmaku(document);
           const cuts = this.state.settings.biliCutAlignment === false ? [] : await this.officialCuts(show, number, match.cid);
-          for (const node of document.querySelectorAll("d")) {
-            const fields = node.getAttribute("p").split(",");
-            const sourceTime = Number(fields[0]);
-            fields[0] = String(sourceTime + cuts.filter((cut) => sourceTime >= cut.at).reduce((total, cut) => total + cut.duration, 0));
-            node.setAttribute("p", fields.join(","));
-          }
+          const align = (time) => time + cuts.filter((cut) => time >= cut.at).reduce((total, cut) => total + cut.duration, 0);
+          for (const node of document.querySelectorAll("d")) alignDanmakuNode(node, match.cid, align);
           const target = file.path.replace(/\.[^.]+$/, ".xml");
           try {
             const existing = await fs.readFile(target, "utf8");
             const previous = new DOMParser().parseFromString(existing, "text/xml");
-            const known = new Set([...document.querySelectorAll("d")].map((node) => node.getAttribute("p") + "|" + node.textContent));
-            for (const node of this.danmakuResetPaths?.has(target) ? [] : previous.querySelectorAll("d")) {
-              const key = node.getAttribute("p") + "|" + node.textContent;
-              if (!known.has(key)) { document.documentElement.appendChild(document.importNode(node, true)); known.add(key); }
+            if (previous.querySelector("parsererror")) throw Error("已有弹幕 XML 无法解析，已保留原文件");
+            if (!this.danmakuResetPaths?.has(target)) {
+              const alignments = new Map([[String(match.cid), align]]);
+              for (const node of mergeDanmakuNodes(document.querySelectorAll("d"), previous.querySelectorAll("d"), alignments))
+                document.documentElement.appendChild(document.importNode(node, true));
             }
           } catch (error) { if (error.code !== "ENOENT") throw error; }
           await fs.writeFile(target, new XMLSerializer().serializeToString(document), "utf8");
           this.danmakuResetPaths?.delete(target);
           episode.danmaku = { ...episode.danmaku, cid: match.cid, official: true, cuts, xmlPath: target, biliMatchedAt: Date.now() };
           await this.persist();
-          return;
+          return { sources: [...(uploaderResult?.sources || []), { cid: match.cid }], count: document.querySelectorAll("d").length };
         }
       }
     } catch (error) { C.record(this.state, `${show.title} 第${episode.sort}集 · 官方弹幕获取失败：${error.message}`); }
@@ -280,7 +285,7 @@ const settingsOpenWebsite = AniLink.prototype.openWebsite;
 AniLink.prototype.openWebsite = function (value) {
   const url = new URL(value);
   if (this.state.settings.bgmMirror && this.state.settings.bgmMirrorWeb !== false && ["bgm.tv", "www.bgm.tv"].includes(url.hostname))
-    url.hostname = "bangumi.lat";
+    url.hostname = "bgm.lat";
   return settingsOpenWebsite.call(this, url.href);
 };
 
@@ -290,7 +295,7 @@ Dashboard.prototype.renderDetail = function (el, show) {
   if (this.p.state.settings.bgmMirror && this.p.state.settings.bgmMirrorWeb !== false) {
     for (const guest of el.querySelectorAll("webview")) {
       const src = guest.getAttribute("src");
-      if (src?.startsWith("https://bgm.tv/")) guest.setAttribute("src", src.replace("https://bgm.tv/", "https://bangumi.lat/"));
+      if (src?.startsWith("https://bgm.tv/")) guest.setAttribute("src", src.replace("https://bgm.tv/", "https://bgm.lat/"));
     }
   }
 };

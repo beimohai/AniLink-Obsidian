@@ -10,7 +10,7 @@ declare namespace AniLinkData {
     cleanupMode: string; cleanupAfterWatch?: boolean; downloadMode: string; idleMinutes: number; wakeMinutes?: number;
     remoteRoot: string; localRoot: string; storageMode: string; storageLabel: string;
     pollSeconds: number; rssRefreshMinutes: number; rssMinutes?: number; autoRefresh: boolean;
-    browserMode: string; openFirstShow: boolean; cardDensity: string; showOriginalName: boolean;
+    dateFormat: string; browserMode: string; openFirstShow: boolean; cardDensity: string; showOriginalName: boolean;
     logScope: string; logRetention: string; shelfQuarterDefault: string; shelfSort: string;
     shelfColumns: string; lastShelfQuarter?: string; searchStatuses: number[];
     informationPanel: boolean; informationPage: string; toolbarOrder?: string[];

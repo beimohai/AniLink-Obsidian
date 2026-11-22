@@ -72,16 +72,21 @@ Connections.prototype.display = function () {
   };
 
   heading("通用");
-  choice("网页打开方式", "browserMode", { external: "默认浏览器", obsidian: "Obsidian Web viewer" }, "external");
+  choice("日期格式", "dateFormat", { "yyyy/mm/dd": "YYYY/MM/DD", "yyyy-mm-dd": "YYYY-MM-DD", "yyyy.mm.dd": "YYYY.MM.DD", "yyyymmdd": "YYYYMMDD",
+    "mm/dd/yyyy": "MM/DD/YYYY", "mm-dd-yyyy": "MM-DD-YYYY",
+    "dd/mm/yyyy": "DD/MM/YYYY", "dd-mm-yyyy": "DD-MM-YYYY", "dd.mm.yyyy": "DD.MM.YYYY",
+    "yyyy年mm月dd日": "YYYY年MM月DD日",
+  }, "yyyy/mm/dd").setClass("al-wide-select-setting");
+  choice("网页打开方式", "browserMode", { external: "默认浏览器", obsidian: "Obsidian 内置" }, "external").setClass("al-wide-select-setting");
   toggle("默认打开第一个番剧", "openFirstShow", false);
   new Setting(el).setName("运行日志").setClass("al-log-setting").addButton((b) => b.setButtonText("查看日志").onClick(() => p.logsModal()));
   choice("日志记录范围", "logScope", { all: "全量操作", errors: "错误信息" }, "all");
   choice("日志缓存时间", "logRetention", { session: "退出后清除", day: "一天", week: "七天", forever: "长期保留" }, "session");
 
   toggle("启动通知", "startupNotifications", true);
-  toggle("播放准备通知", "playbackNotifications", true);
+  if (Platform.isDesktop) toggle("播放准备通知", "playbackNotifications", true);
   toggle("进度与状态通知", "progressNotifications", true);
-  toggle("下载完成通知", "downloadNotifications", false);
+  if (Platform.isDesktop) toggle("下载完成通知", "downloadNotifications", false);
   toggle("刷新完成通知", "refreshNotifications", true);
   toggle("同步完成通知", "syncNotifications", true);
 
@@ -99,14 +104,16 @@ Connections.prototype.display = function () {
   heading("Bangumi");
   const token = text("访问令牌", "bgmToken", "用于同步收藏、进度与评价。", true);
   sideAction(token.row, "获取 Token", () => p.openWebsite("https://next.bgm.tv/demo/access-token"));
-  toggle("使用镜像网站", "bgmMirror", false, "使用 bangumi.lat 镜像。", (enabled) => { mirrorControls.hidden = !enabled; });
+  toggle("使用镜像网站", "bgmMirror", false, "使用 bgm.lat 镜像。", (enabled) => { mirrorControls.hidden = !enabled; });
   const mirrorControls = el.createDiv("al-settings-conditional");
   mirrorControls.hidden = !s.bgmMirror;
   for (const [name, key] of [["网页使用镜像网站", "bgmMirrorWeb"], ["API使用镜像网站", "bgmMirrorApi"], ["数据源使用镜像网站", "bgmMirrorData"]]) {
     const control = toggle(name, key, true);
     mirrorControls.appendChild(control.row.settingEl);
   }
-  text("自动同步间隔（分钟）", "bgmSyncMinutes", "0 为关闭定时同步。");
+  const syncInterval = text("自动同步间隔（分钟）", "bgmSyncMinutes", "0 为关闭定时同步。");
+  syncInterval.row.settingEl.addClass("al-sync-interval-setting");
+  syncInterval.input().inputMode = "numeric";
   toggle("启动时自动同步", "bgmSyncStartup", true);
   toggle("退出时自动同步", "bgmSyncExit", true);
   toggle("看到最后一集自动标记看过", "bgmAutoComplete", true);
@@ -148,7 +155,7 @@ Connections.prototype.display = function () {
   );
 
   el.appendChild(startupSetting.settingEl);
-  toggle("打开软件自动启动", "downloaderOnStartup", false);
+  toggle("打开插件自动启动", "downloaderOnStartup", false);
   toggle("自动刷新 RSS 订阅", "autoRefresh", true, "", (value) => { polling.settingEl.hidden = !value; });
   const polling = text("自动刷新 RSS 订阅（分钟）", "rssRefreshMinutes").row;
   polling.settingEl.hidden = s.autoRefresh === false;
@@ -190,7 +197,7 @@ Connections.prototype.display = function () {
   };
   renderLibraries();
 
-  new Setting(el).setName("手动关联本地番剧").addButton((control) => control.setButtonText("关联 Bangumi 条目").onClick(() => p.localLibraryModal()));
+  new Setting(el).setName("手动关联本地番剧").setClass("al-local-association-setting").addButton((control) => control.setButtonText("关联 Bangumi 条目").onClick(() => p.localLibraryModal()));
   choice("点击看到这里", "cleanupMode", { none: "不清理", current: "清理当前文件", watched: "清理已看文件" }, s.cleanupAfterWatch === false ? "none" : "watched").settingEl.addClass("al-cleanup-setting");
   toggle("删除文件时同步删除种子", "deleteTorrentWithFiles", true);
 
@@ -338,7 +345,7 @@ Connections.prototype.display = function () {
     row.classList.toggle("al-setting-no-description", !row.querySelector(".setting-item-description"));
     row.classList.toggle("al-toggle-setting", !!row.querySelector(".checkbox-container"));
     row.classList.toggle("al-input-setting", !!row.querySelector('input[type="text"], input[type="password"], input[type="number"]'));
-    row.classList.toggle("al-browser-setting", !!row.querySelector('option[value="obsidian"]'));
+    row.classList.toggle("al-select-setting", !!row.querySelector("select"));
   }
   const footer = el.createDiv("al-plugin-footer");
   const logo = new DOMParser().parseFromString(ANI_ICON, "image/svg+xml").documentElement;

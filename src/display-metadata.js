@@ -1,7 +1,7 @@
 // Display data is kept separate from Bangumi identity, progress and media paths.
 AniLink.prototype.displayMetadata = async function (show) {
   const settings = this.state.settings;
-  const base = settings.bgmMirror && settings.bgmMirrorData !== false ? "https://api.bangumi.lat" : "https://api.bgm.tv";
+  const base = settings.bgmMirror && settings.bgmMirrorData !== false ? "https://api.bgm.lat" : "https://api.bgm.tv";
   const subject = await new C.Bangumi(this.http, "", base).call("/v0/subjects/" + show.id);
   show.displayMetadata = { title: subject.name_cn || subject.name, name: subject.name, cover: subject.images?.medium || subject.images?.common || "", source: "bangumi" };
 };
@@ -25,7 +25,7 @@ function displayShow(show, settings) {
   const metadata = show.displayMetadata?.source === expected ? show.displayMetadata : {};
   const cover = metadata.cover || show.cover;
   const mirror = settings.bgmMirror && settings.bgmMirrorData !== false;
-  const image = cover?.replace(/^https:\/\/lain\.(?:bgm\.tv|bangumi\.lat)\//, mirror ? "https://lain.bangumi.lat/" : "https://lain.bgm.tv/");
+  const image = cover?.replace(/^https:\/\/lain\.(?:bgm\.tv|bgm\.lat|bangumi\.lat)\//, mirror ? "https://lain.bgm.lat/" : "https://lain.bgm.tv/");
   return { ...show, title: metadata.title || show.title, name: metadata.name || show.name, cover: image };
 }
 const sourceCards = Dashboard.prototype.renderCards;
@@ -45,7 +45,7 @@ Dashboard.prototype.renderDetail = function (el, show) {
 
 AniLink.prototype.loadCoverImage = function (address) {
   const url = new URL(address);
-  if (url.protocol !== "https:" || !["assets.fankuhub.cn", "img.fankuhub.com", "lain.bgm.tv", "lain.bangumi.lat"].includes(url.hostname))
+  if (url.protocol !== "https:" || !["assets.fankuhub.cn", "img.fankuhub.com", "lain.bgm.tv", "lain.bgm.lat", "lain.bangumi.lat"].includes(url.hostname))
     return Promise.reject(Error("不支持的封面地址"));
   this.coverImageCache ||= new Map();
   if (this.coverImageCache.has(url.href)) return this.coverImageCache.get(url.href);

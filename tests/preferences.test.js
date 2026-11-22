@@ -105,9 +105,9 @@ test("incomplete releases stay separate when subtitle versions are ambiguous", (
 
 test("Bangumi mirror routes API calls and retains authentication", async () => {
   let call;
-  const client = new C.Bangumi({ json: async (...args) => { call = args; return { id: 1 }; } }, "fixture-token", "https://api.bangumi.lat");
+  const client = new C.Bangumi({ json: async (...args) => { call = args; return { id: 1 }; } }, "fixture-token", "https://api.bgm.lat");
   await client.call("/v0/me");
-  assert.equal(call[0], "https://api.bangumi.lat/v0/me");
+  assert.equal(call[0], "https://api.bgm.lat/v0/me");
   assert.equal(call[3].Authorization, "Bearer fixture-token");
 });
 

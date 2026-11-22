@@ -59,22 +59,24 @@ AniLink.prototype.attachLocalLibrary = async function (subject, directory, statu
 };
 AniLink.prototype.localLibraryModal = function () {
   new Panel(this, "手动关联本地番剧", (el, modal) => {
+    modal.modalEl.addClass("al-local-library-modal");
     const query = field(el, "Bangumi 条目 ID 或番剧名称");
     const directory = field(el, "本地番剧目录");
-    button(el, "选择目录", () => this.run(async () => {
+    for (const input of [query, directory]) input.parentElement.addClass("al-library-field");
+    button(directory.parentElement, "选择目录", () => this.run(async () => {
       const result = await desktop.remote.dialog.showOpenDialog({ properties: ["openDirectory"] });
       if (!result.canceled) directory.value = result.filePaths[0] || "";
     }));
     const status = select(el, "未收藏时加入", "3", { 1: "想看", 3: "在看", 2: "看过" });
     const results = el.createDiv("al-results");
-    button(el, "搜索条目", () => this.run(async () => {
+    button(query.parentElement, "搜索条目", () => this.run(async () => {
       const value = query.value.trim();
       if (!value) throw Error("请输入 Bangumi 条目 ID 或名称");
       const response = /^\d+$/.test(value) ? { data: [await this.bgm().call("/v0/subjects/" + value)] } : await this.bgm().search(value);
       results.empty();
       for (const subject of response.data || []) {
         if (subject.type !== 2) continue;
-        new Setting(results).setName(subject.name_cn || subject.name).setDesc(`${subject.id} · ${subject.date || "日期未定"}`)
+        new Setting(results).setName(subject.name_cn || subject.name).setDesc(`${subject.id} · ${C.formatDate(subject.date, this.state.settings.dateFormat) || "日期未定"}`)
           .addButton((control) => control.setButtonText("关联并收藏").onClick(() => this.run(async () => {
             await this.attachLocalLibrary(subject, directory.value.trim(), Number(status.value));
             modal.close();

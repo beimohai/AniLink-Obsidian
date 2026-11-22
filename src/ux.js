@@ -95,7 +95,7 @@ AniLink.prototype.subscriptionsManager = function () {
       const tags = info.createDiv("al-version-tags");
       for (const tag of [s.subscription.profile?.quality || s.subscription.quality, s.subscription.profile?.language || s.subscription.language, s.subscription.profile?.codec, s.subscription.profile?.subtitle].filter((value) => value && value !== "未标注")) tags.createSpan({ text: tag });
       const status = info.createEl("p", { cls: "al-muted" });
-      const showUpdate = () => status.setText((s.subscription.enabled ? "自动下载" : "已暂停") + " · 最近更新 " + (s.subscription.rssUpdatedAt ? new Date(s.subscription.rssUpdatedAt).toLocaleDateString("zh-CN") : "暂无记录"));
+      const showUpdate = () => status.setText((s.subscription.enabled ? "自动下载" : "已暂停") + " · 最近更新 " + (s.subscription.rssUpdatedAt ? C.formatDate(s.subscription.rssUpdatedAt, this.state.settings.dateFormat) : "暂无记录"));
       showUpdate();
       this.readFeed(s.subscription.feed).then((rows) => {
         s.subscription.rssUpdatedAt = Math.max(0, ...rows.map((item) => Date.parse(item.date)).filter(Number.isFinite));
@@ -718,7 +718,7 @@ Dashboard.prototype.renderDetail = function (el, s) {
   const viewport = panel.createDiv("al-preview-viewport");
   const pages = {
     trend: { url: `https://netaba.re/subject/${s.id}` },
-    bangumi: { url: `https://${this.p.state.settings.bgmMirror && this.p.state.settings.bgmMirrorWeb !== false ? "bangumi.lat" : "bgm.tv"}/subject/${s.id}` },
+    bangumi: { url: `https://${this.p.state.settings.bgmMirror && this.p.state.settings.bgmMirrorWeb !== false ? "bgm.lat" : "bgm.tv"}/subject/${s.id}` },
     fanku: {
       url: s.fankuUrl || null,
     },
@@ -959,7 +959,7 @@ AniLink.prototype.logsModal = function () {
     const list = el.createDiv("al-log-list");
     for (const log of logs) {
       const row = list.createDiv("al-log-row");
-      row.createEl("time", { text: time(log.at) });
+      row.createEl("time", { text: time(log.at, this.state.settings.dateFormat) });
       row.createEl("p", { text: log.message });
     }
   }).open();
@@ -967,33 +967,29 @@ AniLink.prototype.logsModal = function () {
 const finalCards = Dashboard.prototype.renderCards;
 Dashboard.prototype.renderCards = function (cards) {
   finalCards.call(this, cards);
+  this.contentEl.classList.toggle("al-hide-original", this.p.state.settings.showOriginalName === false);
   for (const card of cards.querySelectorAll(".al-card")) {
     const show = this.p.state.shows.find(
       (s) => String(s.id) === card.dataset.showId,
     );
-    const meta = card.querySelector(":scope > div");
+    const meta = card.querySelector(":scope > div:not(.al-cover-placeholder)");
     if (!show || !meta) continue;
     const episodes = show.episodes.filter((e) => e.type === 0);
     const watched = episodes.filter((e) => e.watched).length;
-    const stamp = Math.max(
-      show.lastLocalUpdate || 0,
-      0,
-      ...episodes.flatMap((e) =>
-        (e.files || []).map((f) => f.completedAt || 0),
-      ),
-    );
-    show.lastLocalUpdate = stamp;
+    const update = shelfUpdate(show, C.japanBroadcastDate());
+    const date = C.formatDate(update.date, this.p.state.settings.dateFormat);
+    const dateLabel = date ? date + " " + update.label : "";
     meta.empty();
     meta.createEl("strong", { text: show.title });
-    if (show.name && show.name !== show.title)
+    if (this.p.state.settings.showOriginalName !== false && show.name && show.name !== show.title)
       meta.createEl("p", { text: show.name, cls: "al-original-name" });
     const summary = meta.createEl("p", {
       text: `${C.STATUS[show.status]} · ${watched}/${show.total || episodes.length || "待定"}集`,
       cls: "al-card-summary",
     });
-    if (stamp)
+    if (dateLabel)
       summary.createSpan({
-        text: " · " + new Date(stamp).toLocaleDateString("zh-CN"),
+        text: " · " + dateLabel,
         cls: "al-update-date",
       });
     meta.createEl("p", {
@@ -1221,6 +1217,45 @@ Dashboard.prototype.render = function () {
   window.requestAnimationFrame(() => this.fitInformation());
 };
 
+// Keep source coordinates separate from the timestamp sent to the player.
+function alignDanmakuNode(node, cid, align) {
+  const fields = node.getAttribute("p").split(",");
+  const original = Number(fields[0]);
+  const key = String(cid) + ":" + (fields[7] || fields.join(",") + "|" + node.textContent);
+  node.setAttribute("anilink-key", key);
+  if (!Number.isFinite(original)) return key;
+  node.setAttribute("anilink-source-time", String(original));
+  fields[0] = String(align(original));
+  node.setAttribute("p", fields.join(","));
+  return key;
+}
+
+function mergeDanmakuNodes(fresh, saved, alignments) {
+  const freshNodes = Array.from(fresh);
+  const keys = new Set(Array.from(freshNodes, (node) => node.getAttribute("anilink-key")));
+  // Bilibili row IDs let us recognize older entries without source metadata.
+  const rowIds = new Set(Array.from(freshNodes, (node) => node.getAttribute("p").split(",")[7]).filter(Boolean));
+  const retained = [];
+  for (const node of saved) {
+    const fields = node.getAttribute("p").split(",");
+    const sourceKey = node.getAttribute("anilink-key");
+    const rowId = fields[7];
+    const key = sourceKey || (rowId ? "legacy:" + rowId : fields.join(",") + "|" + node.textContent);
+    if (keys.has(key) || (!sourceKey && rowId && rowIds.has(rowId))) continue;
+    const align = sourceKey && alignments.get(sourceKey.split(":", 1)[0]);
+    const rawTime = node.getAttribute("anilink-source-time");
+    if (align && rawTime !== null && Number.isFinite(Number(rawTime))) {
+      const stamp = align(Number(rawTime));
+      if (stamp < 0) continue;
+      fields[0] = String(stamp);
+      node.setAttribute("p", fields.join(","));
+    }
+    keys.add(key);
+    retained.push(node);
+  }
+  return retained;
+}
+
 AniLink.prototype.prepareUploaderDanmaku = async function (
   show,
   episode,
@@ -1283,6 +1318,7 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
       }
     }
   }
+  const freshNodes = new Map();
   const sources = [],
     comments = new Map();
   for (const candidate of candidates.values()) {
@@ -1334,17 +1370,10 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
           )
             throw Error("B站弹幕格式错误");
           for (const node of doc.querySelectorAll("d")) {
-          const fields = node.getAttribute("p").split(",");
-        const identity = String(page.cid) + ":" + (fields[7] || fields.join(",") + "|" + node.textContent);
-        node.setAttribute("anilink-key", identity);
-            const stamp = Number(fields[0]) + calibration.offsetSeconds;
-            if (stamp < 0) continue;
-            fields[0] = String(stamp);
-            node.setAttribute("p", fields.join(","));
-            comments.set(
-          identity,
-              new XMLSerializer().serializeToString(node),
-            );
+            const identity = alignDanmakuNode(node, page.cid, (time) => time + calibration.offsetSeconds);
+            if (Number(node.getAttribute("p").split(",")[0]) < 0) continue;
+            freshNodes.set(identity, node);
+            comments.set(identity, new XMLSerializer().serializeToString(node));
           }
           sources.push({
             bvid: candidate.bvid,
@@ -1379,9 +1408,10 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
   if (existing && !this.danmakuResetPaths?.has(target)) {
     const old = new DOMParser().parseFromString(existing, "text/xml");
     if (old.querySelector("parsererror")) throw Error("已有弹幕 XML 无法解析，已保留原文件");
-    for (const node of old.querySelectorAll("d")) {
+    const alignments = new Map(sources.map(({ cid, calibration }) => [String(cid), (time) => time + calibration.offsetSeconds]));
+    for (const node of mergeDanmakuNodes(freshNodes.values(), old.querySelectorAll("d"), alignments)) {
       const identity = node.getAttribute("anilink-key") || node.getAttribute("p") + "|" + node.textContent;
-      if (!comments.has(identity)) comments.set(identity, new XMLSerializer().serializeToString(node));
+      comments.set(identity, new XMLSerializer().serializeToString(node));
     }
   }
   await fs.writeFile(
@@ -1403,7 +1433,7 @@ AniLink.prototype.prepareUploaderDanmaku = async function (
   await this.persist();
   return { sources, count: comments.size, elapsedMs: Date.now() - started };
 };
-AniLink.prototype.play = async function (show, episode, file) {
+AniLink.prototype.play = async function (show, episode, file, onPrepared) {
   if (file.remotePath) await this.cacheRemoteVideo(file);
   let cached = !!episode.danmaku?.biliMatchedAt;
   const uploaderIds = String(this.state.settings.biliUploaders || "").split(/[\s,，]+/).filter(Boolean).sort().join(",");
@@ -1427,9 +1457,11 @@ AniLink.prototype.play = async function (show, episode, file) {
     episode.danmaku?.sources?.some((source) => source.calibration?.disabled)
   )
     cached = false;
-  if (!cached) {
+  let prepared;
+  if (!cached || !episode.watched) {
+    cached = false;
     try {
-      await this.prepareUploaderDanmaku(show, episode, file);
+      prepared = await this.prepareUploaderDanmaku(show, episode, file);
       if (episode.danmaku) episode.danmaku.sourceOptions = sourceOptions;
     } catch (error) {
       C.record(this.state, `${show.title} 第${episode.sort}集 · UP ${this.state.settings.biliUploaders || C.defaults().settings.biliUploaders}：弹幕匹配失败 ${error.message}`);
@@ -1437,7 +1469,20 @@ AniLink.prototype.play = async function (show, episode, file) {
       this.danmakuResetPaths?.delete(file.path.replace(/\.[^.]+$/, ".xml"));
     }
   }
-  const result = await launchLocalMedia.call(this, show, episode, file);
+  if (onPrepared && !show.demo) {
+    let count = prepared?.count || 0;
+    if (!prepared) {
+      try {
+        const xml = await fs.readFile(file.path.replace(/\.[^.]+$/, ".xml"), "utf8");
+        count = new DOMParser().parseFromString(xml, "text/xml").querySelectorAll("i > d").length;
+      } catch {
+        // Playback can still start if the cached sidecar cannot be read.
+      }
+    }
+    const videos = new Set((prepared?.sources || []).map((source) => String(source.cid))).size;
+    onPrepared({ videos, count, cached, reusedLocal: !prepared && count > 0 });
+  }
+  const result = await launchLocalMedia.call(this, show, episode, file, !onPrepared);
   if (show.episodes && !this.danmakuPrefetchRunning) {
     this.danmakuPrefetchRunning = true;
     this.background("后续剧集弹幕", async () => {
